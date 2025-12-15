@@ -29,6 +29,27 @@ A modern, open-source web hosting control panel built with Laravel and React.
 - 20GB disk space
 - Root access
 
+### Environment Limitations
+
+**FreePanel requires a dedicated server or VPS.** It cannot run in:
+
+| Environment | Reason |
+|-------------|--------|
+| Google Colab | No persistent services, no systemd, ephemeral filesystem |
+| Shared Hosting | No root access, cannot install system services |
+| Docker (partial) | Requires multiple containers for full functionality |
+| Serverless/Lambda | Not designed for stateless execution |
+
+**Required System Services:**
+- **Web Server** (Apache/Nginx) - Virtual host management
+- **Database** (MariaDB/MySQL) - Persistent data storage
+- **Mail Server** (Dovecot/Exim) - Email hosting
+- **DNS Server** (BIND) - Zone management
+- **FTP Server** (Pure-FTPd) - File transfer
+- **Systemd** - Service management
+
+These services require a full Linux server environment with persistent storage and root-level access to system configuration.
+
 ## Installation
 
 ### Quick Install (Recommended)
