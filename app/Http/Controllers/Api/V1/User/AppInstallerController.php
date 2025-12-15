@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-class AppController extends Controller
+class AppInstallerController extends Controller
 {
     protected AppInstallerFactory $installerFactory;
 
