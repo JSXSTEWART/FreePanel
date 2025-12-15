@@ -1,0 +1,45 @@
+/vendor/
+/node_modules/
+/public/build/
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/.env
+/.env.backup
+/.env.production
+/.phpactor.json
+/.phpunit.result.cache
+/Homestead.json
+/Homestead.yaml
+/npm-debug.log
+/yarn-error.log
+/.idea
+/.vscode
+/.claude
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Frontend build artifacts
+/frontend/dist/
+/frontend/node_modules/
+
+# Composer
+composer.phar
+
+# PHPUnit
+.phpunit.cache/
+
+# Laravel specific
+bootstrap/cache/*.php
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+!storage/logs/.gitkeep
+!storage/framework/.gitkeep
+!storage/framework/cache/.gitkeep
+!storage/framework/sessions/.gitkeep
+!storage/framework/views/.gitkeep
