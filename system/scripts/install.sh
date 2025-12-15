@@ -16,6 +16,8 @@ NC='\033[0m' # No Color
 # Configuration
 FREEPANEL_DIR="/opt/freepanel"
 FREEPANEL_USER="freepanel"
+FREEPANEL_REPO="https://github.com/JSXSTEWART/FreePanel.git"
+FREEPANEL_BRANCH="main"
 PHP_VERSION="8.2"
 NODE_VERSION="20"
 
@@ -240,40 +242,97 @@ install_certbot() {
     log_success "Certbot installed"
 }
 
+clone_freepanel() {
+    log_info "Cloning FreePanel from GitHub..."
+
+    # Remove existing directory if present
+    if [ -d "$FREEPANEL_DIR" ]; then
+        log_warning "Removing existing FreePanel installation..."
+        rm -rf $FREEPANEL_DIR
+    fi
+
+    # Clone repository
+    git clone --branch $FREEPANEL_BRANCH $FREEPANEL_REPO $FREEPANEL_DIR
+
+    if [ $? -ne 0 ]; then
+        log_error "Failed to clone FreePanel repository"
+    fi
+
+    log_success "FreePanel cloned successfully"
+}
+
 setup_freepanel() {
     log_info "Setting up FreePanel..."
 
     # Create FreePanel user
-    useradd -r -m -d $FREEPANEL_DIR -s /bin/bash $FREEPANEL_USER || true
-
-    # Copy files (assuming this script is run from the FreePanel source directory)
-    if [ -d "/mnt/FreePanel" ]; then
-        cp -r /mnt/FreePanel/* $FREEPANEL_DIR/
-    fi
+    useradd -r -m -d /home/$FREEPANEL_USER -s /bin/bash $FREEPANEL_USER 2>/dev/null || true
 
     # Set ownership
     chown -R $FREEPANEL_USER:$FREEPANEL_USER $FREEPANEL_DIR
 
-    # Install PHP dependencies
+    # Setup environment file
     cd $FREEPANEL_DIR
+    if [ ! -f .env ]; then
+        cp .env.example .env
+        log_info "Created .env file from .env.example"
+    fi
+
+    # Install PHP dependencies
+    log_info "Installing PHP dependencies..."
     sudo -u $FREEPANEL_USER composer install --no-dev --optimize-autoloader
 
     # Install Node dependencies and build frontend
+    log_info "Building frontend..."
     cd $FREEPANEL_DIR/frontend
     sudo -u $FREEPANEL_USER npm install
     sudo -u $FREEPANEL_USER npm run build
 
+    # Copy frontend build to public directory
+    if [ -d "$FREEPANEL_DIR/frontend/dist" ]; then
+        cp -r $FREEPANEL_DIR/frontend/dist/* $FREEPANEL_DIR/public/
+        log_info "Frontend assets copied to public directory"
+    fi
+
     # Generate application key
     cd $FREEPANEL_DIR
-    sudo -u $FREEPANEL_USER php artisan key:generate
+    sudo -u $FREEPANEL_USER php artisan key:generate --force
 
-    # Run migrations
-    sudo -u $FREEPANEL_USER php artisan migrate --force
-
-    # Create admin user
-    sudo -u $FREEPANEL_USER php artisan freepanel:create-admin
+    # Set storage permissions
+    chmod -R 775 $FREEPANEL_DIR/storage
+    chmod -R 775 $FREEPANEL_DIR/bootstrap/cache
 
     log_success "FreePanel setup complete"
+}
+
+setup_database() {
+    log_info "Setting up database..."
+
+    # Generate random password
+    DB_PASS=$(openssl rand -base64 12)
+
+    # Create database and user
+    mysql -e "CREATE DATABASE IF NOT EXISTS freepanel;"
+    mysql -e "CREATE USER IF NOT EXISTS 'freepanel'@'localhost' IDENTIFIED BY '$DB_PASS';"
+    mysql -e "GRANT ALL PRIVILEGES ON freepanel.* TO 'freepanel'@'localhost';"
+    mysql -e "FLUSH PRIVILEGES;"
+
+    # Update .env with database credentials
+    sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASS/" $FREEPANEL_DIR/.env
+
+    # Run migrations
+    cd $FREEPANEL_DIR
+    sudo -u $FREEPANEL_USER php artisan migrate --force --seed
+
+    log_success "Database configured"
+}
+
+create_admin() {
+    log_info "Creating admin user..."
+
+    cd $FREEPANEL_DIR
+    sudo -u $FREEPANEL_USER php artisan freepanel:create-admin
+
+    log_success "Admin user created"
 }
 
 create_systemd_service() {
@@ -395,7 +454,10 @@ main() {
     install_nodejs
     install_composer
     install_certbot
+    clone_freepanel
     setup_freepanel
+    setup_database
+    create_admin
     create_systemd_service
     configure_firewall
     print_summary
