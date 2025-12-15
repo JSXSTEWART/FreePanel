@@ -287,10 +287,11 @@ setup_freepanel() {
     sudo -u $FREEPANEL_USER npm install
     sudo -u $FREEPANEL_USER npm run build
 
-    # Copy frontend build to public directory
-    if [ -d "$FREEPANEL_DIR/frontend/dist" ]; then
-        cp -r $FREEPANEL_DIR/frontend/dist/* $FREEPANEL_DIR/public/
-        log_info "Frontend assets copied to public directory"
+    # Vite outputs directly to public/build via config
+    if [ -d "$FREEPANEL_DIR/public/build" ]; then
+        log_info "Frontend assets built to public/build directory"
+    else
+        log_warning "Frontend build directory not found - check build output"
     fi
 
     # Generate application key
