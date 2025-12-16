@@ -1,5 +1,48 @@
+/**
+ * Application Installer Component
+ *
+ * TODO: Implement full API integration for one-click app installation
+ *
+ * Backend API endpoints to integrate:
+ *
+ * 1. Available Apps - GET /api/v1/user/apps/available
+ *    Response: [{ id, name, version, description, category, icon, requirements }, ...]
+ *    Use: Replace hardcoded `apps` array, show requirements before install
+ *
+ * 2. Installed Apps - GET /api/v1/user/apps/installed
+ *    Response: [{ id, app_type, domain, path, version, has_update, installed_at }, ...]
+ *    Use: Replace hardcoded installed apps table
+ *
+ * 3. Install App - POST /api/v1/user/apps/install
+ *    Body: { app: 'wordpress', domain_id, path, admin_username, admin_password, admin_email, site_name }
+ *    Use: Handle install button click, show installation wizard/modal
+ *
+ * 4. Update App - POST /api/v1/user/apps/{id}/update
+ *    Use: Handle update button click
+ *
+ * 5. Uninstall App - DELETE /api/v1/user/apps/{id}
+ *    Body: { delete_files: true, delete_database: true }
+ *    Use: Handle uninstall with confirmation dialog
+ *
+ * 6. App Details - GET /api/v1/user/apps/{id}
+ *    Response: { id, app_type, version, current_version, url, admin_url, has_update, ... }
+ *    Use: Show app management panel
+ *
+ * Implementation requirements:
+ * - Add InstallAppModal component with form for admin credentials and settings
+ * - Show domain selector dropdown (fetch from /api/v1/user/domains)
+ * - Display installation progress (could use polling or WebSocket)
+ * - Add confirmation dialogs for destructive actions (uninstall)
+ * - Show update available badges on apps that can be updated
+ * - Handle staging environment creation (POST /api/v1/user/apps/{id}/staging)
+ *
+ * Note: Only WordPress installer is currently fully implemented on backend.
+ * Other installers (Joomla, Drupal, etc.) have stub implementations with TODOs.
+ */
 import { Card, CardBody } from '../../components/common/Card'
 
+// TODO: Fetch from API instead of hardcoding
+// const { data: availableApps } = useQuery(['available-apps'], () => api.get('/user/apps/available'))
 const apps = [
   { name: 'WordPress', version: '6.4', icon: '🔵', description: 'Popular blogging and CMS platform' },
   { name: 'Joomla', version: '5.0', icon: '🟠', description: 'Flexible content management system' },
@@ -10,6 +53,18 @@ const apps = [
 ]
 
 export default function Apps() {
+  // TODO: Add state for install modal
+  // const [installModalOpen, setInstallModalOpen] = useState(false)
+  // const [selectedApp, setSelectedApp] = useState(null)
+  //
+  // TODO: Fetch installed apps from API
+  // const { data: installedApps } = useQuery(['installed-apps'], () => api.get('/user/apps/installed'))
+  //
+  // TODO: Add install mutation
+  // const installMutation = useMutation(
+  //   (data) => api.post('/user/apps/install', data),
+  //   { onSuccess: () => queryClient.invalidateQueries(['installed-apps']) }
+  // )
   return (
     <div className="space-y-6">
       <div>

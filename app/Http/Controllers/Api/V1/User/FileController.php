@@ -437,6 +437,91 @@ class FileController extends Controller
         }
     }
 
+    /**
+     * Search for files and directories
+     *
+     * TODO: Implement file search functionality
+     *
+     * This endpoint should support:
+     * 1. Filename search with wildcards (e.g., *.php, config*)
+     * 2. Content search within text files (grep-like functionality)
+     * 3. Search filters:
+     *    - File type (files only, directories only, or both)
+     *    - File extension filter
+     *    - Size range (min/max bytes)
+     *    - Date modified range
+     *    - Max depth for recursive search
+     * 4. Pagination for large result sets
+     * 5. Sort options (name, size, date, relevance)
+     *
+     * Example implementation:
+     *
+     * public function search(Request $request)
+     * {
+     *     $account = $request->user()->account;
+     *
+     *     $validator = Validator::make($request->all(), [
+     *         'query' => 'required|string|min:2|max:255',
+     *         'path' => 'nullable|string',
+     *         'type' => 'nullable|string|in:file,directory,all',
+     *         'extension' => 'nullable|string|max:20',
+     *         'content' => 'nullable|boolean',
+     *         'max_depth' => 'nullable|integer|min:1|max:10',
+     *         'min_size' => 'nullable|integer|min:0',
+     *         'max_size' => 'nullable|integer|min:0',
+     *         'limit' => 'nullable|integer|min:1|max:500',
+     *     ]);
+     *
+     *     if ($validator->fails()) {
+     *         return $this->error($validator->errors()->first(), 422);
+     *     }
+     *
+     *     $basePath = "/home/{$account->username}";
+     *     $searchPath = $request->path
+     *         ? $this->resolvePath($basePath, $request->path)
+     *         : $basePath;
+     *
+     *     if (!str_starts_with($searchPath, $basePath)) {
+     *         return $this->error('Access denied', 403);
+     *     }
+     *
+     *     try {
+     *         $results = $this->fileService->search($searchPath, [
+     *             'query' => $request->query,
+     *             'type' => $request->type ?? 'all',
+     *             'extension' => $request->extension,
+     *             'content_search' => $request->boolean('content', false),
+     *             'max_depth' => $request->max_depth ?? 5,
+     *             'min_size' => $request->min_size,
+     *             'max_size' => $request->max_size,
+     *             'limit' => $request->limit ?? 100,
+     *         ]);
+     *
+     *         // Strip base path from results for security
+     *         $results = array_map(function ($item) use ($basePath) {
+     *             $item['path'] = str_replace($basePath, '', $item['path']);
+     *             return $item;
+     *         }, $results);
+     *
+     *         return $this->success([
+     *             'query' => $request->query,
+     *             'path' => str_replace($basePath, '', $searchPath),
+     *             'results' => $results,
+     *             'total' => count($results),
+     *         ]);
+     *     } catch (\Exception $e) {
+     *         return $this->error('Search failed: ' . $e->getMessage(), 500);
+     *     }
+     * }
+     *
+     * FileService::search() implementation hints:
+     * - Use `find` command for filename search
+     * - Use `grep -r` for content search (with timeout/limits)
+     * - Consider using `locate` database if available for faster searches
+     * - Implement caching for frequently searched directories
+     * - Add rate limiting to prevent abuse
+     */
+
     protected function resolvePath(string $basePath, string $path): string
     {
         // Handle absolute vs relative paths

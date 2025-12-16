@@ -295,12 +295,80 @@ class AccountController extends Controller
         }
     }
 
-    public function terminate(int $id)
+    public function terminate(Request $request, int $id)
     {
         $account = Account::findOrFail($id);
 
+        // TODO: Full account termination verification implementation
+        // This is a destructive operation that should include multiple safety checks:
+        //
+        // 1. Require explicit confirmation with account username:
+        //    $validator = Validator::make($request->all(), [
+        //        'confirm_username' => 'required|string|in:' . $account->username,
+        //        'backup_data' => 'nullable|boolean',
+        //        'keep_dns' => 'nullable|boolean',
+        //        'reason' => 'nullable|string|max:500',
+        //    ]);
+        //
+        // 2. Create final backup before deletion (if requested):
+        //    if ($request->boolean('backup_data', true)) {
+        //        $backupService = app(BackupService::class);
+        //        $backupPath = $backupService->createFullBackup($account);
+        //        // Optionally email backup download link to admin or account email
+        //    }
+        //
+        // 3. Send notification email to account owner:
+        //    Mail::to($account->user->email)->send(new AccountTerminationNotice($account, $request->reason));
+        //
+        // 4. Optionally keep DNS records for grace period:
+        //    if (!$request->boolean('keep_dns', false)) {
+        //        $this->dns->removeZone($domain);
+        //    }
+        //
+        // 5. Archive account data for compliance/audit trail:
+        //    TerminatedAccount::create([
+        //        'original_id' => $account->id,
+        //        'username' => $account->username,
+        //        'email' => $account->user->email,
+        //        'domain' => $account->domain,
+        //        'terminated_by' => auth()->id(),
+        //        'reason' => $request->reason,
+        //        'backup_path' => $backupPath ?? null,
+        //        'account_data' => $account->toArray(),
+        //    ]);
+        //
+        // 6. Add delay/cooling-off period:
+        //    $account->update(['status' => 'pending_termination', 'terminate_at' => now()->addDays(7)]);
+        //    // Use scheduled job to actually delete after cooling-off period
+
+        // Validate confirmation
+        $validator = Validator::make($request->all(), [
+            'confirm' => 'required|boolean|accepted',
+            'confirm_username' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->error($validator->errors()->first(), 422);
+        }
+
+        // Verify username matches
+        if ($request->confirm_username !== $account->username) {
+            return $this->error(
+                'Username confirmation does not match. Please type the exact username to confirm termination.',
+                422
+            );
+        }
+
         DB::beginTransaction();
         try {
+            // Log the termination for audit trail
+            \Log::warning("Account termination initiated", [
+                'account_id' => $account->id,
+                'username' => $account->username,
+                'terminated_by' => auth()->id(),
+                'ip' => request()->ip(),
+            ]);
+
             // Remove all domains and their configs
             foreach ($account->domains as $domain) {
                 $this->webServer->removeVirtualHost($domain);

@@ -276,8 +276,44 @@ class AppInstallerController extends Controller
                 'database_prefix' => 'stg_',
             ]);
 
-            // Create subdomain record if needed
-            // ...
+            // TODO: Create subdomain DNS record and virtual host
+            // This staging feature requires the following steps to be fully functional:
+            // 1. Create a Domain model record for the staging subdomain:
+            //    $stagingDomainRecord = Domain::create([
+            //        'account_id' => $account->id,
+            //        'name' => $stagingDomain,
+            //        'document_root' => $stagingPath,
+            //        'is_main' => false,
+            //        'is_staging' => true,
+            //        'parent_domain_id' => $app->domain_id,
+            //        'status' => 'active',
+            //    ]);
+            //
+            // 2. Create virtual host configuration:
+            //    app(WebServerInterface::class)->createVirtualHost($stagingDomainRecord);
+            //
+            // 3. Add DNS A record pointing to server IP:
+            //    app(DnsInterface::class)->addRecord($app->domain->name, [
+            //        'type' => 'A',
+            //        'name' => $request->subdomain,
+            //        'value' => config('freepanel.server_ip'),
+            //        'ttl' => 3600,
+            //    ]);
+            //
+            // 4. Optionally provision SSL certificate:
+            //    app(SslService::class)->provisionLetsEncrypt($stagingDomainRecord);
+            //
+            // 5. Record the staging app in InstalledApp:
+            //    InstalledApp::create([
+            //        'account_id' => $account->id,
+            //        'domain_id' => $stagingDomainRecord->id,
+            //        'app_type' => $app->app_type,
+            //        'version' => $app->version,
+            //        'path' => '/',
+            //        'is_staging' => true,
+            //        'production_app_id' => $app->id,
+            //        'database_name' => $result['database'] ?? null,
+            //    ]);
 
             DB::commit();
             return $this->success([

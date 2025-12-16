@@ -127,18 +127,111 @@ class EximService implements EmailInterface
 
     public function createAutoresponder(EmailAutoresponder $autoresponder): void
     {
-        // Autoresponders are typically handled by Dovecot Sieve or a separate system
+        // TODO: Implement Exim autoresponder using one of these approaches:
+        //
+        // Option 1: Use Exim's autoreply transport (recommended for Exim-only setups)
+        // - Create a filter file at: /var/mail/vhosts/{domain}/{user}/.autoresponder
+        // - Add router in Exim config that checks for .autoresponder file
+        // - Filter format example:
+        //   if $header_from: does not contain $local_part@$domain
+        //   then
+        //     mail to: $header_from:
+        //     subject: "Auto: $header_subject:"
+        //     text: "{message}"
+        //   endif
+        //
+        // Option 2: Use vacation program (/usr/bin/vacation)
+        // - Create .vacation.msg file with the autoresponder message
+        // - Create .vacation.db for tracking sent responses (avoid reply loops)
+        // - Configure Exim to pipe to vacation program
+        //
+        // Option 3: Delegate to Dovecot Sieve (if using Dovecot for LDA)
+        // - Create Sieve script at: /var/mail/vhosts/{domain}/{user}/sieve/autoresponder.sieve
+        // - See DovecotService for Sieve implementation example
+        //
+        // Implementation checklist:
+        // 1. Check date range (start_date, end_date) if autoresponder should be time-limited
+        // 2. Store list of already-responded addresses to prevent reply loops
+        // 3. Only reply once per sender per day/period
+        // 4. Exclude mailing lists, bounce messages, and spam
+        // 5. Set proper headers (Auto-Submitted: auto-replied, X-Auto-Response-Suppress)
+
+        $this->writeAutoresponderConfig($autoresponder);
         Log::info("Autoresponder created for {$autoresponder->emailAccount->email}");
     }
 
     public function updateAutoresponder(EmailAutoresponder $autoresponder): void
     {
+        // TODO: Update the autoresponder configuration
+        // - Regenerate the filter/script file with new message/settings
+        // - Clear the response tracking database if desired
+
+        $this->writeAutoresponderConfig($autoresponder);
         Log::info("Autoresponder updated for {$autoresponder->emailAccount->email}");
     }
 
     public function deleteAutoresponder(EmailAutoresponder $autoresponder): void
     {
-        Log::info("Autoresponder deleted for {$autoresponder->emailAccount->email}");
+        // TODO: Remove autoresponder configuration
+        // - Delete .autoresponder filter file
+        // - Delete .vacation.db tracking file
+        // - Remove any Sieve scripts if using Dovecot
+
+        $email = $autoresponder->emailAccount->email;
+        $domain = $autoresponder->emailAccount->domain->name;
+        $localPart = explode('@', $email)[0];
+        $autoresponderPath = "{$this->mailDir}/{$domain}/{$localPart}/.autoresponder";
+
+        if (file_exists($autoresponderPath)) {
+            unlink($autoresponderPath);
+        }
+
+        // Also remove vacation db if exists
+        $vacationDb = "{$this->mailDir}/{$domain}/{$localPart}/.vacation.db";
+        if (file_exists($vacationDb)) {
+            unlink($vacationDb);
+        }
+
+        Log::info("Autoresponder deleted for {$email}");
+    }
+
+    /**
+     * Write autoresponder configuration file
+     *
+     * TODO: Implement based on chosen autoresponder approach above
+     */
+    protected function writeAutoresponderConfig(EmailAutoresponder $autoresponder): void
+    {
+        $email = $autoresponder->emailAccount->email;
+        $domain = $autoresponder->emailAccount->domain->name;
+        $localPart = explode('@', $email)[0];
+        $mailboxPath = "{$this->mailDir}/{$domain}/{$localPart}";
+
+        // Ensure mailbox directory exists
+        if (!is_dir($mailboxPath)) {
+            return;
+        }
+
+        // TODO: Generate appropriate autoresponder format based on configuration
+        // For now, create a simple vacation-style message file
+        $autoresponderPath = "{$mailboxPath}/.autoresponder";
+
+        $message = sprintf(
+            "From: %s\n" .
+            "Subject: %s\n" .
+            "Content-Type: text/plain; charset=utf-8\n" .
+            "Auto-Submitted: auto-replied\n" .
+            "X-Auto-Response-Suppress: All\n" .
+            "\n" .
+            "%s",
+            $email,
+            $autoresponder->subject ?? 'Auto-Reply',
+            $autoresponder->message ?? 'I am currently unavailable.'
+        );
+
+        file_put_contents($autoresponderPath, $message);
+        chmod($autoresponderPath, 0600);
+        Process::run("chown mail:mail " . escapeshellarg($autoresponderPath));
     }
 
     public function mailboxExists(string $email): bool

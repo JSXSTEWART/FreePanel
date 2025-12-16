@@ -107,7 +107,7 @@ class ServiceController extends Controller
         }
     }
 
-    public function stop(string $service)
+    public function stop(Request $request, string $service)
     {
         $serviceName = $this->getServiceName($service);
 
@@ -116,9 +116,47 @@ class ServiceController extends Controller
         }
 
         // Prevent stopping critical services without confirmation
+        // TODO: Implement critical service protection
+        // Critical services should require additional confirmation to prevent accidental outages:
+        //
+        // 1. Add 'confirm' parameter to request validation:
+        //    'confirm' => 'required_if:service,httpd,mariadb,named|boolean'
+        //
+        // 2. Check for confirmation:
+        //    if (!$request->boolean('confirm')) {
+        //        return $this->error(
+        //            "Stopping {$service} will affect all hosted websites/databases. " .
+        //            "Pass 'confirm: true' to proceed.",
+        //            422,
+        //            ['requires_confirmation' => true, 'service' => $service]
+        //        );
+        //    }
+        //
+        // 3. Log the action to audit trail:
+        //    AuditLog::create([
+        //        'user_id' => auth()->id(),
+        //        'action' => 'service.stop',
+        //        'target_type' => 'service',
+        //        'target_id' => $service,
+        //        'details' => ['confirmed' => true, 'ip' => request()->ip()],
+        //    ]);
+        //
+        // 4. Optionally notify other admins:
+        //    Notification::send(User::admins()->get(), new CriticalServiceStopped($service));
+        //
+        // 5. Consider adding a grace period or maintenance mode:
+        //    - Set maintenance mode before stopping web server
+        //    - Queue service stop with delay to allow active requests to complete
         $criticalServices = ['httpd', 'mariadb', 'named'];
         if (in_array($service, $criticalServices)) {
-            // In production, require additional confirmation
+            if (!$request->boolean('confirm')) {
+                return $this->error(
+                    "Warning: Stopping '{$service}' is a critical operation that may affect " .
+                    "all hosted websites and services. Please confirm this action.",
+                    422,
+                    ['requires_confirmation' => true, 'critical_service' => $service]
+                );
+            }
         }
 
         try {

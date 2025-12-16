@@ -1,3 +1,42 @@
+/**
+ * Admin Dashboard Component
+ *
+ * TODO: Implement API integration for server monitoring and admin stats
+ *
+ * Backend API endpoints to integrate:
+ *
+ * 1. Account Stats - GET /api/v1/admin/accounts/stats
+ *    Response: { total, active, suspended, created_today, created_this_month, by_package }
+ *    Use: Replace hardcoded StatCard values
+ *
+ * 2. Server Info - GET /api/v1/admin/server/info
+ *    Response: { hostname, os, kernel, uptime, panel_version, ip_addresses, php_version }
+ *    Use: Replace hardcoded server information
+ *
+ * 3. Services Status - GET /api/v1/admin/services
+ *    Response: [{ id, service_name, display_name, status, is_running, uptime, memory, cpu }, ...]
+ *    Use: Replace hardcoded services array, enable real-time status updates
+ *
+ * 4. Server Resources - GET /api/v1/admin/server/resources
+ *    Response: { load: [1m, 5m, 15m], memory: { used, total }, disk: { used, total }, cpu_percent }
+ *    Use: Display real-time server load, memory, and disk usage
+ *
+ * 5. Recent Accounts - GET /api/v1/admin/accounts?sort_by=created_at&sort_dir=desc&per_page=5
+ *    Response: { data: [{ username, domain, package, status, created_at }, ...] }
+ *    Use: Replace hardcoded recent accounts table
+ *
+ * 6. System Alerts - GET /api/v1/admin/alerts
+ *    Response: [{ type, message, severity, created_at }, ...]
+ *    Use: Display warnings for disk space, failed services, etc.
+ *
+ * Implementation requirements:
+ * - Add auto-refresh every 30 seconds for server stats
+ * - Add service control buttons (start/stop/restart) with confirmation
+ * - Show loading states and error handling
+ * - Add WebSocket support for real-time service status updates
+ * - Display alerts/warnings prominently (e.g., disk >90%, services down)
+ * - Add click-through to service management page
+ */
 import StatCard from '../../components/common/StatCard'
 import { Card, CardHeader, CardBody } from '../../components/common/Card'
 import {
@@ -10,6 +49,25 @@ import {
 } from '@heroicons/react/24/outline'
 
 export default function AdminDashboard() {
+  // TODO: Fetch services from API
+  // const { data: services, isLoading } = useQuery(
+  //   ['admin', 'services'],
+  //   () => api.get('/admin/services').then(res => res.data),
+  //   { refetchInterval: 30000 } // Auto-refresh every 30 seconds
+  // )
+  //
+  // TODO: Fetch account stats from API
+  // const { data: accountStats } = useQuery(['admin', 'accounts', 'stats'], () => api.get('/admin/accounts/stats'))
+  //
+  // TODO: Fetch server info from API
+  // const { data: serverInfo } = useQuery(['admin', 'server', 'info'], () => api.get('/admin/server/info'))
+  //
+  // TODO: Fetch recent accounts from API
+  // const { data: recentAccounts } = useQuery(['admin', 'accounts', 'recent'], () =>
+  //   api.get('/admin/accounts?sort_by=created_at&sort_dir=desc&per_page=5')
+  // )
+
+  // TODO: Remove hardcoded mock data and use API response
   const services = [
     { name: 'Apache', status: 'running' },
     { name: 'MySQL', status: 'running' },

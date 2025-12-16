@@ -1,3 +1,60 @@
+/**
+ * User Dashboard Component
+ *
+ * TODO: Implement API integration for real-time data
+ *
+ * This dashboard currently uses hardcoded mock data. To make it functional,
+ * integrate with the following backend API endpoints:
+ *
+ * 1. Account Stats - GET /api/v1/user/stats
+ *    Response: { domains_count, email_accounts_count, databases_count, disk_used, disk_limit, ... }
+ *    Use: Replace hardcoded StatCard values
+ *
+ * 2. Resource Usage - GET /api/v1/user/usage
+ *    Response: { disk: { used, limit, percent }, bandwidth: { used, limit, percent }, inodes: {...} }
+ *    Use: Replace hardcoded progress bars in Resource Usage card
+ *
+ * 3. Recent Activity - GET /api/v1/user/activity?limit=10
+ *    Response: [{ action, target, timestamp, details }, ...]
+ *    Use: Replace hardcoded activity list
+ *
+ * Implementation example:
+ *
+ * import { useQuery } from '@tanstack/react-query'
+ * import { api } from '../../lib/api'
+ *
+ * export default function Dashboard() {
+ *   const { user } = useAuth()
+ *
+ *   const { data: stats, isLoading: statsLoading } = useQuery({
+ *     queryKey: ['user', 'stats'],
+ *     queryFn: () => api.get('/user/stats').then(res => res.data),
+ *   })
+ *
+ *   const { data: usage, isLoading: usageLoading } = useQuery({
+ *     queryKey: ['user', 'usage'],
+ *     queryFn: () => api.get('/user/usage').then(res => res.data),
+ *   })
+ *
+ *   const { data: activity, isLoading: activityLoading } = useQuery({
+ *     queryKey: ['user', 'activity'],
+ *     queryFn: () => api.get('/user/activity?limit=5').then(res => res.data),
+ *   })
+ *
+ *   if (statsLoading) return <DashboardSkeleton />
+ *
+ *   return (
+ *     // ... render with real data
+ *   )
+ * }
+ *
+ * Additional enhancements:
+ * - Add auto-refresh every 30 seconds for usage stats
+ * - Show loading skeletons while data is fetching
+ * - Add error states with retry buttons
+ * - Implement real-time updates via WebSocket for activity feed
+ * - Add notifications for quota warnings (>80% usage)
+ */
 import { useAuth } from '../../hooks/useAuth'
 import StatCard from '../../components/common/StatCard'
 import { Card, CardHeader, CardBody } from '../../components/common/Card'
@@ -10,8 +67,16 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline'
 
+// TODO: Remove mock data and fetch from API
+// const MOCK_STATS = { ... }
+
 export default function Dashboard() {
   const { user } = useAuth()
+
+  // TODO: Replace with real API calls
+  // const { data: stats } = useQuery(['user-stats'], fetchUserStats)
+  // const { data: usage } = useQuery(['user-usage'], fetchUserUsage)
+  // const { data: activity } = useQuery(['user-activity'], fetchUserActivity)
 
   return (
     <div className="space-y-6">
