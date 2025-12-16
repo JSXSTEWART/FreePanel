@@ -1,38 +1,181 @@
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import StatCard from '../../components/common/StatCard'
 import { Card, CardHeader, CardBody } from '../../components/common/Card'
+import ProgressBar from '../../components/common/ProgressBar'
+import Badge from '../../components/common/Badge'
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts'
 import {
   GlobeAltIcon,
   EnvelopeIcon,
   CircleStackIcon,
   ServerIcon,
-  ArrowUpIcon,
-  ClockIcon,
+  
+  ArrowRightIcon,
+  CubeIcon,
+  LockClosedIcon,
+  FolderIcon,
+  ArchiveBoxIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline'
+
+// Sample data for charts
+const bandwidthData = [
+  { name: 'Mon', value: 4 },
+  { name: 'Tue', value: 7 },
+  { name: 'Wed', value: 5 },
+  { name: 'Thu', value: 8 },
+  { name: 'Fri', value: 12 },
+  { name: 'Sat', value: 9 },
+  { name: 'Sun', value: 6 },
+]
+
+const diskUsageData = [
+  { name: 'Used', value: 2.4 },
+  { name: 'Free', value: 7.6 },
+]
+
+const COLORS = ['#3b82f6', '#e5e7eb']
+
+const quickActions = [
+  {
+    name: 'Create Email',
+    description: 'Add new mailbox',
+    href: '/email',
+    icon: EnvelopeIcon,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-50 hover:bg-blue-100',
+  },
+  {
+    name: 'Add Domain',
+    description: 'Setup new domain',
+    href: '/domains',
+    icon: GlobeAltIcon,
+    color: 'text-green-500',
+    bgColor: 'bg-green-50 hover:bg-green-100',
+  },
+  {
+    name: 'New Database',
+    description: 'Create MySQL DB',
+    href: '/databases',
+    icon: CircleStackIcon,
+    color: 'text-purple-500',
+    bgColor: 'bg-purple-50 hover:bg-purple-100',
+  },
+  {
+    name: 'Install App',
+    description: 'WordPress & more',
+    href: '/apps',
+    icon: CubeIcon,
+    color: 'text-orange-500',
+    bgColor: 'bg-orange-50 hover:bg-orange-100',
+  },
+  {
+    name: 'File Manager',
+    description: 'Browse files',
+    href: '/files',
+    icon: FolderIcon,
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-50 hover:bg-cyan-100',
+  },
+  {
+    name: 'SSL Certificates',
+    description: 'Manage SSL',
+    href: '/ssl',
+    icon: LockClosedIcon,
+    color: 'text-emerald-500',
+    bgColor: 'bg-emerald-50 hover:bg-emerald-100',
+  },
+]
+
+const recentActivity = [
+  {
+    action: 'SSL certificate renewed',
+    target: 'example.com',
+    time: '2 hours ago',
+    status: 'success',
+    icon: ShieldCheckIcon,
+  },
+  {
+    action: 'Email account created',
+    target: 'info@example.com',
+    time: '1 day ago',
+    status: 'success',
+    icon: EnvelopeIcon,
+  },
+  {
+    action: 'WordPress installed',
+    target: 'example.com/blog',
+    time: '3 days ago',
+    status: 'success',
+    icon: CubeIcon,
+  },
+  {
+    action: 'Backup completed',
+    target: 'wp_database',
+    time: '1 week ago',
+    status: 'success',
+    icon: ArchiveBoxIcon,
+  },
+]
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Simulate loading
+    const timer = setTimeout(() => setLoading(false), 500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }
 
   return (
     <div className="space-y-6">
-      {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {user?.username}!
-        </h1>
-        <p className="mt-1 text-gray-500">
-          Here's what's happening with your hosting account.
-        </p>
+      {/* Welcome Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {getGreeting()}, {user?.username}!
+          </h1>
+          <p className="mt-1 text-gray-500">
+            Here's an overview of your hosting account.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="success" dot>All systems operational</Badge>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard
           title="Domains"
           value="3"
           subtitle="2 active, 1 parked"
           icon={GlobeAltIcon}
           color="blue"
+          loading={loading}
         />
         <StatCard
           title="Email Accounts"
@@ -40,6 +183,7 @@ export default function Dashboard() {
           subtitle="of 100 available"
           icon={EnvelopeIcon}
           color="green"
+          loading={loading}
         />
         <StatCard
           title="Databases"
@@ -47,56 +191,172 @@ export default function Dashboard() {
           subtitle="of 10 available"
           icon={CircleStackIcon}
           color="purple"
+          loading={loading}
         />
         <StatCard
           title="Disk Usage"
           value="2.4 GB"
-          subtitle="of 10 GB"
+          subtitle="of 10 GB (24%)"
           icon={ServerIcon}
           color="yellow"
+          loading={loading}
         />
       </div>
 
-      {/* Usage & Quick Actions */}
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Bandwidth Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Bandwidth Usage</h2>
+              <span className="text-sm text-gray-500">Last 7 days</span>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={bandwidthData}>
+                  <defs>
+                    <linearGradient id="colorBandwidth" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    tickFormatter={(value) => `${value} GB`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    }}
+                    formatter={(value: number) => [`${value} GB`, 'Bandwidth']}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorBandwidth)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-4 flex items-center justify-between text-sm">
+              <span className="text-gray-500">Total this month: <span className="font-medium text-gray-900">45 GB</span></span>
+              <span className="text-gray-500">Limit: <span className="font-medium text-gray-900">100 GB</span></span>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Disk Usage Pie Chart */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold text-gray-900">Disk Space</h2>
+          </CardHeader>
+          <CardBody>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={diskUsageData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {diskUsageData.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: number) => [`${value} GB`, '']}
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="text-center mt-2">
+              <p className="text-2xl font-bold text-gray-900">2.4 GB</p>
+              <p className="text-sm text-gray-500">of 10 GB used</p>
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-4 text-sm">
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-blue-500" />
+                Used
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-gray-200" />
+                Free
+              </span>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Resource Usage & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Resource Usage */}
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold text-gray-900">Resource Usage</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Resource Limits</h2>
           </CardHeader>
-          <CardBody className="space-y-4">
-            {/* Disk */}
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">Disk Space</span>
-                <span className="font-medium">2.4 GB / 10 GB</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: '24%' }}></div>
-              </div>
-            </div>
-
-            {/* Bandwidth */}
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">Bandwidth</span>
-                <span className="font-medium">45 GB / 100 GB</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '45%' }}></div>
-              </div>
-            </div>
-
-            {/* Inodes */}
-            <div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-600">Inodes</span>
-                <span className="font-medium">25,420 / 100,000</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div className="bg-purple-500 h-2.5 rounded-full" style={{ width: '25%' }}></div>
-              </div>
-            </div>
+          <CardBody className="space-y-5">
+            <ProgressBar
+              value={2.4}
+              max={10}
+              label="Disk Space"
+              showValue
+              valueLabel="2.4 GB / 10 GB"
+            />
+            <ProgressBar
+              value={45}
+              max={100}
+              label="Bandwidth"
+              showValue
+              valueLabel="45 GB / 100 GB"
+            />
+            <ProgressBar
+              value={25420}
+              max={100000}
+              label="Inodes"
+              showValue
+              valueLabel="25,420 / 100,000"
+            />
+            <ProgressBar
+              value={12}
+              max={100}
+              label="Email Accounts"
+              showValue
+              valueLabel="12 / 100"
+            />
+            <ProgressBar
+              value={5}
+              max={10}
+              label="MySQL Databases"
+              showValue
+              valueLabel="5 / 10"
+            />
           </CardBody>
         </Card>
 
@@ -106,35 +366,22 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
           </CardHeader>
           <CardBody>
-            <div className="grid grid-cols-2 gap-4">
-              <a href="/email" className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <EnvelopeIcon className="w-8 h-8 text-blue-500" />
-                <div className="ml-3">
-                  <p className="font-medium text-gray-900">Create Email</p>
-                  <p className="text-sm text-gray-500">Add new mailbox</p>
-                </div>
-              </a>
-              <a href="/domains" className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <GlobeAltIcon className="w-8 h-8 text-green-500" />
-                <div className="ml-3">
-                  <p className="font-medium text-gray-900">Add Domain</p>
-                  <p className="text-sm text-gray-500">Setup new domain</p>
-                </div>
-              </a>
-              <a href="/databases" className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <CircleStackIcon className="w-8 h-8 text-purple-500" />
-                <div className="ml-3">
-                  <p className="font-medium text-gray-900">New Database</p>
-                  <p className="text-sm text-gray-500">Create MySQL DB</p>
-                </div>
-              </a>
-              <a href="/apps" className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <ArrowUpIcon className="w-8 h-8 text-orange-500" />
-                <div className="ml-3">
-                  <p className="font-medium text-gray-900">Install App</p>
-                  <p className="text-sm text-gray-500">WordPress, etc.</p>
-                </div>
-              </a>
+            <div className="grid grid-cols-2 gap-3">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.name}
+                  to={action.href}
+                  className={`flex items-center p-4 rounded-xl transition-all duration-200 group ${action.bgColor}`}
+                >
+                  <action.icon className={`w-8 h-8 ${action.color} flex-shrink-0`} />
+                  <div className="ml-3 min-w-0">
+                    <p className="font-medium text-gray-900 group-hover:text-gray-700 truncate">
+                      {action.name}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{action.description}</p>
+                  </div>
+                </Link>
+              ))}
             </div>
           </CardBody>
         </Card>
@@ -142,26 +389,44 @@ export default function Dashboard() {
 
       {/* Recent Activity */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+          <Link
+            to="/settings"
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+          >
+            View all
+            <ArrowRightIcon className="w-4 h-4" />
+          </Link>
         </CardHeader>
-        <CardBody>
-          <div className="space-y-4">
-            {[
-              { action: 'SSL certificate renewed', domain: 'example.com', time: '2 hours ago' },
-              { action: 'Email account created', domain: 'info@example.com', time: '1 day ago' },
-              { action: 'WordPress installed', domain: 'example.com/blog', time: '3 days ago' },
-              { action: 'Database backup completed', domain: 'wp_database', time: '1 week ago' },
-            ].map((item, index) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                <div className="flex items-center">
-                  <ClockIcon className="w-5 h-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{item.action}</p>
-                    <p className="text-sm text-gray-500">{item.domain}</p>
-                  </div>
+        <CardBody className="p-0">
+          <div className="divide-y divide-gray-100">
+            {recentActivity.map((item, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
+              >
+                <div className={`p-2 rounded-lg ${
+                  item.status === 'success' ? 'bg-green-50' : 'bg-yellow-50'
+                }`}>
+                  <item.icon className={`w-5 h-5 ${
+                    item.status === 'success' ? 'text-green-600' : 'text-yellow-600'
+                  }`} />
                 </div>
-                <span className="text-sm text-gray-400">{item.time}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">{item.action}</p>
+                  <p className="text-sm text-gray-500 truncate">{item.target}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {item.status === 'success' ? (
+                    <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />
+                  )}
+                  <span className="text-sm text-gray-400 whitespace-nowrap">
+                    {item.time}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
