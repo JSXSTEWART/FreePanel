@@ -95,8 +95,9 @@ export default function Accounts() {
       setShowCreateModal(false)
       setFormData({ username: '', password: '', email: '', domain: '', package_id: formData.package_id })
       loadData()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create account')
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } }
+      toast.error(axiosError.response?.data?.message || 'Failed to create account')
     } finally {
       setActionLoading(null)
     }

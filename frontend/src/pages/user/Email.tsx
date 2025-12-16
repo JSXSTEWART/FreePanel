@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardBody } from '../../components/common/Card'
+import { Card, CardBody } from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import { PlusIcon, EnvelopeIcon } from '@heroicons/react/24/outline'
 
