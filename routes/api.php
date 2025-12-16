@@ -22,12 +22,20 @@ use App\Http\Controllers\Api\V1\Admin\PackageController;
 use App\Http\Controllers\Api\V1\Admin\ResellerController;
 use App\Http\Controllers\Api\V1\Admin\ServiceController;
 use App\Http\Controllers\Api\V1\Admin\ServerController;
+use App\Http\Controllers\Api\V1\SetupController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 */
+
+// Setup Routes (Public - for fresh installation)
+Route::prefix('v1/setup')->group(function () {
+    Route::get('/status', [SetupController::class, 'status']);
+    Route::get('/requirements', [SetupController::class, 'requirements']);
+    Route::post('/initialize', [SetupController::class, 'initialize'])->middleware('throttle:setup');
+});
 
 // Authentication Routes (Public)
 Route::prefix('v1/auth')->group(function () {
