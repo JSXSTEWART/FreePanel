@@ -48,7 +48,7 @@ Route::prefix('v1/auth')->group(function () {
 });
 
 // Protected API Routes
-Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:api', 'audit'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
