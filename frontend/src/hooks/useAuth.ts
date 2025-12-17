@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import type { RootState, AppDispatch } from '../store'
@@ -24,6 +24,10 @@ export const useAuth = () => {
     navigate('/login')
   }
 
+  const refreshUser = useCallback(() => {
+    dispatch(fetchUser())
+  }, [dispatch])
+
   return {
     user,
     isAuthenticated,
@@ -32,6 +36,7 @@ export const useAuth = () => {
     requires2FA,
     tempToken,
     logout,
+    refreshUser,
     isAdmin: user?.role === 'admin',
     isReseller: user?.role === 'reseller',
   }
