@@ -74,10 +74,11 @@ export default function Backups() {
       await backupsApi.create(backupOptions)
       toast.success('Backup creation started. This may take several minutes.')
       setShowCreateModal(false)
-      // Refresh periodically to check progress
-      setTimeout(loadBackups, 5000)
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create backup')
+      // Refresh after a delay to check progress
+      loadBackups()
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create backup')
     } finally {
       setCreating(false)
     }
@@ -121,8 +122,9 @@ export default function Backups() {
       toast.success('Restore started. This may take several minutes.')
       setShowRestoreModal(false)
       setSelectedBackup(null)
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to restore backup')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to restore backup')
     } finally {
       setActionLoading(null)
     }

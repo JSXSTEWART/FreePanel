@@ -56,8 +56,9 @@ export default function Domains() {
       setShowAddModal(false)
       setNewDomain({ name: '', document_root: '' })
       loadDomains()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to add domain')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to add domain')
     } finally {
       setActionLoading(null)
     }
@@ -98,8 +99,9 @@ export default function Domains() {
       setShowSubdomainModal(false)
       setNewSubdomain({ name: '', document_root: '' })
       loadDomains()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create subdomain')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create subdomain')
     } finally {
       setActionLoading(null)
     }

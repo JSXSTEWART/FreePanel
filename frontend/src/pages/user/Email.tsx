@@ -95,8 +95,9 @@ export default function Email() {
       setShowCreateModal(false)
       setNewAccount({ email: '', domain: newAccount.domain, password: '', confirmPassword: '', quota: 1024 })
       loadData()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create email account')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create email account')
     } finally {
       setActionLoading(null)
     }
@@ -160,8 +161,9 @@ export default function Email() {
       setShowForwarderModal(false)
       setNewForwarder({ source: '', sourceDomain: newForwarder.sourceDomain, destination: '' })
       loadData()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create forwarder')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create forwarder')
     } finally {
       setActionLoading(null)
     }

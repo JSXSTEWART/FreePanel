@@ -71,8 +71,9 @@ export default function Databases() {
       setShowCreateDbModal(false)
       setNewDbName('')
       loadData()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create database')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create database')
     } finally {
       setActionLoading(null)
     }
@@ -119,8 +120,9 @@ export default function Databases() {
       setShowCreateUserModal(false)
       setNewUser({ username: '', password: '', confirmPassword: '' })
       loadData()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create user')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create user')
     } finally {
       setActionLoading(null)
     }

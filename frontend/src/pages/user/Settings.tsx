@@ -68,8 +68,9 @@ export default function Settings() {
       await client.put('/user/profile', { email })
       toast.success('Profile updated successfully')
       refreshUser?.()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to update profile')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to update profile')
     } finally {
       setLoading(false)
     }
@@ -95,8 +96,9 @@ export default function Settings() {
       })
       toast.success('Password changed successfully')
       setPasswordForm({ current_password: '', new_password: '', confirm_password: '' })
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to change password')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to change password')
     } finally {
       setLoading(false)
     }
@@ -127,8 +129,9 @@ export default function Settings() {
       setRecoveryCodes(result.recovery_codes)
       toast.success('Two-factor authentication enabled')
       refreshUser?.()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to enable 2FA')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to enable 2FA')
     } finally {
       setLoading(false)
     }
@@ -148,8 +151,9 @@ export default function Settings() {
       setTwoFACode('')
       setTwoFAPassword('')
       refreshUser?.()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to disable 2FA')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to disable 2FA')
     } finally {
       setLoading(false)
     }
@@ -166,8 +170,9 @@ export default function Settings() {
       const response = await client.post<{ data: { token: string } }>('/user/tokens', { name: newTokenName })
       setNewToken(response.data.data.token)
       loadTokens()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create token')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create token')
     } finally {
       setLoading(false)
     }
@@ -185,9 +190,13 @@ export default function Settings() {
     }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success('Copied to clipboard')
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success('Copied to clipboard')
+    } catch {
+      toast.error('Failed to copy to clipboard')
+    }
   }
 
   return (

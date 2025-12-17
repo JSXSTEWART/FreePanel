@@ -107,8 +107,9 @@ export default function Files() {
       setShowNewFolderModal(false)
       setNewFolderName('')
       loadFiles()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create folder')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to create folder')
     } finally {
       setActionLoading(null)
     }
