@@ -156,20 +156,23 @@ export default function Files() {
   }
 
   const handleDownload = async (file: FileItem) => {
+    let url: string | null = null
+    let a: HTMLAnchorElement | null = null
     try {
       setActionLoading(file.path)
       const blob = await filesApi.download(file.path)
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      url = window.URL.createObjectURL(blob)
+      a = document.createElement('a')
       a.href = url
       a.download = file.name
       document.body.appendChild(a)
       a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
     } catch (error) {
       toast.error('Failed to download')
     } finally {
+      // Clean up DOM and object URL
+      if (url) window.URL.revokeObjectURL(url)
+      if (a && document.body.contains(a)) document.body.removeChild(a)
       setActionLoading(null)
     }
   }

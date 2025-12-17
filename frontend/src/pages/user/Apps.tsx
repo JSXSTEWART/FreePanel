@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardBody } from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import { appsApi, domainsApi, AvailableApp, InstalledApp, Domain } from '../../api'
@@ -128,13 +128,19 @@ export default function Apps() {
     }
   }
 
-  const filteredApps = availableApps.filter(app =>
-    app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    app.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    app.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredApps = useMemo(() =>
+    availableApps.filter(app =>
+      app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.category.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [availableApps, searchTerm]
   )
 
-  const categories = [...new Set(availableApps.map(app => app.category))]
+  const categories = useMemo(() =>
+    [...new Set(availableApps.map(app => app.category))],
+    [availableApps]
+  )
 
   if (loading) {
     return (

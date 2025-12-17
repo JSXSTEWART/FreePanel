@@ -90,21 +90,24 @@ export default function Backups() {
       return
     }
 
+    let url: string | null = null
+    let a: HTMLAnchorElement | null = null
     try {
       setActionLoading(backup.id)
       const blob = await backupsApi.download(backup.id)
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      url = window.URL.createObjectURL(blob)
+      a = document.createElement('a')
       a.href = url
       a.download = backup.filename || `backup-${backup.id}.tar.gz`
       document.body.appendChild(a)
       a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
       toast.success('Download started')
     } catch (error) {
       toast.error('Failed to download backup')
     } finally {
+      // Clean up DOM and object URL
+      if (url) window.URL.revokeObjectURL(url)
+      if (a && document.body.contains(a)) document.body.removeChild(a)
       setActionLoading(null)
     }
   }

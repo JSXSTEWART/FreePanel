@@ -66,8 +66,9 @@ export default function Services() {
       await servicesApi.start(serviceId)
       toast.success('Service started successfully')
       loadServices()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to start service')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to start service')
     } finally {
       setActionLoading(null)
     }
@@ -79,8 +80,9 @@ export default function Services() {
       await servicesApi.stop(serviceId)
       toast.success('Service stopped successfully')
       loadServices()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to stop service')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to stop service')
     } finally {
       setActionLoading(null)
     }
@@ -92,8 +94,9 @@ export default function Services() {
       await servicesApi.restart(serviceId)
       toast.success('Service restarted successfully')
       loadServices()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to restart service')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to restart service')
     } finally {
       setActionLoading(null)
     }

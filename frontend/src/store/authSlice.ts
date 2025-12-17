@@ -11,9 +11,24 @@ interface AuthState {
   tempToken: string | null
 }
 
+// Safely parse user from localStorage
+const getSavedUser = (): User | null => {
+  try {
+    const saved = localStorage.getItem('user')
+    return saved ? JSON.parse(saved) : null
+  } catch {
+    // Corrupted localStorage data - clear it
+    localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    return null
+  }
+}
+
+const savedUser = getSavedUser()
+
 const initialState: AuthState = {
-  user: JSON.parse(localStorage.getItem('user') || 'null'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  user: savedUser,
+  isAuthenticated: !!savedUser && !!localStorage.getItem('token'),
   isLoading: false,
   error: null,
   requires2FA: false,
