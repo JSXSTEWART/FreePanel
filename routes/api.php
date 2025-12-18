@@ -16,12 +16,19 @@ use App\Http\Controllers\Api\V1\User\SslController;
 use App\Http\Controllers\Api\V1\User\AppInstallerController;
 use App\Http\Controllers\Api\V1\User\BackupController;
 use App\Http\Controllers\Api\V1\User\StatsController;
+use App\Http\Controllers\Api\V1\User\CronController;
+use App\Http\Controllers\Api\V1\User\SecurityController;
+use App\Http\Controllers\Api\V1\User\ErrorPageController;
+use App\Http\Controllers\Api\V1\User\RedirectController;
+use App\Http\Controllers\Api\V1\User\PhpConfigController;
 
 use App\Http\Controllers\Api\V1\Admin\AccountController;
 use App\Http\Controllers\Api\V1\Admin\PackageController;
 use App\Http\Controllers\Api\V1\Admin\ResellerController;
 use App\Http\Controllers\Api\V1\Admin\ServiceController;
 use App\Http\Controllers\Api\V1\Admin\ServerController;
+use App\Http\Controllers\Api\V1\Admin\FirewallController;
+use App\Http\Controllers\Api\V1\Admin\BackupScheduleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -155,6 +162,67 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
         Route::get('/resource-usage', [StatsController::class, 'resourceUsage']);
     });
 
+    // Cron Jobs
+    Route::prefix('cron')->group(function () {
+        Route::get('/', [CronController::class, 'index']);
+        Route::post('/', [CronController::class, 'store']);
+        Route::get('/presets', [CronController::class, 'presets']);
+        Route::get('/crontab', [CronController::class, 'crontab']);
+        Route::get('/{cronJob}', [CronController::class, 'show']);
+        Route::put('/{cronJob}', [CronController::class, 'update']);
+        Route::delete('/{cronJob}', [CronController::class, 'destroy']);
+        Route::post('/{cronJob}/toggle', [CronController::class, 'toggle']);
+    });
+
+    // Security - IP Blocker
+    Route::prefix('security')->group(function () {
+        Route::get('/blocked-ips', [SecurityController::class, 'blockedIps']);
+        Route::post('/blocked-ips', [SecurityController::class, 'blockIp']);
+        Route::delete('/blocked-ips/{blockedIp}', [SecurityController::class, 'unblockIp']);
+
+        // Hotlink Protection
+        Route::get('/hotlink-protection', [SecurityController::class, 'getHotlinkProtection']);
+        Route::post('/hotlink-protection', [SecurityController::class, 'updateHotlinkProtection']);
+
+        // Directory Protection
+        Route::get('/protected-directories', [SecurityController::class, 'getProtectedDirectories']);
+        Route::post('/protected-directories', [SecurityController::class, 'protectDirectory']);
+        Route::delete('/protected-directories/{protectedDirectory}', [SecurityController::class, 'unprotectDirectory']);
+        Route::post('/protected-directories/{protectedDirectory}/users', [SecurityController::class, 'addDirectoryUser']);
+        Route::delete('/protected-directories/{protectedDirectory}/users/{user}', [SecurityController::class, 'removeDirectoryUser']);
+    });
+
+    // Custom Error Pages
+    Route::prefix('error-pages')->group(function () {
+        Route::get('/', [ErrorPageController::class, 'index']);
+        Route::get('/codes', [ErrorPageController::class, 'codes']);
+        Route::get('/{errorPage}', [ErrorPageController::class, 'show']);
+        Route::post('/', [ErrorPageController::class, 'store']);
+        Route::put('/{errorPage}', [ErrorPageController::class, 'update']);
+        Route::delete('/{errorPage}', [ErrorPageController::class, 'destroy']);
+        Route::post('/{errorPage}/toggle', [ErrorPageController::class, 'toggle']);
+    });
+
+    // Redirects
+    Route::prefix('redirects')->group(function () {
+        Route::get('/', [RedirectController::class, 'index']);
+        Route::post('/', [RedirectController::class, 'store']);
+        Route::get('/{redirect}', [RedirectController::class, 'show']);
+        Route::put('/{redirect}', [RedirectController::class, 'update']);
+        Route::delete('/{redirect}', [RedirectController::class, 'destroy']);
+        Route::post('/{redirect}/toggle', [RedirectController::class, 'toggle']);
+    });
+
+    // PHP Configuration
+    Route::prefix('php')->group(function () {
+        Route::get('/config', [PhpConfigController::class, 'index']);
+        Route::put('/config', [PhpConfigController::class, 'update']);
+        Route::get('/versions', [PhpConfigController::class, 'versions']);
+        Route::put('/version', [PhpConfigController::class, 'setVersion']);
+        Route::get('/info', [PhpConfigController::class, 'info']);
+        Route::get('/extensions', [PhpConfigController::class, 'extensions']);
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Admin API Routes (WHM equivalent)
@@ -201,6 +269,33 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
         Route::prefix('dns')->middleware('role:admin')->group(function () {
             Route::get('/zones', [DnsController::class, 'allZones']);
             Route::post('/zones/{domain}/sync', [DnsController::class, 'syncZone']);
+        });
+
+        // Firewall (Admin only)
+        Route::prefix('firewall')->middleware('role:admin')->group(function () {
+            Route::get('/', [FirewallController::class, 'index']);
+            Route::post('/enable', [FirewallController::class, 'enable']);
+            Route::post('/disable', [FirewallController::class, 'disable']);
+            Route::post('/rules', [FirewallController::class, 'addRule']);
+            Route::delete('/rules/{ruleNumber}', [FirewallController::class, 'deleteRule']);
+            Route::post('/services/allow', [FirewallController::class, 'allowService']);
+            Route::get('/blocked-ips', [FirewallController::class, 'getBlockedIps']);
+            Route::post('/unban', [FirewallController::class, 'unbanIp']);
+        });
+
+        // Backup Schedules (Admin only)
+        Route::prefix('backup-schedules')->middleware('role:admin')->group(function () {
+            Route::get('/', [BackupScheduleController::class, 'index']);
+            Route::post('/', [BackupScheduleController::class, 'store']);
+            Route::get('/statistics', [BackupScheduleController::class, 'statistics']);
+            Route::get('/backups', [BackupScheduleController::class, 'listBackups']);
+            Route::get('/{backupSchedule}', [BackupScheduleController::class, 'show']);
+            Route::put('/{backupSchedule}', [BackupScheduleController::class, 'update']);
+            Route::delete('/{backupSchedule}', [BackupScheduleController::class, 'destroy']);
+            Route::post('/{backupSchedule}/toggle', [BackupScheduleController::class, 'toggle']);
+            Route::post('/{backupSchedule}/run', [BackupScheduleController::class, 'runNow']);
+            Route::post('/restore', [BackupScheduleController::class, 'restore']);
+            Route::delete('/backups', [BackupScheduleController::class, 'deleteBackup']);
         });
     });
 });
