@@ -1,0 +1,48 @@
+name: Clean-slate — Staging Dry-Run
+
+on:
+  push:
+    branches: [ 'staging' ]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run as dry-run (true/false) — default true'
+        required: false
+        default: 'true'
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v4
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo, pdo_mysql, sqlite3, curl, xml
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-ansi --no-progress --prefer-dist
+
+      - name: Install frontend deps (optional)
+        run: |
+          if [ -d frontend ]; then
+            cd frontend
+            npm ci || true
+          fi
+
+      - name: Ensure clean_slate script is executable
+        run: chmod +x system/scripts/clean_slate.sh
+
+      - name: Run clean_slate (dry-run)
+        env:
+          DB_CONNECTION: sqlite
+        run: |
+          ./system/scripts/clean_slate.sh --backup --mode seeded --non-interactive --dry-run
