@@ -24,6 +24,11 @@ use App\Http\Controllers\Api\V1\User\PhpConfigController;
 use App\Http\Controllers\Api\V1\User\EmailFilterController;
 use App\Http\Controllers\Api\V1\User\GitController;
 use App\Http\Controllers\Api\V1\User\ApplicationController;
+use App\Http\Controllers\Api\V1\User\MimeTypeController;
+use App\Http\Controllers\Api\V1\User\TerminalController;
+use App\Http\Controllers\Api\V1\User\RemoteMysqlController;
+use App\Http\Controllers\Api\V1\User\DiskUsageController;
+use App\Http\Controllers\Api\V1\User\AccessLogController;
 
 use App\Http\Controllers\Api\V1\Admin\AccountController;
 use App\Http\Controllers\Api\V1\Admin\PackageController;
@@ -33,6 +38,8 @@ use App\Http\Controllers\Api\V1\Admin\ServerController;
 use App\Http\Controllers\Api\V1\Admin\FirewallController;
 use App\Http\Controllers\Api\V1\Admin\BackupScheduleController;
 use App\Http\Controllers\Api\V1\Admin\SshController;
+use App\Http\Controllers\Api\V1\Admin\MailQueueController;
+use App\Http\Controllers\Api\V1\Admin\ModSecurityController;
 
 /*
 |--------------------------------------------------------------------------
@@ -280,6 +287,56 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
         Route::put('/{application}/env', [ApplicationController::class, 'updateEnv']);
     });
 
+    // MIME Types & Apache Handlers
+    Route::prefix('mime-types')->group(function () {
+        Route::get('/', [MimeTypeController::class, 'index']);
+        Route::post('/', [MimeTypeController::class, 'store']);
+        Route::put('/{mimeType}', [MimeTypeController::class, 'update']);
+        Route::delete('/{mimeType}', [MimeTypeController::class, 'destroy']);
+        Route::get('/handlers', [MimeTypeController::class, 'handlers']);
+        Route::post('/handlers', [MimeTypeController::class, 'addHandler']);
+        Route::delete('/handlers', [MimeTypeController::class, 'removeHandler']);
+        Route::get('/indexes', [MimeTypeController::class, 'indexes']);
+        Route::put('/indexes', [MimeTypeController::class, 'updateIndexes']);
+    });
+
+    // Web Terminal
+    Route::prefix('terminal')->group(function () {
+        Route::post('/session', [TerminalController::class, 'createSession']);
+        Route::post('/execute', [TerminalController::class, 'execute']);
+        Route::post('/cd', [TerminalController::class, 'cd']);
+        Route::get('/history', [TerminalController::class, 'history']);
+        Route::delete('/session', [TerminalController::class, 'closeSession']);
+        Route::post('/complete', [TerminalController::class, 'complete']);
+    });
+
+    // Remote MySQL
+    Route::prefix('remote-mysql')->group(function () {
+        Route::get('/', [RemoteMysqlController::class, 'index']);
+        Route::post('/', [RemoteMysqlController::class, 'store']);
+        Route::delete('/', [RemoteMysqlController::class, 'destroy']);
+        Route::post('/test', [RemoteMysqlController::class, 'test']);
+    });
+
+    // Disk Usage
+    Route::prefix('disk-usage')->group(function () {
+        Route::get('/', [DiskUsageController::class, 'index']);
+        Route::get('/directory', [DiskUsageController::class, 'directory']);
+        Route::get('/databases', [DiskUsageController::class, 'databases']);
+        Route::get('/emails', [DiskUsageController::class, 'emails']);
+        Route::get('/largest-files', [DiskUsageController::class, 'largestFiles']);
+        Route::get('/by-type', [DiskUsageController::class, 'byType']);
+    });
+
+    // Access Logs
+    Route::prefix('access-logs')->group(function () {
+        Route::get('/', [AccessLogController::class, 'index']);
+        Route::get('/view', [AccessLogController::class, 'view']);
+        Route::get('/download', [AccessLogController::class, 'download']);
+        Route::get('/search', [AccessLogController::class, 'search']);
+        Route::get('/stats', [AccessLogController::class, 'stats']);
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Admin API Routes (WHM equivalent)
@@ -368,6 +425,37 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
             Route::get('/logs', [SshController::class, 'logs']);
             Route::get('/sessions', [SshController::class, 'sessions']);
             Route::post('/sessions/terminate', [SshController::class, 'terminateSession']);
+        });
+
+        // Mail Queue Manager (Admin only)
+        Route::prefix('mail-queue')->middleware('role:admin')->group(function () {
+            Route::get('/', [MailQueueController::class, 'index']);
+            Route::get('/search', [MailQueueController::class, 'search']);
+            Route::get('/by-sender', [MailQueueController::class, 'bySender']);
+            Route::get('/logs', [MailQueueController::class, 'logs']);
+            Route::get('/{queueId}', [MailQueueController::class, 'show']);
+            Route::delete('/{queueId}', [MailQueueController::class, 'destroy']);
+            Route::post('/bulk-delete', [MailQueueController::class, 'bulkDelete']);
+            Route::post('/flush', [MailQueueController::class, 'flush']);
+            Route::post('/purge', [MailQueueController::class, 'purge']);
+            Route::post('/{queueId}/hold', [MailQueueController::class, 'hold']);
+            Route::post('/{queueId}/release', [MailQueueController::class, 'release']);
+            Route::post('/{queueId}/requeue', [MailQueueController::class, 'requeue']);
+        });
+
+        // ModSecurity/WAF (Admin only)
+        Route::prefix('modsecurity')->middleware('role:admin')->group(function () {
+            Route::get('/', [ModSecurityController::class, 'index']);
+            Route::post('/enable', [ModSecurityController::class, 'enable']);
+            Route::post('/disable', [ModSecurityController::class, 'disable']);
+            Route::post('/detection-only', [ModSecurityController::class, 'detectionOnly']);
+            Route::put('/config', [ModSecurityController::class, 'updateConfiguration']);
+            Route::get('/audit-log', [ModSecurityController::class, 'auditLog']);
+            Route::get('/blocked-requests', [ModSecurityController::class, 'blockedRequests']);
+            Route::get('/exclusions', [ModSecurityController::class, 'getExclusions']);
+            Route::post('/exclusions', [ModSecurityController::class, 'addExclusion']);
+            Route::delete('/exclusions', [ModSecurityController::class, 'removeExclusion']);
+            Route::post('/install-owasp-crs', [ModSecurityController::class, 'installOwaspCrs']);
         });
     });
 });
