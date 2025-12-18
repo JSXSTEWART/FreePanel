@@ -39,39 +39,10 @@ return new class extends Migration
             $table->unique('account_id');
         });
 
-        Schema::create('email_forwarders', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('account_id')->constrained()->onDelete('cascade');
-            $table->string('source_email');
-            $table->string('destination_email');
-            $table->boolean('keep_copy')->default(true);
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-
-            $table->unique(['account_id', 'source_email', 'destination_email']);
-        });
-
-        Schema::create('autoresponders', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('account_id')->constrained()->onDelete('cascade');
-            $table->string('email');
-            $table->string('subject');
-            $table->text('body');
-            $table->boolean('is_html')->default(false);
-            $table->timestamp('start_date')->nullable();
-            $table->timestamp('end_date')->nullable();
-            $table->integer('interval_hours')->default(24); // Min hours between responses to same sender
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-
-            $table->unique(['account_id', 'email']);
-        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('autoresponders');
-        Schema::dropIfExists('email_forwarders');
         Schema::dropIfExists('spam_settings');
         Schema::dropIfExists('email_filters');
     }
