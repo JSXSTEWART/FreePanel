@@ -13,19 +13,19 @@ class ServiceController extends Controller
     protected SystemdManager $systemd;
 
     protected array $managedServices = [
-        'httpd' => ['name' => 'Apache Web Server', 'aliases' => ['apache2']],
+        'apache2' => ['name' => 'Apache Web Server', 'aliases' => ['httpd']],
         'nginx' => ['name' => 'Nginx Proxy'],
         'mariadb' => ['name' => 'MariaDB Database', 'aliases' => ['mysql', 'mysqld']],
         'dovecot' => ['name' => 'Dovecot IMAP/POP3'],
-        'exim' => ['name' => 'Exim Mail Server', 'aliases' => ['exim4']],
-        'named' => ['name' => 'BIND DNS Server', 'aliases' => ['bind9']],
+        'exim4' => ['name' => 'Exim Mail Server', 'aliases' => ['exim']],
+        'bind9' => ['name' => 'BIND DNS Server', 'aliases' => ['named']],
         'pure-ftpd' => ['name' => 'Pure-FTPd Server', 'aliases' => ['proftpd', 'vsftpd']],
-        'redis' => ['name' => 'Redis Cache', 'aliases' => ['redis-server']],
+        'redis-server' => ['name' => 'Redis Cache', 'aliases' => ['redis']],
         'memcached' => ['name' => 'Memcached'],
         'fail2ban' => ['name' => 'Fail2Ban Security'],
         'clamav-daemon' => ['name' => 'ClamAV Antivirus', 'aliases' => ['clamd']],
-        'spamd' => ['name' => 'SpamAssassin', 'aliases' => ['spamassassin']],
-        'php-fpm' => ['name' => 'PHP-FPM', 'aliases' => ['php8.2-fpm', 'php8.1-fpm']],
+        'spamassassin' => ['name' => 'SpamAssassin', 'aliases' => ['spamd']],
+        'php8.4-fpm' => ['name' => 'PHP 8.4 FPM', 'aliases' => ['php-fpm', 'php8.3-fpm', 'php8.2-fpm', 'php8.1-fpm']],
     ];
 
     public function __construct(SystemdManager $systemd)
@@ -116,7 +116,7 @@ class ServiceController extends Controller
         }
 
         // Prevent stopping critical services without confirmation
-        $criticalServices = ['httpd', 'mariadb', 'named'];
+        $criticalServices = ['apache2', 'mariadb', 'bind9'];
         if (in_array($service, $criticalServices)) {
             // In production, require additional confirmation
         }
