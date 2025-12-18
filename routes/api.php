@@ -21,6 +21,9 @@ use App\Http\Controllers\Api\V1\User\SecurityController;
 use App\Http\Controllers\Api\V1\User\ErrorPageController;
 use App\Http\Controllers\Api\V1\User\RedirectController;
 use App\Http\Controllers\Api\V1\User\PhpConfigController;
+use App\Http\Controllers\Api\V1\User\EmailFilterController;
+use App\Http\Controllers\Api\V1\User\GitController;
+use App\Http\Controllers\Api\V1\User\ApplicationController;
 
 use App\Http\Controllers\Api\V1\Admin\AccountController;
 use App\Http\Controllers\Api\V1\Admin\PackageController;
@@ -29,6 +32,7 @@ use App\Http\Controllers\Api\V1\Admin\ServiceController;
 use App\Http\Controllers\Api\V1\Admin\ServerController;
 use App\Http\Controllers\Api\V1\Admin\FirewallController;
 use App\Http\Controllers\Api\V1\Admin\BackupScheduleController;
+use App\Http\Controllers\Api\V1\Admin\SshController;
 
 /*
 |--------------------------------------------------------------------------
@@ -223,6 +227,59 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
         Route::get('/extensions', [PhpConfigController::class, 'extensions']);
     });
 
+    // Email Filters
+    Route::prefix('email-filters')->group(function () {
+        Route::get('/', [EmailFilterController::class, 'index']);
+        Route::post('/', [EmailFilterController::class, 'store']);
+        Route::get('/options', [EmailFilterController::class, 'options']);
+        Route::get('/{emailFilter}', [EmailFilterController::class, 'show']);
+        Route::put('/{emailFilter}', [EmailFilterController::class, 'update']);
+        Route::delete('/{emailFilter}', [EmailFilterController::class, 'destroy']);
+        Route::post('/{emailFilter}/toggle', [EmailFilterController::class, 'toggle']);
+        Route::post('/reorder', [EmailFilterController::class, 'reorder']);
+
+        // Spam Settings
+        Route::get('/spam/settings', [EmailFilterController::class, 'getSpamSettings']);
+        Route::put('/spam/settings', [EmailFilterController::class, 'updateSpamSettings']);
+        Route::get('/spam/whitelist', [EmailFilterController::class, 'getWhitelist']);
+        Route::post('/spam/whitelist', [EmailFilterController::class, 'addToWhitelist']);
+        Route::delete('/spam/whitelist/{email}', [EmailFilterController::class, 'removeFromWhitelist']);
+        Route::get('/spam/blacklist', [EmailFilterController::class, 'getBlacklist']);
+        Route::post('/spam/blacklist', [EmailFilterController::class, 'addToBlacklist']);
+        Route::delete('/spam/blacklist/{email}', [EmailFilterController::class, 'removeFromBlacklist']);
+    });
+
+    // Git Repositories
+    Route::prefix('git')->group(function () {
+        Route::get('/', [GitController::class, 'index']);
+        Route::post('/', [GitController::class, 'store']);
+        Route::post('/clone', [GitController::class, 'cloneRepo']);
+        Route::get('/{gitRepository}', [GitController::class, 'show']);
+        Route::put('/{gitRepository}', [GitController::class, 'update']);
+        Route::delete('/{gitRepository}', [GitController::class, 'destroy']);
+        Route::post('/{gitRepository}/pull', [GitController::class, 'pull']);
+        Route::post('/{gitRepository}/deploy', [GitController::class, 'deploy']);
+        Route::get('/{gitRepository}/deploy-logs', [GitController::class, 'deployLogs']);
+        Route::get('/{gitRepository}/files', [GitController::class, 'files']);
+        Route::get('/{gitRepository}/file', [GitController::class, 'fileContent']);
+    });
+
+    // Node.js/Python Applications
+    Route::prefix('applications')->group(function () {
+        Route::get('/', [ApplicationController::class, 'index']);
+        Route::get('/runtimes', [ApplicationController::class, 'runtimes']);
+        Route::post('/', [ApplicationController::class, 'store']);
+        Route::get('/{application}', [ApplicationController::class, 'show']);
+        Route::put('/{application}', [ApplicationController::class, 'update']);
+        Route::delete('/{application}', [ApplicationController::class, 'destroy']);
+        Route::post('/{application}/start', [ApplicationController::class, 'start']);
+        Route::post('/{application}/stop', [ApplicationController::class, 'stop']);
+        Route::post('/{application}/restart', [ApplicationController::class, 'restart']);
+        Route::get('/{application}/logs', [ApplicationController::class, 'logs']);
+        Route::get('/{application}/metrics', [ApplicationController::class, 'metrics']);
+        Route::put('/{application}/env', [ApplicationController::class, 'updateEnv']);
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Admin API Routes (WHM equivalent)
@@ -296,6 +353,21 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
             Route::post('/{backupSchedule}/run', [BackupScheduleController::class, 'runNow']);
             Route::post('/restore', [BackupScheduleController::class, 'restore']);
             Route::delete('/backups', [BackupScheduleController::class, 'deleteBackup']);
+        });
+
+        // SSH Access Manager (Admin only)
+        Route::prefix('ssh')->middleware('role:admin')->group(function () {
+            Route::get('/keys', [SshController::class, 'index']);
+            Route::get('/settings', [SshController::class, 'settings']);
+            Route::put('/settings', [SshController::class, 'updateSettings']);
+            Route::post('/accounts/{account}/enable', [SshController::class, 'enableSshAccess']);
+            Route::post('/accounts/{account}/disable', [SshController::class, 'disableSshAccess']);
+            Route::post('/accounts/{account}/keys', [SshController::class, 'addKey']);
+            Route::delete('/keys/{sshKey}', [SshController::class, 'removeKey']);
+            Route::post('/keys/{sshKey}/toggle', [SshController::class, 'toggleKey']);
+            Route::get('/logs', [SshController::class, 'logs']);
+            Route::get('/sessions', [SshController::class, 'sessions']);
+            Route::post('/sessions/terminate', [SshController::class, 'terminateSession']);
         });
     });
 });
