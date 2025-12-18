@@ -23,6 +23,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'quota' => \App\Http\Middleware\CheckQuota::class,
             'audit' => \App\Http\Middleware\AuditLog::class,
         ]);
+
+        // For API routes, return JSON 401 instead of redirecting to login
+        $middleware->redirectGuestsTo(function ($request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return null;
+            }
+            return '/login';
+        });
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

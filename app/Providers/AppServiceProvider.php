@@ -15,6 +15,8 @@ use App\Services\Email\EximService;
 use App\Services\Email\DovecotService;
 use App\Services\Ftp\FtpInterface;
 use App\Services\Ftp\PureFtpdService;
+use App\Services\Database\DatabaseInterface;
+use App\Services\Database\MysqlService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -51,6 +53,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FtpInterface::class, function ($app) {
             return new PureFtpdService();
         });
+
+        // Bind Database provider
+        $this->app->bind(DatabaseInterface::class, function ($app) {
+            return new MysqlService();
+        });
     }
 
     /**
@@ -58,8 +65,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Force HTTPS in production
-        if ($this->app->environment('production')) {
+        // Force HTTPS only if FORCE_HTTPS env is set
+        if (config('app.force_https', false)) {
             URL::forceScheme('https');
         }
     }

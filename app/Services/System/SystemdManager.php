@@ -11,7 +11,7 @@ class SystemdManager
      */
     public function start(string $service): void
     {
-        $result = Process::run("systemctl start {$service}");
+        $result = Process::run("sudo /usr/bin/systemctl start {$service}");
 
         if (!$result->successful()) {
             throw new \RuntimeException("Failed to start {$service}: " . $result->errorOutput());
@@ -23,7 +23,7 @@ class SystemdManager
      */
     public function stop(string $service): void
     {
-        $result = Process::run("systemctl stop {$service}");
+        $result = Process::run("sudo /usr/bin/systemctl stop {$service}");
 
         if (!$result->successful()) {
             throw new \RuntimeException("Failed to stop {$service}: " . $result->errorOutput());
@@ -35,7 +35,7 @@ class SystemdManager
      */
     public function restart(string $service): void
     {
-        $result = Process::run("systemctl restart {$service}");
+        $result = Process::run("sudo /usr/bin/systemctl restart {$service}");
 
         if (!$result->successful()) {
             throw new \RuntimeException("Failed to restart {$service}: " . $result->errorOutput());
@@ -47,7 +47,7 @@ class SystemdManager
      */
     public function reload(string $service): void
     {
-        $result = Process::run("systemctl reload {$service}");
+        $result = Process::run("sudo /usr/bin/systemctl reload {$service}");
 
         if (!$result->successful()) {
             // Fall back to restart if reload fails
@@ -60,7 +60,7 @@ class SystemdManager
      */
     public function enable(string $service): void
     {
-        $result = Process::run("systemctl enable {$service}");
+        $result = Process::run("sudo /usr/bin/systemctl enable {$service}");
 
         if (!$result->successful()) {
             throw new \RuntimeException("Failed to enable {$service}: " . $result->errorOutput());
@@ -72,7 +72,7 @@ class SystemdManager
      */
     public function disable(string $service): void
     {
-        $result = Process::run("systemctl disable {$service}");
+        $result = Process::run("sudo /usr/bin/systemctl disable {$service}");
 
         if (!$result->successful()) {
             throw new \RuntimeException("Failed to disable {$service}: " . $result->errorOutput());
@@ -84,7 +84,7 @@ class SystemdManager
      */
     public function exists(string $service): bool
     {
-        $result = Process::run("systemctl list-unit-files {$service}.service 2>/dev/null | grep -q {$service}");
+        $result = Process::run("sudo /usr/bin/systemctl list-unit-files {$service}.service 2>/dev/null | grep -q {$service}");
         return $result->successful();
     }
 
@@ -105,22 +105,22 @@ class SystemdManager
         ];
 
         // Check if running
-        $activeResult = Process::run("systemctl is-active {$service} 2>/dev/null");
+        $activeResult = Process::run("sudo /usr/bin/systemctl is-active {$service} 2>/dev/null");
         $status['status'] = trim($activeResult->output());
         $status['is_running'] = $status['status'] === 'active';
 
         // Check if enabled
-        $enabledResult = Process::run("systemctl is-enabled {$service} 2>/dev/null");
+        $enabledResult = Process::run("sudo /usr/bin/systemctl is-enabled {$service} 2>/dev/null");
         $status['is_enabled'] = trim($enabledResult->output()) === 'enabled';
 
         if ($status['is_running']) {
             // Get PID
-            $pidResult = Process::run("systemctl show {$service} --property=MainPID --value 2>/dev/null");
+            $pidResult = Process::run("sudo /usr/bin/systemctl show {$service} --property=MainPID --value 2>/dev/null");
             $pid = (int) trim($pidResult->output());
             $status['pid'] = $pid > 0 ? $pid : null;
 
             // Get uptime
-            $uptimeResult = Process::run("systemctl show {$service} --property=ActiveEnterTimestamp --value 2>/dev/null");
+            $uptimeResult = Process::run("sudo /usr/bin/systemctl show {$service} --property=ActiveEnterTimestamp --value 2>/dev/null");
             $timestamp = trim($uptimeResult->output());
             if ($timestamp) {
                 $startTime = strtotime($timestamp);
@@ -130,7 +130,7 @@ class SystemdManager
             }
 
             // Get memory usage
-            $memResult = Process::run("systemctl show {$service} --property=MemoryCurrent --value 2>/dev/null");
+            $memResult = Process::run("sudo /usr/bin/systemctl show {$service} --property=MemoryCurrent --value 2>/dev/null");
             $memBytes = trim($memResult->output());
             if ($memBytes && $memBytes !== '[not set]') {
                 $status['memory'] = $this->formatBytes((int) $memBytes);
@@ -154,7 +154,7 @@ class SystemdManager
      */
     public function getLogs(string $service, int $lines = 100): array
     {
-        $result = Process::run("journalctl -u {$service} -n {$lines} --no-pager 2>/dev/null");
+        $result = Process::run("sudo /usr/bin/journalctl -u {$service} -n {$lines} --no-pager 2>/dev/null");
 
         if (!$result->successful()) {
             return [];
@@ -182,7 +182,7 @@ class SystemdManager
      */
     public function daemonReload(): void
     {
-        Process::run('systemctl daemon-reload');
+        Process::run('sudo /usr/bin/systemctl daemon-reload');
     }
 
     protected function formatUptime(int $seconds): string
