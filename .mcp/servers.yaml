@@ -1,0 +1,5 @@
+# MCP servers configuration
+servers:
+  - name: zapier-mcp
+    url: "https://mcp.zapier.com/mcp/servers/f1d0a419-583b-457f-97ca-87eca62606af"
+    note: "Added per request — used for future MCP automation / integrations"

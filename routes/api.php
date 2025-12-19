@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\User\TerminalController;
 use App\Http\Controllers\Api\V1\User\RemoteMysqlController;
 use App\Http\Controllers\Api\V1\User\DiskUsageController;
 use App\Http\Controllers\Api\V1\User\AccessLogController;
+use App\Http\Controllers\Api\V1\SetupController;
 
 use App\Http\Controllers\Api\V1\Admin\AccountController;
 use App\Http\Controllers\Api\V1\Admin\PackageController;
