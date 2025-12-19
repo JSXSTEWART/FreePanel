@@ -109,8 +109,9 @@ export default function Packages() {
 
       setShowModal(false)
       loadData()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save package')
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } }
+      toast.error(axiosError.response?.data?.message || 'Failed to save package')
     } finally {
       setActionLoading(null)
     }
@@ -136,8 +137,9 @@ export default function Packages() {
       await packagesApi.delete(pkg.id)
       toast.success('Package deleted successfully')
       loadData()
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete package')
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: { message?: string } } }
+      toast.error(axiosError.response?.data?.message || 'Failed to delete package')
     } finally {
       setActionLoading(null)
     }
