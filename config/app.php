@@ -36,6 +36,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Server Identity
+    |--------------------------------------------------------------------------
+    */
+
+    'hostname' => env('APP_HOSTNAME', env('FREEPANEL_HOSTNAME')),
+    'server_ip' => env('APP_SERVER_IP', env('FREEPANEL_SERVER_IP')),
+    'nameservers' => json_decode(env('FREEPANEL_NAMESERVERS', '[]'), true) ?: [],
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     */

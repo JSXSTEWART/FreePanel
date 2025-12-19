@@ -70,7 +70,7 @@ class SetupController extends Controller
             'admin_password' => 'required|string|min:8|confirmed',
             'server_hostname' => 'nullable|string|max:255',
             'server_ip' => 'nullable|ip',
-            'nameservers' => 'nullable|array|max:4',
+            'nameservers' => 'nullable|array',
             'nameservers.*' => 'nullable|string|max:255',
         ]);
 
@@ -248,7 +248,114 @@ class SetupController extends Controller
      */
     private function updateConfig(string $key, $value): void
     {
-        // In a production environment, you would update .env or a settings table
-        // For now, we'll skip this implementation
+        if (is_string($value)) {
+            $value = trim($value);
+
+            if ($value === '') {
+                return;
+            }
+        }
+
+        if ($key === 'app.nameservers' && is_array($value)) {
+            $value = $this->formatNameservers($value);
+
+            if (empty($value)) {
+                return;
+            }
+        }
+
+        config([$key => $value]);
+
+        $this->mirrorFreepanelConfig($key, $value);
+
+        if ($key !== 'app.nameservers') {
+            $envKey = strtoupper(str_replace('.', '_', $key));
+            $this->writeEnvironmentValue($envKey, $this->stringifyValue($value));
+        }
+    }
+
+    /**
+     * Mirror settings into the freepanel config namespace when applicable.
+     */
+    private function mirrorFreepanelConfig(string $key, $value): void
+    {
+        if ($key === 'app.hostname') {
+            config(['freepanel.hostname' => $value]);
+            $this->writeEnvironmentValue('FREEPANEL_HOSTNAME', $this->stringifyValue($value));
+        }
+
+        if ($key === 'app.server_ip') {
+            config(['freepanel.server_ip' => $value]);
+            $this->writeEnvironmentValue('FREEPANEL_SERVER_IP', $this->stringifyValue($value));
+        }
+
+        if ($key === 'app.nameservers' && is_array($value)) {
+            $nameservers = $value;
+
+            config(['freepanel.nameservers' => $nameservers]);
+
+            $this->writeEnvironmentValue('FREEPANEL_NAMESERVERS', json_encode($nameservers, JSON_UNESCAPED_SLASHES));
+        }
+    }
+
+    /**
+     * Ensure nameservers have sequential ns* keys.
+     */
+    private function formatNameservers(array $nameservers): array
+    {
+        $formatted = [];
+        $counter = 1;
+
+        foreach (array_values($nameservers) as $server) {
+            $server = is_string($server) ? trim($server) : $server;
+
+            if ($server === null || $server === '' || $server === false) {
+                continue;
+            }
+
+            $formatted['ns' . $counter] = $server;
+            $counter++;
+        }
+
+        return $formatted;
+    }
+
+    /**
+     * Persist a single environment value to the current environment file.
+     */
+    private function writeEnvironmentValue(string $envKey, string $value): void
+    {
+        $envPath = app()->environmentFilePath();
+        $envContent = file_exists($envPath) ? file_get_contents($envPath) : '';
+        $pattern = '/^' . preg_quote($envKey, '/') . '=.*$/m';
+        $replacement = $envKey . '=' . $value;
+
+        if (preg_match($pattern, $envContent)) {
+            $envContent = preg_replace($pattern, $replacement, $envContent);
+        } else {
+            if ($envContent !== '' && !str_ends_with($envContent, "\n")) {
+                $envContent .= "\n";
+            }
+
+            $envContent .= $replacement . "\n";
+        }
+
+        file_put_contents($envPath, $envContent, LOCK_EX);
+    }
+
+    /**
+     * Normalize values for environment storage.
+     */
+    private function stringifyValue($value): string
+    {
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        if (is_array($value)) {
+            return json_encode($value, JSON_UNESCAPED_SLASHES);
+        }
+
+        return (string) $value;
     }
 }
