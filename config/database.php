@@ -68,6 +68,27 @@ return [
             ]) : [],
         ],
 
+        // MySQL Admin connection for administrative operations (creating DBs, users)
+        'mysql_admin' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_ADMIN_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('DB_ADMIN_PORT', env('DB_PORT', '3306')),
+            'database' => env('DB_ADMIN_DATABASE', 'mysql'),
+            'username' => env('DB_ADMIN_USERNAME', env('DB_USERNAME', 'freepanel')),
+            'password' => env('DB_ADMIN_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('DB_ADMIN_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),

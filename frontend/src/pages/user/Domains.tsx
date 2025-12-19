@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Card, CardHeader, CardBody } from '../../components/common/Card'
+import { Card, CardBody } from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Modal, { ModalBody, ModalFooter } from '../../components/common/Modal'
 import Input from '../../components/common/Input'
