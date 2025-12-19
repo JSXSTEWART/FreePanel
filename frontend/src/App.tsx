@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 
@@ -7,6 +8,7 @@ import UserLayout from './components/layout/UserLayout'
 
 // Auth Pages
 import Login from './pages/auth/Login'
+import Setup from './pages/Setup'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -28,23 +30,76 @@ import Settings from './pages/user/Settings'
 // Protected Route Component
 import ProtectedRoute from './routes/ProtectedRoute'
 
+// API
+import setupApi from './api/setup'
+
 function App() {
   const { isAuthenticated, user, isLoading } = useAuth()
+  const [setupRequired, setSetupRequired] = useState<boolean | null>(null)
+  const [checkingSetup, setCheckingSetup] = useState(true)
 
-  if (isLoading) {
+  // Check if setup is required on app load
+  useEffect(() => {
+    const checkSetupStatus = async () => {
+      try {
+        const status = await setupApi.getStatus()
+        setSetupRequired(status.setup_required)
+      } catch (error) {
+        // If API fails, assume setup is not required (server might be configured)
+        setSetupRequired(false)
+      } finally {
+        setCheckingSetup(false)
+      }
+    }
+
+    // Only check setup status if not authenticated
+    if (!isAuthenticated) {
+      checkSetupStatus()
+    } else {
+      setCheckingSetup(false)
+      setSetupRequired(false)
+    }
+  }, [isAuthenticated])
+
+  if (isLoading || checkingSetup) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <Routes>
+      {/* Setup Route (for fresh installations) */}
+      <Route
+        path="/setup"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/" replace />
+          ) : setupRequired === false ? (
+            <Navigate to="/login" replace />
+          ) : (
+            <Setup />
+          )
+        }
+      />
+
       {/* Public Routes */}
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+        element={
+          isAuthenticated ? (
+            <Navigate to="/" replace />
+          ) : setupRequired ? (
+            <Navigate to="/setup" replace />
+          ) : (
+            <Login />
+          )
+        }
       />
 
       {/* Admin Routes */}
@@ -66,9 +121,13 @@ function App() {
       <Route
         path="/"
         element={
-          <ProtectedRoute>
-            <UserLayout />
-          </ProtectedRoute>
+          setupRequired ? (
+            <Navigate to="/setup" replace />
+          ) : (
+            <ProtectedRoute>
+              <UserLayout />
+            </ProtectedRoute>
+          )
         }
       >
         <Route index element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <UserDashboard />} />
@@ -82,8 +141,13 @@ function App() {
         <Route path="settings" element={<Settings />} />
       </Route>
 
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Catch all - redirect to setup if required, otherwise to home */}
+      <Route
+        path="*"
+        element={
+          setupRequired ? <Navigate to="/setup" replace /> : <Navigate to="/" replace />
+        }
+      />
     </Routes>
   )
 }

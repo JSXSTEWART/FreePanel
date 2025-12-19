@@ -47,6 +47,13 @@ use App\Http\Controllers\Api\V1\Admin\ModSecurityController;
 |--------------------------------------------------------------------------
 */
 
+// Setup Routes (Public - for fresh installation)
+Route::prefix('v1/setup')->group(function () {
+    Route::get('/status', [SetupController::class, 'status']);
+    Route::get('/requirements', [SetupController::class, 'requirements']);
+    Route::post('/initialize', [SetupController::class, 'initialize'])->middleware('throttle:setup');
+});
+
 // Authentication Routes (Public)
 Route::prefix('v1/auth')->group(function () {
     Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:auth');
