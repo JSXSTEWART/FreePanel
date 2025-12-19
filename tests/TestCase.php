@@ -23,6 +23,9 @@ abstract class TestCase extends BaseTestCase
             try {
                 $this->artisan('config:clear');
                 $this->artisan('view:clear');
+
+                // Ensure migrations are run in the test environment so DB-backed features are available
+                $this->artisan('migrate', ['--force' => true]);
             } catch (\Exception $e) {
                 // Non-fatal during some environments
             }
