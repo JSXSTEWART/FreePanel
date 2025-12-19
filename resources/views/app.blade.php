@@ -7,7 +7,8 @@
     <title>{{ config('app.name', 'FreePanel') }}</title>
 
     @php
-        $manifest = json_decode(file_get_contents(public_path('build/.vite/manifest.json')), true);
+        $manifestPath = public_path('build/.vite/manifest.json');
+        $manifest = file_exists($manifestPath) ? json_decode(file_get_contents($manifestPath), true) : null;
         $entry = $manifest['src/index.tsx'] ?? $manifest['src/main.tsx'] ?? null;
     @endphp
 
