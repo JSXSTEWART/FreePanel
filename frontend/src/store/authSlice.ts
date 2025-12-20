@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import * as authApi from '../api/auth'
 import type { User } from '../api/auth'
+import { getStorageItem, getStorageString, setStorageItem } from '../utils/storage'
+import { getErrorMessage } from '../utils/errors'
 
 interface AuthState {
   user: User | null
@@ -12,8 +14,8 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: JSON.parse(localStorage.getItem('user') || 'null'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  user: getStorageItem<User | null>('user', null),
+  isAuthenticated: !!getStorageString('token'),
   isLoading: false,
   error: null,
   requires2FA: false,
@@ -27,8 +29,7 @@ export const login = createAsyncThunk(
       const response = await authApi.login(credentials)
       return response
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } }
-      return rejectWithValue(err.response?.data?.message || 'Login failed')
+      return rejectWithValue(getErrorMessage(error, 'Login failed'))
     }
   }
 )
@@ -40,8 +41,7 @@ export const verify2FA = createAsyncThunk(
       const response = await authApi.verify2FA(data)
       return response
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } }
-      return rejectWithValue(err.response?.data?.message || 'Verification failed')
+      return rejectWithValue(getErrorMessage(error, 'Verification failed'))
     }
   }
 )
@@ -55,8 +55,7 @@ export const fetchUser = createAsyncThunk('auth/fetchUser', async (_, { rejectWi
     const user = await authApi.getMe()
     return user
   } catch (error: unknown) {
-    const err = error as { response?: { data?: { message?: string } } }
-    return rejectWithValue(err.response?.data?.message || 'Failed to fetch user')
+    return rejectWithValue(getErrorMessage(error, 'Failed to fetch user'))
   }
 })
 
@@ -130,7 +129,7 @@ const authSlice = createSlice({
       .addCase(fetchUser.fulfilled, (state, action) => {
         state.isLoading = false
         state.user = action.payload
-        localStorage.setItem('user', JSON.stringify(action.payload))
+        setStorageItem('user', action.payload)
       })
       .addCase(fetchUser.rejected, (state) => {
         state.isLoading = false
