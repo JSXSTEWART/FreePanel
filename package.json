@@ -1,0 +1,31 @@
+{
+  "name": "freepanel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FreePanel - Modern Open Source Web Hosting Control Panel",
+  "scripts": {
+    "prepare": "husky",
+    "lint:php": "cd . && composer lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "format:frontend": "cd frontend && npm run format",
+    "format:check": "cd frontend && npm run format:check",
+    "test:php": "php artisan test",
+    "test:frontend": "cd frontend && npm run test:run"
+  },
+  "devDependencies": {
+    "husky": "^9.0.10",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.php": [
+      "./vendor/bin/pint"
+    ],
+    "frontend/src/**/*.{ts,tsx,js,jsx}": [
+      "npm run format:frontend --",
+      "npm run lint:frontend --"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
