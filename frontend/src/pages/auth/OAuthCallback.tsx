@@ -13,12 +13,19 @@ export default function OAuthCallback() {
   useEffect(() => {
     const processCallback = async () => {
       try {
-        // Extract provider from state or default to google
-        // In a production app, you'd encode the provider in the state parameter
-        const provider = 'google' // This should come from state parameter
-        
-        // Get all query params
+        // Extract provider from state parameter
         const params = new URLSearchParams(window.location.search)
+        const state = params.get('state')
+        
+        let provider = 'google' // default fallback
+        if (state) {
+          try {
+            const stateData = JSON.parse(atob(state))
+            provider = stateData.provider || 'google'
+          } catch (e) {
+            console.warn('Could not decode state parameter, using default provider')
+          }
+        }
         
         // Check for error
         if (params.get('error')) {

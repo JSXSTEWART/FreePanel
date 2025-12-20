@@ -24,8 +24,12 @@ class OAuthController extends Controller
             ], 400);
         }
 
+        // Encode provider in state parameter for callback
+        $state = base64_encode(json_encode(['provider' => $provider, 'nonce' => Str::random(32)]));
+
         $url = Socialite::driver($provider)
             ->stateless()
+            ->with(['state' => $state])
             ->redirect()
             ->getTargetUrl();
 
@@ -40,6 +44,22 @@ class OAuthController extends Controller
      */
     public function callback(Request $request, string $provider): JsonResponse
     {
+        // Verify state parameter contains correct provider
+        $state = $request->get('state');
+        if ($state) {
+            try {
+                $stateData = json_decode(base64_decode($state), true);
+                if (isset($stateData['provider']) && $stateData['provider'] !== $provider) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'State parameter mismatch.',
+                    ], 400);
+                }
+            } catch (\Exception $e) {
+                // If state decoding fails, continue with provided provider
+            }
+        }
+
         if (!$this->isProviderSupported($provider)) {
             return response()->json([
                 'success' => false,
@@ -138,13 +158,21 @@ class OAuthController extends Controller
      */
     protected function generateUsername($oauthUser): string
     {
+        $email = $oauthUser->getEmail();
+        
+        // Get base username from nickname, name, or email
         $baseUsername = $oauthUser->getNickname() 
             ?? $oauthUser->getName() 
-            ?? explode('@', $oauthUser->getEmail())[0];
+            ?? ($email ? explode('@', $email)[0] : 'user');
 
         // Clean username (alphanumeric and underscore only)
         $baseUsername = preg_replace('/[^a-z0-9_]/', '', strtolower($baseUsername));
         $baseUsername = substr($baseUsername, 0, 32);
+        
+        // Ensure we have at least some characters
+        if (empty($baseUsername)) {
+            $baseUsername = 'user';
+        }
 
         // Ensure uniqueness
         $username = $baseUsername;

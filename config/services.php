@@ -17,7 +17,7 @@ return [
     | Supported OAuth Providers
     |--------------------------------------------------------------------------
     */
-    'oauth_providers' => explode(',', env('OAUTH_PROVIDERS', 'google,github')),
+    'oauth_providers' => array_filter(explode(',', env('OAUTH_PROVIDERS', 'google,github'))).
 
     /*
     |--------------------------------------------------------------------------
