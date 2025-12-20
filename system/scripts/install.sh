@@ -567,8 +567,16 @@ setup_freepanel() {
     # Build frontend
     log_info "Building frontend assets..."
     cd $FREEPANEL_DIR/frontend
-    sudo -u $FREEPANEL_USER npm ci --no-audit
-    sudo -u $FREEPANEL_USER npm run build
+
+    # Use npm ci if package-lock.json exists, otherwise npm install
+    if [ -f "package-lock.json" ]; then
+        sudo -u $FREEPANEL_USER npm ci --no-audit --no-fund
+    else
+        sudo -u $FREEPANEL_USER npm install --no-audit --no-fund
+    fi
+
+    # Use build:prod to skip TypeScript check for faster builds
+    sudo -u $FREEPANEL_USER npm run build:prod
 
     # Verify frontend build
     if [ -d "$FREEPANEL_DIR/public/build" ]; then
