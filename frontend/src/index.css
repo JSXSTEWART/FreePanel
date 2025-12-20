@@ -150,8 +150,11 @@
   @keyframes animate-in {
     from {
       opacity: var(--tw-enter-opacity, 1);
-      transform: translate(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0))
-                 scale(var(--tw-enter-scale, 1));
+      transform: translate(
+          var(--tw-enter-translate-x, 0),
+          var(--tw-enter-translate-y, 0)
+        )
+        scale(var(--tw-enter-scale, 1));
     }
   }
 
@@ -161,7 +164,8 @@
   }
 
   @keyframes glow-pulse {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
     }
     50% {
@@ -171,12 +175,7 @@
 
   /* Shimmer effect for loading states */
   .shimmer {
-    background: linear-gradient(
-      90deg,
-      #f0f0f0 0%,
-      #e0e0e0 50%,
-      #f0f0f0 100%
-    );
+    background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 50%, #f0f0f0 100%);
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
   }

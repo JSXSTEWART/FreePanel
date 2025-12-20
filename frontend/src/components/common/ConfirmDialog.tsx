@@ -1,52 +1,52 @@
-import { Fragment } from 'react'
-import { Dialog, Transition } from '@headlessui/react'
+import { Fragment } from "react";
+import { Dialog, Transition } from "@headlessui/react";
 import {
   ExclamationTriangleIcon,
   TrashIcon,
   CheckCircleIcon,
   InformationCircleIcon,
-} from '@heroicons/react/24/outline'
-import Button from './Button'
-import { clsx } from 'clsx'
+} from "@heroicons/react/24/outline";
+import Button from "./Button";
+import { clsx } from "clsx";
 
 interface ConfirmDialogProps {
-  isOpen: boolean
-  onClose: () => void
-  onConfirm: () => void
-  title: string
-  message: string
-  confirmLabel?: string
-  cancelLabel?: string
-  variant?: 'danger' | 'warning' | 'info' | 'success'
-  isLoading?: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: "danger" | "warning" | "info" | "success";
+  isLoading?: boolean;
 }
 
 const variantConfig = {
   danger: {
     icon: TrashIcon,
-    iconBg: 'bg-red-100',
-    iconColor: 'text-red-600',
-    buttonVariant: 'danger' as const,
+    iconBg: "bg-red-100",
+    iconColor: "text-red-600",
+    buttonVariant: "danger" as const,
   },
   warning: {
     icon: ExclamationTriangleIcon,
-    iconBg: 'bg-yellow-100',
-    iconColor: 'text-yellow-600',
-    buttonVariant: 'primary' as const,
+    iconBg: "bg-yellow-100",
+    iconColor: "text-yellow-600",
+    buttonVariant: "primary" as const,
   },
   info: {
     icon: InformationCircleIcon,
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
-    buttonVariant: 'primary' as const,
+    iconBg: "bg-blue-100",
+    iconColor: "text-blue-600",
+    buttonVariant: "primary" as const,
   },
   success: {
     icon: CheckCircleIcon,
-    iconBg: 'bg-green-100',
-    iconColor: 'text-green-600',
-    buttonVariant: 'success' as const,
+    iconBg: "bg-green-100",
+    iconColor: "text-green-600",
+    buttonVariant: "success" as const,
   },
-}
+};
 
 export default function ConfirmDialog({
   isOpen,
@@ -54,17 +54,17 @@ export default function ConfirmDialog({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  variant = 'danger',
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  variant = "danger",
   isLoading = false,
 }: ConfirmDialogProps) {
-  const config = variantConfig[variant]
-  const Icon = config.icon
+  const config = variantConfig[variant];
+  const Icon = config.icon;
 
   const handleConfirm = () => {
-    onConfirm()
-  }
+    onConfirm();
+  };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -98,8 +98,13 @@ export default function ConfirmDialog({
                 <div className="p-6">
                   <div className="flex items-start gap-4">
                     {/* Icon */}
-                    <div className={clsx('flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center', config.iconBg)}>
-                      <Icon className={clsx('w-6 h-6', config.iconColor)} />
+                    <div
+                      className={clsx(
+                        "flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center",
+                        config.iconBg,
+                      )}
+                    >
+                      <Icon className={clsx("w-6 h-6", config.iconColor)} />
                     </div>
 
                     {/* Content */}
@@ -137,5 +142,5 @@ export default function ConfirmDialog({
         </div>
       </Dialog>
     </Transition>
-  )
+  );
 }

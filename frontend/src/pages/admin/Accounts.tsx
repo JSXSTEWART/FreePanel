@@ -1,15 +1,20 @@
-import { useState, useEffect } from 'react'
-import { Card, CardBody } from '../../components/common/Card'
-import Button from '../../components/common/Button'
-import Modal, { ModalBody, ModalFooter } from '../../components/common/Modal'
-import ConfirmDialog from '../../components/common/ConfirmDialog'
-import Input, { PasswordStrength } from '../../components/common/Input'
-import Badge, { StatusBadge } from '../../components/common/Badge'
-import ProgressBar from '../../components/common/ProgressBar'
-import EmptyState, { SearchEmptyState } from '../../components/common/EmptyState'
-import { SkeletonTable, SkeletonStatCards } from '../../components/common/Skeleton'
-import Tooltip from '../../components/common/Tooltip'
-import toast from 'react-hot-toast'
+import { useState, useEffect } from "react";
+import { Card, CardBody } from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Modal, { ModalBody, ModalFooter } from "../../components/common/Modal";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import Input, { PasswordStrength } from "../../components/common/Input";
+import Badge, { StatusBadge } from "../../components/common/Badge";
+import ProgressBar from "../../components/common/ProgressBar";
+import EmptyState, {
+  SearchEmptyState,
+} from "../../components/common/EmptyState";
+import {
+  SkeletonTable,
+  SkeletonStatCards,
+} from "../../components/common/Skeleton";
+import Tooltip from "../../components/common/Tooltip";
+import toast from "react-hot-toast";
 import {
   UserPlusIcon,
   MagnifyingGlassIcon,
@@ -22,199 +27,225 @@ import {
   XCircleIcon,
   ServerIcon,
   XMarkIcon,
-} from '@heroicons/react/24/outline'
-import { accountsApi, packagesApi, Account, Package } from '../../api'
+} from "@heroicons/react/24/outline";
+import { accountsApi, packagesApi, Account, Package } from "../../api";
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  if (bytes === -1) return 'Unlimited'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  if (bytes === 0) return "0 B";
+  if (bytes === -1) return "Unlimited";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export default function Accounts() {
-  const [accounts, setAccounts] = useState<Account[]>([])
-  const [packages, setPackages] = useState<Package[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   // Confirm dialogs
-  const [deleteConfirm, setDeleteConfirm] = useState<Account | null>(null)
-  const [suspendConfirm, setSuspendConfirm] = useState<Account | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<Account | null>(null);
+  const [suspendConfirm, setSuspendConfirm] = useState<Account | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-    email: '',
-    domain: '',
+    username: "",
+    password: "",
+    email: "",
+    domain: "",
     package_id: 0,
-  })
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   // Stats
-  const totalAccounts = accounts.length
-  const activeAccounts = accounts.filter(a => a.status === 'active').length
-  const suspendedAccounts = accounts.filter(a => a.status === 'suspended').length
-  const totalDiskUsed = accounts.reduce((sum, a) => sum + a.disk_used, 0)
+  const totalAccounts = accounts.length;
+  const activeAccounts = accounts.filter((a) => a.status === "active").length;
+  const suspendedAccounts = accounts.filter(
+    (a) => a.status === "suspended",
+  ).length;
+  const totalDiskUsed = accounts.reduce((sum, a) => sum + a.disk_used, 0);
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
       const [accountsData, packagesData] = await Promise.all([
         accountsApi.list({ per_page: 100 }),
         packagesApi.list(),
-      ])
-      setAccounts(accountsData.data)
-      setPackages(packagesData)
+      ]);
+      setAccounts(accountsData.data);
+      setPackages(packagesData);
       if (packagesData.length > 0) {
-        const defaultPkg = packagesData.find(p => p.is_default) || packagesData[0]
-        setFormData(prev => ({ ...prev, package_id: defaultPkg.id }))
+        const defaultPkg =
+          packagesData.find((p) => p.is_default) || packagesData[0];
+        setFormData((prev) => ({ ...prev, package_id: defaultPkg.id }));
       }
     } catch (error) {
-      toast.error('Failed to load accounts')
+      toast.error("Failed to load accounts");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const filteredAccounts = accounts.filter(
-    acc => acc.username.toLowerCase().includes(search.toLowerCase()) ||
-           acc.domain.toLowerCase().includes(search.toLowerCase()) ||
-           acc.user.email.toLowerCase().includes(search.toLowerCase())
-  )
+    (acc) =>
+      acc.username.toLowerCase().includes(search.toLowerCase()) ||
+      acc.domain.toLowerCase().includes(search.toLowerCase()) ||
+      acc.user.email.toLowerCase().includes(search.toLowerCase()),
+  );
 
   const validateForm = (): boolean => {
-    const errors: Record<string, string> = {}
+    const errors: Record<string, string> = {};
 
     if (!formData.username || formData.username.length < 3) {
-      errors.username = 'Username must be at least 3 characters'
+      errors.username = "Username must be at least 3 characters";
     } else if (formData.username.length > 16) {
-      errors.username = 'Username must be at most 16 characters'
+      errors.username = "Username must be at most 16 characters";
     } else if (!/^[a-z0-9]+$/.test(formData.username)) {
-      errors.username = 'Username can only contain lowercase letters and numbers'
+      errors.username =
+        "Username can only contain lowercase letters and numbers";
     }
 
     if (!formData.password || formData.password.length < 8) {
-      errors.password = 'Password must be at least 8 characters'
+      errors.password = "Password must be at least 8 characters";
     }
 
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address'
+      errors.email = "Please enter a valid email address";
     }
 
-    if (!formData.domain || !/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/.test(formData.domain)) {
-      errors.domain = 'Please enter a valid domain name'
+    if (
+      !formData.domain ||
+      !/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/.test(formData.domain)
+    ) {
+      errors.domain = "Please enter a valid domain name";
     }
 
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
-  }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleCreate = async () => {
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
     try {
-      setActionLoading(-1)
-      await accountsApi.create(formData)
-      toast.success('Account created successfully')
-      setShowCreateModal(false)
-      setFormData({ username: '', password: '', email: '', domain: '', package_id: formData.package_id })
-      setFormErrors({})
-      loadData()
+      setActionLoading(-1);
+      await accountsApi.create(formData);
+      toast.success("Account created successfully");
+      setShowCreateModal(false);
+      setFormData({
+        username: "",
+        password: "",
+        email: "",
+        domain: "",
+        package_id: formData.package_id,
+      });
+      setFormErrors({});
+      loadData();
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { message?: string } } }
-      toast.error(axiosError.response?.data?.message || 'Failed to create account')
+      const axiosError = error as {
+        response?: { data?: { message?: string } };
+      };
+      toast.error(
+        axiosError.response?.data?.message || "Failed to create account",
+      );
     } finally {
-      setActionLoading(null)
+      setActionLoading(null);
     }
-  }
+  };
 
   const handleSuspend = async () => {
-    if (!suspendConfirm) return
+    if (!suspendConfirm) return;
 
     try {
-      setActionLoading(suspendConfirm.id)
-      await accountsApi.suspend(suspendConfirm.id, 'Suspended by administrator')
-      toast.success('Account suspended')
-      setSuspendConfirm(null)
-      loadData()
+      setActionLoading(suspendConfirm.id);
+      await accountsApi.suspend(
+        suspendConfirm.id,
+        "Suspended by administrator",
+      );
+      toast.success("Account suspended");
+      setSuspendConfirm(null);
+      loadData();
     } catch (error) {
-      toast.error('Failed to suspend account')
+      toast.error("Failed to suspend account");
     } finally {
-      setActionLoading(null)
+      setActionLoading(null);
     }
-  }
+  };
 
   const handleUnsuspend = async (account: Account) => {
     try {
-      setActionLoading(account.id)
-      await accountsApi.unsuspend(account.id)
-      toast.success('Account unsuspended')
-      loadData()
+      setActionLoading(account.id);
+      await accountsApi.unsuspend(account.id);
+      toast.success("Account unsuspended");
+      loadData();
     } catch (error) {
-      toast.error('Failed to unsuspend account')
+      toast.error("Failed to unsuspend account");
     } finally {
-      setActionLoading(null)
+      setActionLoading(null);
     }
-  }
+  };
 
   const handleDelete = async () => {
-    if (!deleteConfirm) return
+    if (!deleteConfirm) return;
 
     try {
-      setActionLoading(deleteConfirm.id)
-      await accountsApi.delete(deleteConfirm.id)
-      toast.success('Account terminated')
-      setDeleteConfirm(null)
-      loadData()
+      setActionLoading(deleteConfirm.id);
+      await accountsApi.delete(deleteConfirm.id);
+      toast.success("Account terminated");
+      setDeleteConfirm(null);
+      loadData();
     } catch (error) {
-      toast.error('Failed to terminate account')
+      toast.error("Failed to terminate account");
     } finally {
-      setActionLoading(null)
+      setActionLoading(null);
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
-      username: '',
-      password: '',
-      email: '',
-      domain: '',
-      package_id: packages.find(p => p.is_default)?.id || packages[0]?.id || 0,
-    })
-    setFormErrors({})
-  }
+      username: "",
+      password: "",
+      email: "",
+      domain: "",
+      package_id:
+        packages.find((p) => p.is_default)?.id || packages[0]?.id || 0,
+    });
+    setFormErrors({});
+  };
 
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Hosting Accounts</h1>
-            <p className="text-gray-500">Manage all hosting accounts on this server</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Hosting Accounts
+            </h1>
+            <p className="text-gray-500">
+              Manage all hosting accounts on this server
+            </p>
           </div>
         </div>
         <SkeletonStatCards count={4} />
         <SkeletonTable rows={5} columns={7} />
       </div>
-    )
+    );
   }
 
   return (
@@ -223,13 +254,15 @@ export default function Accounts() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Hosting Accounts</h1>
-          <p className="text-gray-500">Manage all hosting accounts on this server</p>
+          <p className="text-gray-500">
+            Manage all hosting accounts on this server
+          </p>
         </div>
         <Button
           variant="primary"
           onClick={() => {
-            resetForm()
-            setShowCreateModal(true)
+            resetForm();
+            setShowCreateModal(true);
           }}
         >
           <UserPlusIcon className="w-5 h-5 mr-2" />
@@ -245,7 +278,9 @@ export default function Accounts() {
               <UsersIcon className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{totalAccounts}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {totalAccounts}
+              </p>
               <p className="text-sm text-gray-500">Total Accounts</p>
             </div>
           </CardBody>
@@ -256,7 +291,9 @@ export default function Accounts() {
               <CheckCircleIcon className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{activeAccounts}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {activeAccounts}
+              </p>
               <p className="text-sm text-gray-500">Active</p>
             </div>
           </CardBody>
@@ -267,7 +304,9 @@ export default function Accounts() {
               <XCircleIcon className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{suspendedAccounts}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {suspendedAccounts}
+              </p>
               <p className="text-sm text-gray-500">Suspended</p>
             </div>
           </CardBody>
@@ -278,7 +317,9 @@ export default function Accounts() {
               <ServerIcon className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900">{formatBytes(totalDiskUsed)}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {formatBytes(totalDiskUsed)}
+              </p>
               <p className="text-sm text-gray-500">Disk Used</p>
             </div>
           </CardBody>
@@ -297,7 +338,7 @@ export default function Accounts() {
         />
         {search && (
           <button
-            onClick={() => setSearch('')}
+            onClick={() => setSearch("")}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <XMarkIcon className="w-5 h-5" />
@@ -316,10 +357,10 @@ export default function Accounts() {
                 title="No accounts yet"
                 description="Get started by creating your first hosting account."
                 action={{
-                  label: 'Create Account',
+                  label: "Create Account",
                   onClick: () => {
-                    resetForm()
-                    setShowCreateModal(true)
+                    resetForm();
+                    setShowCreateModal(true);
                   },
                 }}
               />
@@ -349,8 +390,12 @@ export default function Accounts() {
                             </span>
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{account.username}</p>
-                            <p className="text-sm text-gray-500 truncate">{account.user.email}</p>
+                            <p className="font-medium text-gray-900 truncate">
+                              {account.username}
+                            </p>
+                            <p className="text-sm text-gray-500 truncate">
+                              {account.user.email}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -365,12 +410,15 @@ export default function Accounts() {
                         </a>
                       </td>
                       <td className="table-cell">
-                        <Badge variant="info">{account.package?.name || 'Unknown'}</Badge>
+                        <Badge variant="info">
+                          {account.package?.name || "Unknown"}
+                        </Badge>
                       </td>
                       <td className="table-cell">
                         <div className="w-32">
                           <p className="text-sm text-gray-600 mb-1">
-                            {formatBytes(account.disk_used)} / {formatBytes(account.package?.disk_quota || 0)}
+                            {formatBytes(account.disk_used)} /{" "}
+                            {formatBytes(account.package?.disk_quota || 0)}
                           </p>
                           <ProgressBar
                             value={account.disk_used}
@@ -380,7 +428,9 @@ export default function Accounts() {
                         </div>
                       </td>
                       <td className="table-cell">
-                        <StatusBadge status={account.status as 'active' | 'suspended'} />
+                        <StatusBadge
+                          status={account.status as "active" | "suspended"}
+                        />
                       </td>
                       <td className="table-cell text-gray-500">
                         {formatDate(account.created_at)}
@@ -395,7 +445,7 @@ export default function Accounts() {
                               <PencilIcon className="w-4 h-4" />
                             </button>
                           </Tooltip>
-                          {account.status === 'active' ? (
+                          {account.status === "active" ? (
                             <Tooltip content="Suspend account">
                               <button
                                 className="p-2 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 rounded-lg transition-colors disabled:opacity-50"
@@ -450,10 +500,14 @@ export default function Accounts() {
               label="Username"
               placeholder="johndoe"
               value={formData.username}
-              onChange={(e) => setFormData({
-                ...formData,
-                username: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '')
-              })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  username: e.target.value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, ""),
+                })
+              }
               maxLength={16}
               error={formErrors.username}
               hint="3-16 lowercase letters and numbers"
@@ -464,7 +518,9 @@ export default function Accounts() {
                 type="password"
                 placeholder="Min 8 characters"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 error={formErrors.password}
                 showPasswordToggle
               />
@@ -475,7 +531,9 @@ export default function Accounts() {
             label="Domain"
             placeholder="example.com"
             value={formData.domain}
-            onChange={(e) => setFormData({ ...formData, domain: e.target.value.toLowerCase() })}
+            onChange={(e) =>
+              setFormData({ ...formData, domain: e.target.value.toLowerCase() })
+            }
             error={formErrors.domain}
             hint="Primary domain for this account"
           />
@@ -484,7 +542,9 @@ export default function Accounts() {
             type="email"
             placeholder="user@example.com"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
             error={formErrors.email}
             hint="Contact email for the account owner"
           />
@@ -493,12 +553,18 @@ export default function Accounts() {
             <select
               className="input"
               value={formData.package_id}
-              onChange={(e) => setFormData({ ...formData, package_id: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  package_id: parseInt(e.target.value),
+                })
+              }
             >
               {packages.map((pkg) => (
                 <option key={pkg.id} value={pkg.id}>
-                  {pkg.name} - {formatBytes(pkg.disk_quota)} Disk, {formatBytes(pkg.bandwidth)} Bandwidth
-                  {pkg.is_default ? ' (Default)' : ''}
+                  {pkg.name} - {formatBytes(pkg.disk_quota)} Disk,{" "}
+                  {formatBytes(pkg.bandwidth)} Bandwidth
+                  {pkg.is_default ? " (Default)" : ""}
                 </option>
               ))}
             </select>
@@ -542,5 +608,5 @@ export default function Accounts() {
         isLoading={actionLoading === deleteConfirm?.id}
       />
     </div>
-  )
+  );
 }

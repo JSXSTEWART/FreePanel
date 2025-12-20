@@ -1,66 +1,66 @@
-import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './hooks/useAuth'
+import { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./hooks/useAuth";
 
 // Layouts
-import AdminLayout from './components/layout/AdminLayout'
-import UserLayout from './components/layout/UserLayout'
+import AdminLayout from "./components/layout/AdminLayout";
+import UserLayout from "./components/layout/UserLayout";
 
 // Auth Pages
-import Login from './pages/auth/Login'
-import OAuthCallback from './pages/auth/OAuthCallback'
-import Setup from './pages/Setup'
+import Login from "./pages/auth/Login";
+import OAuthCallback from "./pages/auth/OAuthCallback";
+import Setup from "./pages/Setup";
 
 // Admin Pages
-import AdminDashboard from './pages/admin/Dashboard'
-import AdminAccounts from './pages/admin/Accounts'
-import AdminPackages from './pages/admin/Packages'
-import AdminServices from './pages/admin/Services'
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminAccounts from "./pages/admin/Accounts";
+import AdminPackages from "./pages/admin/Packages";
+import AdminServices from "./pages/admin/Services";
 
 // User Pages
-import UserDashboard from './pages/user/Dashboard'
-import Domains from './pages/user/Domains'
-import Email from './pages/user/Email'
-import Databases from './pages/user/Databases'
-import Files from './pages/user/Files'
-import Ssl from './pages/user/Ssl'
-import Apps from './pages/user/Apps'
-import Backups from './pages/user/Backups'
-import Settings from './pages/user/Settings'
+import UserDashboard from "./pages/user/Dashboard";
+import Domains from "./pages/user/Domains";
+import Email from "./pages/user/Email";
+import Databases from "./pages/user/Databases";
+import Files from "./pages/user/Files";
+import Ssl from "./pages/user/Ssl";
+import Apps from "./pages/user/Apps";
+import Backups from "./pages/user/Backups";
+import Settings from "./pages/user/Settings";
 
 // Protected Route Component
-import ProtectedRoute from './routes/ProtectedRoute'
+import ProtectedRoute from "./routes/ProtectedRoute";
 
 // API
-import setupApi from './api/setup'
+import setupApi from "./api/setup";
 
 function App() {
-  const { isAuthenticated, user, isLoading } = useAuth()
-  const [setupRequired, setSetupRequired] = useState<boolean | null>(null)
-  const [checkingSetup, setCheckingSetup] = useState(true)
+  const { isAuthenticated, user, isLoading } = useAuth();
+  const [setupRequired, setSetupRequired] = useState<boolean | null>(null);
+  const [checkingSetup, setCheckingSetup] = useState(true);
 
   // Check if setup is required on app load
   useEffect(() => {
     const checkSetupStatus = async () => {
       try {
-        const status = await setupApi.getStatus()
-        setSetupRequired(status.setup_required)
+        const status = await setupApi.getStatus();
+        setSetupRequired(status.setup_required);
       } catch (error) {
         // If API fails, assume setup is not required (server might be configured)
-        setSetupRequired(false)
+        setSetupRequired(false);
       } finally {
-        setCheckingSetup(false)
+        setCheckingSetup(false);
       }
-    }
+    };
 
     // Only check setup status if not authenticated
     if (!isAuthenticated) {
-      checkSetupStatus()
+      checkSetupStatus();
     } else {
-      setCheckingSetup(false)
-      setSetupRequired(false)
+      setCheckingSetup(false);
+      setSetupRequired(false);
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated]);
 
   if (isLoading || checkingSetup) {
     return (
@@ -70,7 +70,7 @@ function App() {
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -107,11 +107,7 @@ function App() {
       <Route
         path="/auth/callback"
         element={
-          isAuthenticated ? (
-            <Navigate to="/" replace />
-          ) : (
-            <OAuthCallback />
-          )
+          isAuthenticated ? <Navigate to="/" replace /> : <OAuthCallback />
         }
       />
 
@@ -119,7 +115,7 @@ function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+          <ProtectedRoute allowedRoles={["admin"]}>
             <AdminLayout />
           </ProtectedRoute>
         }
@@ -143,7 +139,16 @@ function App() {
           )
         }
       >
-        <Route index element={user?.role === 'admin' ? <Navigate to="/admin" replace /> : <UserDashboard />} />
+        <Route
+          index
+          element={
+            user?.role === "admin" ? (
+              <Navigate to="/admin" replace />
+            ) : (
+              <UserDashboard />
+            )
+          }
+        />
         <Route path="domains" element={<Domains />} />
         <Route path="email" element={<Email />} />
         <Route path="databases" element={<Databases />} />
@@ -158,11 +163,15 @@ function App() {
       <Route
         path="*"
         element={
-          setupRequired ? <Navigate to="/setup" replace /> : <Navigate to="/" replace />
+          setupRequired ? (
+            <Navigate to="/setup" replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;

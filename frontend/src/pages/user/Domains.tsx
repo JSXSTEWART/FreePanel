@@ -1,12 +1,12 @@
-import { Card, CardBody } from '../../components/common/Card'
-import Button from '../../components/common/Button'
-import Modal, { ModalBody, ModalFooter } from '../../components/common/Modal'
-import Input from '../../components/common/Input'
-import Badge from '../../components/common/Badge'
-import EmptyState from '../../components/common/EmptyState'
-import ConfirmDialog from '../../components/common/ConfirmDialog'
-import Tooltip from '../../components/common/Tooltip'
-import toast from 'react-hot-toast'
+import { Card, CardBody } from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import Modal, { ModalBody, ModalFooter } from "../../components/common/Modal";
+import Input from "../../components/common/Input";
+import Badge from "../../components/common/Badge";
+import EmptyState from "../../components/common/EmptyState";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import Tooltip from "../../components/common/Tooltip";
+import toast from "react-hot-toast";
 import {
   PlusIcon,
   GlobeAltIcon,
@@ -16,100 +16,110 @@ import {
   FolderIcon,
   ServerStackIcon,
   Cog6ToothIcon,
-} from '@heroicons/react/24/outline'
+} from "@heroicons/react/24/outline";
 
 interface Domain {
-  id: number
-  name: string
-  type: 'main' | 'addon' | 'subdomain' | 'parked'
-  documentRoot: string
-  ssl: 'active' | 'inactive' | 'pending'
-  createdAt: string
+  id: number;
+  name: string;
+  type: "main" | "addon" | "subdomain" | "parked";
+  documentRoot: string;
+  ssl: "active" | "inactive" | "pending";
+  createdAt: string;
 }
 
 // Sample data
 const sampleDomains: Domain[] = [
   {
     id: 1,
-    name: 'example.com',
-    type: 'main',
-    documentRoot: '/public_html',
-    ssl: 'active',
-    createdAt: '2024-01-01',
+    name: "example.com",
+    type: "main",
+    documentRoot: "/public_html",
+    ssl: "active",
+    createdAt: "2024-01-01",
   },
   {
     id: 2,
-    name: 'blog.example.com',
-    type: 'subdomain',
-    documentRoot: '/public_html/blog',
-    ssl: 'active',
-    createdAt: '2024-01-05',
+    name: "blog.example.com",
+    type: "subdomain",
+    documentRoot: "/public_html/blog",
+    ssl: "active",
+    createdAt: "2024-01-05",
   },
   {
     id: 3,
-    name: 'shop.example.com',
-    type: 'subdomain',
-    documentRoot: '/public_html/shop',
-    ssl: 'pending',
-    createdAt: '2024-01-10',
+    name: "shop.example.com",
+    type: "subdomain",
+    documentRoot: "/public_html/shop",
+    ssl: "pending",
+    createdAt: "2024-01-10",
   },
-]
+];
 
 const typeConfig = {
-  main: { label: 'Main', variant: 'primary' as const },
-  addon: { label: 'Addon', variant: 'info' as const },
-  subdomain: { label: 'Subdomain', variant: 'default' as const },
-  parked: { label: 'Parked', variant: 'warning' as const },
-}
+  main: { label: "Main", variant: "primary" as const },
+  addon: { label: "Addon", variant: "info" as const },
+  subdomain: { label: "Subdomain", variant: "default" as const },
+  parked: { label: "Parked", variant: "warning" as const },
+};
 
 const sslConfig = {
-  active: { label: 'Active', variant: 'success' as const },
-  inactive: { label: 'Inactive', variant: 'danger' as const },
-  pending: { label: 'Pending', variant: 'warning' as const },
-}
+  active: { label: "Active", variant: "success" as const },
+  inactive: { label: "Inactive", variant: "danger" as const },
+  pending: { label: "Pending", variant: "warning" as const },
+};
 
 export default function Domains() {
-  const [domains] = useState<Domain[]>(sampleDomains)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showDnsModal, setShowDnsModal] = useState<Domain | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<Domain | null>(null)
-  const [addType, setAddType] = useState<'domain' | 'subdomain'>('domain')
+  const [domains] = useState<Domain[]>(sampleDomains);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDnsModal, setShowDnsModal] = useState<Domain | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Domain | null>(null);
+  const [addType, setAddType] = useState<"domain" | "subdomain">("domain");
   const [formData, setFormData] = useState({
-    domain: '',
-    subdomain: '',
-    documentRoot: '',
-  })
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+    domain: "",
+    subdomain: "",
+    documentRoot: "",
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const mainDomains = domains.filter(d => d.type === 'main' || d.type === 'addon')
-  const subdomains = domains.filter(d => d.type === 'subdomain')
+  const mainDomains = domains.filter(
+    (d) => d.type === "main" || d.type === "addon",
+  );
+  const subdomains = domains.filter((d) => d.type === "subdomain");
 
   const handleAddDomain = () => {
-    const errors: Record<string, string> = {}
+    const errors: Record<string, string> = {};
 
-    if (addType === 'domain') {
-      if (!formData.domain || !/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/.test(formData.domain)) {
-        errors.domain = 'Please enter a valid domain name'
+    if (addType === "domain") {
+      if (
+        !formData.domain ||
+        !/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/.test(formData.domain)
+      ) {
+        errors.domain = "Please enter a valid domain name";
       }
     } else {
-      if (!formData.subdomain || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(formData.subdomain)) {
-        errors.subdomain = 'Please enter a valid subdomain'
+      if (
+        !formData.subdomain ||
+        !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(formData.subdomain)
+      ) {
+        errors.subdomain = "Please enter a valid subdomain";
       }
     }
 
-    setFormErrors(errors)
-    if (Object.keys(errors).length > 0) return
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
-    toast.success(`${addType === 'domain' ? 'Domain' : 'Subdomain'} added successfully`)
-    setShowAddModal(false)
-    setFormData({ domain: '', subdomain: '', documentRoot: '' })
-  }
+    toast.success(
+      `${addType === "domain" ? "Domain" : "Subdomain"} added successfully`,
+    );
+    setShowAddModal(false);
+    setFormData({ domain: "", subdomain: "", documentRoot: "" });
+  };
 
   const handleDelete = () => {
-    if (!deleteConfirm) return
-    toast.success('Domain deleted successfully')
-    setDeleteConfirm(null)
-  }
+    if (!deleteConfirm) return;
+    toast.success("Domain deleted successfully");
+    setDeleteConfirm(null);
+  };
 
   return (
     <div className="space-y-6">
@@ -133,7 +143,9 @@ export default function Domains() {
               <GlobeAltIcon className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-xl font-bold text-gray-900">{domains.length}</p>
+              <p className="text-xl font-bold text-gray-900">
+                {domains.length}
+              </p>
               <p className="text-xs text-gray-500">Total Domains</p>
             </div>
           </CardBody>
@@ -145,7 +157,7 @@ export default function Domains() {
             </div>
             <div>
               <p className="text-xl font-bold text-gray-900">
-                {domains.filter(d => d.ssl === 'active').length}
+                {domains.filter((d) => d.ssl === "active").length}
               </p>
               <p className="text-xs text-gray-500">SSL Active</p>
             </div>
@@ -157,7 +169,9 @@ export default function Domains() {
               <ServerStackIcon className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-xl font-bold text-gray-900">{subdomains.length}</p>
+              <p className="text-xl font-bold text-gray-900">
+                {subdomains.length}
+              </p>
               <p className="text-xs text-gray-500">Subdomains</p>
             </div>
           </CardBody>
@@ -168,7 +182,9 @@ export default function Domains() {
               <FolderIcon className="w-5 h-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-xl font-bold text-gray-900">{mainDomains.length}</p>
+              <p className="text-xl font-bold text-gray-900">
+                {mainDomains.length}
+              </p>
               <p className="text-xs text-gray-500">Addon Domains</p>
             </div>
           </CardBody>
@@ -186,7 +202,7 @@ export default function Domains() {
               title="No domains yet"
               description="Add your first domain to get started with your website."
               action={{
-                label: 'Add Domain',
+                label: "Add Domain",
                 onClick: () => setShowAddModal(true),
               }}
             />
@@ -253,7 +269,7 @@ export default function Domains() {
                               <ServerStackIcon className="w-4 h-4" />
                             </button>
                           </Tooltip>
-                          {domain.type !== 'main' && (
+                          {domain.type !== "main" && (
                             <Tooltip content="Delete domain">
                               <button
                                 onClick={() => setDeleteConfirm(domain)}
@@ -285,11 +301,11 @@ export default function Domains() {
           {/* Type selector */}
           <div className="flex gap-2">
             <button
-              onClick={() => setAddType('domain')}
+              onClick={() => setAddType("domain")}
               className={`flex-1 p-3 rounded-lg border-2 transition-colors ${
-                addType === 'domain'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                addType === "domain"
+                  ? "border-primary-500 bg-primary-50 text-primary-700"
+                  : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <GlobeAltIcon className="w-6 h-6 mx-auto mb-1" />
@@ -297,11 +313,11 @@ export default function Domains() {
               <p className="text-xs text-gray-500">Add a new domain</p>
             </button>
             <button
-              onClick={() => setAddType('subdomain')}
+              onClick={() => setAddType("subdomain")}
               className={`flex-1 p-3 rounded-lg border-2 transition-colors ${
-                addType === 'subdomain'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-gray-300'
+                addType === "subdomain"
+                  ? "border-primary-500 bg-primary-50 text-primary-700"
+                  : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <ServerStackIcon className="w-6 h-6 mx-auto mb-1" />
@@ -310,12 +326,17 @@ export default function Domains() {
             </button>
           </div>
 
-          {addType === 'domain' ? (
+          {addType === "domain" ? (
             <Input
               label="Domain Name"
               placeholder="newdomain.com"
               value={formData.domain}
-              onChange={(e) => setFormData({ ...formData, domain: e.target.value.toLowerCase() })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  domain: e.target.value.toLowerCase(),
+                })
+              }
               error={formErrors.domain}
               hint="Enter the domain name without www"
             />
@@ -325,7 +346,12 @@ export default function Domains() {
                 label="Subdomain"
                 placeholder="blog"
                 value={formData.subdomain}
-                onChange={(e) => setFormData({ ...formData, subdomain: e.target.value.toLowerCase() })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    subdomain: e.target.value.toLowerCase(),
+                  })
+                }
                 error={formErrors.subdomain}
                 className="flex-1"
               />
@@ -335,9 +361,15 @@ export default function Domains() {
 
           <Input
             label="Document Root (optional)"
-            placeholder={addType === 'domain' ? '/public_html/newdomain' : '/public_html/blog'}
+            placeholder={
+              addType === "domain"
+                ? "/public_html/newdomain"
+                : "/public_html/blog"
+            }
             value={formData.documentRoot}
-            onChange={(e) => setFormData({ ...formData, documentRoot: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, documentRoot: e.target.value })
+            }
             hint="Leave empty to use default location"
           />
         </ModalBody>
@@ -346,7 +378,7 @@ export default function Domains() {
             Cancel
           </Button>
           <Button variant="primary" onClick={handleAddDomain}>
-            Add {addType === 'domain' ? 'Domain' : 'Subdomain'}
+            Add {addType === "domain" ? "Domain" : "Subdomain"}
           </Button>
         </ModalFooter>
       </Modal>
@@ -362,7 +394,9 @@ export default function Domains() {
         <ModalBody>
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">Current DNS Records</h4>
+              <h4 className="font-medium text-gray-900 mb-2">
+                Current DNS Records
+              </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center p-2 bg-white rounded border">
                   <div>
@@ -383,12 +417,15 @@ export default function Domains() {
                     <span className="font-mono text-gray-600">MX</span>
                     <span className="ml-2 text-gray-900">@</span>
                   </div>
-                  <span className="text-gray-500">mail.{showDnsModal?.name}</span>
+                  <span className="text-gray-500">
+                    mail.{showDnsModal?.name}
+                  </span>
                 </div>
               </div>
             </div>
             <p className="text-sm text-gray-500">
-              For advanced DNS management, please use the DNS Zone Editor from the control panel.
+              For advanced DNS management, please use the DNS Zone Editor from
+              the control panel.
             </p>
           </div>
         </ModalBody>
@@ -396,9 +433,7 @@ export default function Domains() {
           <Button variant="secondary" onClick={() => setShowDnsModal(null)}>
             Close
           </Button>
-          <Button variant="primary">
-            Open DNS Editor
-          </Button>
+          <Button variant="primary">Open DNS Editor</Button>
         </ModalFooter>
       </Modal>
 
@@ -413,5 +448,5 @@ export default function Domains() {
         variant="danger"
       />
     </div>
-  )
+  );
 }

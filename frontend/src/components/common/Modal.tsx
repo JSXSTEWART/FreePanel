@@ -1,26 +1,26 @@
-import { Fragment, useEffect, useCallback } from 'react'
-import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
-import { clsx } from 'clsx'
+import { Fragment, useEffect, useCallback } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import { clsx } from "clsx";
 
 interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-  description?: string
-  children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
-  showCloseButton?: boolean
-  closeOnOverlayClick?: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  description?: string;
+  children: React.ReactNode;
+  size?: "sm" | "md" | "lg" | "xl" | "full";
+  showCloseButton?: boolean;
+  closeOnOverlayClick?: boolean;
 }
 
 const sizeClasses = {
-  sm: 'max-w-md',
-  md: 'max-w-lg',
-  lg: 'max-w-2xl',
-  xl: 'max-w-4xl',
-  full: 'max-w-full mx-4',
-}
+  sm: "max-w-md",
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+  xl: "max-w-4xl",
+  full: "max-w-full mx-4",
+};
 
 export default function Modal({
   isOpen,
@@ -28,23 +28,26 @@ export default function Modal({
   title,
   description,
   children,
-  size = 'md',
+  size = "md",
   showCloseButton = true,
   closeOnOverlayClick = true,
 }: ModalProps) {
   // Handle escape key
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose()
-    }
-  }, [onClose])
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    },
+    [onClose],
+  );
 
   useEffect(() => {
     if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown)
-      return () => document.removeEventListener('keydown', handleKeyDown)
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
     }
-  }, [isOpen, handleKeyDown])
+  }, [isOpen, handleKeyDown]);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -80,8 +83,8 @@ export default function Modal({
             >
               <Dialog.Panel
                 className={clsx(
-                  'w-full transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all',
-                  sizeClasses[size]
+                  "w-full transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all",
+                  sizeClasses[size],
                 )}
               >
                 {/* Header */}
@@ -120,22 +123,35 @@ export default function Modal({
         </div>
       </Dialog>
     </Transition>
-  )
+  );
 }
 
 // Modal sub-components for structured content
-export function ModalBody({ children, className }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={clsx('p-6', className)}>
-      {children}
-    </div>
-  )
+export function ModalBody({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <div className={clsx("p-6", className)}>{children}</div>;
 }
 
-export function ModalFooter({ children, className }: { children: React.ReactNode; className?: string }) {
+export function ModalFooter({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={clsx('px-6 py-4 border-t border-gray-200 flex justify-end gap-3', className)}>
+    <div
+      className={clsx(
+        "px-6 py-4 border-t border-gray-200 flex justify-end gap-3",
+        className,
+      )}
+    >
       {children}
     </div>
-  )
+  );
 }

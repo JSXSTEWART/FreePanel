@@ -1,58 +1,62 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { handleOAuthCallback } from '../../api/auth'
-import { useDispatch } from 'react-redux'
-import { setUser } from '../../store/authSlice'
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { handleOAuthCallback } from "../../api/auth";
+import { useDispatch } from "react-redux";
+import { setUser } from "../../store/authSlice";
 
 export default function OAuthCallback() {
-  const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
-  const dispatch = useDispatch()
-  const [error, setError] = useState<string | null>(null)
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const processCallback = async () => {
       try {
         // Extract provider from state parameter
-        const params = new URLSearchParams(window.location.search)
-        const state = params.get('state')
-        
-        let provider = 'google' // default fallback
+        const params = new URLSearchParams(window.location.search);
+        const state = params.get("state");
+
+        let provider = "google"; // default fallback
         if (state) {
           try {
-            const stateData = JSON.parse(atob(state))
-            provider = stateData.provider || 'google'
+            const stateData = JSON.parse(atob(state));
+            provider = stateData.provider || "google";
           } catch (e) {
-            console.warn('Could not decode state parameter, using default provider')
+            console.warn(
+              "Could not decode state parameter, using default provider",
+            );
           }
         }
-        
+
         // Check for error
-        if (params.get('error')) {
-          setError(params.get('error_description') || 'OAuth authentication failed')
-          setTimeout(() => navigate('/login'), 3000)
-          return
+        if (params.get("error")) {
+          setError(
+            params.get("error_description") || "OAuth authentication failed",
+          );
+          setTimeout(() => navigate("/login"), 3000);
+          return;
         }
 
         // Handle the callback
-        const response = await handleOAuthCallback(provider, params)
+        const response = await handleOAuthCallback(provider, params);
 
         if (response.success && response.user) {
-          dispatch(setUser(response.user))
-          navigate('/dashboard')
+          dispatch(setUser(response.user));
+          navigate("/dashboard");
         } else {
-          setError('Authentication failed')
-          setTimeout(() => navigate('/login'), 3000)
+          setError("Authentication failed");
+          setTimeout(() => navigate("/login"), 3000);
         }
       } catch (err: any) {
-        console.error('OAuth callback error:', err)
-        setError(err.response?.data?.message || 'Authentication failed')
-        setTimeout(() => navigate('/login'), 3000)
+        console.error("OAuth callback error:", err);
+        setError(err.response?.data?.message || "Authentication failed");
+        setTimeout(() => navigate("/login"), 3000);
       }
-    }
+    };
 
-    processCallback()
-  }, [navigate, dispatch, searchParams])
+    processCallback();
+  }, [navigate, dispatch, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 px-4">
@@ -79,5 +83,5 @@ export default function OAuthCallback() {
         </div>
       </div>
     </div>
-  )
+  );
 }

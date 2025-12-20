@@ -1,15 +1,20 @@
-import { forwardRef, useState } from 'react'
-import { clsx } from 'clsx'
-import { EyeIcon, EyeSlashIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline'
+import { forwardRef, useState } from "react";
+import { clsx } from "clsx";
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-  error?: string
-  hint?: string
-  leftIcon?: React.ComponentType<{ className?: string }>
-  rightIcon?: React.ComponentType<{ className?: string }>
-  showPasswordToggle?: boolean
-  success?: boolean
+  label?: string;
+  error?: string;
+  hint?: string;
+  leftIcon?: React.ComponentType<{ className?: string }>;
+  rightIcon?: React.ComponentType<{ className?: string }>;
+  showPasswordToggle?: boolean;
+  success?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -23,19 +28,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       showPasswordToggle = false,
       success = false,
       className,
-      type = 'text',
+      type = "text",
       id,
       ...props
     },
-    ref
+    ref,
   ) => {
-    const [showPassword, setShowPassword] = useState(false)
+    const [showPassword, setShowPassword] = useState(false);
 
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
-    const isPassword = type === 'password'
-    const inputType = isPassword && showPassword ? 'text' : type
+    const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
+    const isPassword = type === "password";
+    const inputType = isPassword && showPassword ? "text" : type;
 
-    const hasRightElement = showPasswordToggle || RightIcon || success || error
+    const hasRightElement = showPasswordToggle || RightIcon || success || error;
 
     return (
       <div className={className}>
@@ -55,14 +60,18 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={inputType}
             className={clsx(
-              'input transition-colors duration-200',
-              LeftIcon && 'pl-10',
-              hasRightElement && 'pr-10',
-              error && 'input-error',
-              success && !error && 'border-green-500 focus:border-green-500 focus:ring-green-500'
+              "input transition-colors duration-200",
+              LeftIcon && "pl-10",
+              hasRightElement && "pr-10",
+              error && "input-error",
+              success &&
+                !error &&
+                "border-green-500 focus:border-green-500 focus:ring-green-500",
             )}
-            aria-invalid={error ? 'true' : 'false'}
-            aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby={
+              error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined
+            }
             {...props}
           />
           {hasRightElement && (
@@ -73,7 +82,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                   onClick={() => setShowPassword(!showPassword)}
                   className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                   tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="w-5 h-5" />
@@ -105,61 +114,68 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
       </div>
-    )
-  }
-)
+    );
+  },
+);
 
-Input.displayName = 'Input'
+Input.displayName = "Input";
 
-export default Input
+export default Input;
 
 // Password strength indicator
 interface PasswordStrengthProps {
-  password: string
-  className?: string
+  password: string;
+  className?: string;
 }
 
-export function PasswordStrength({ password, className }: PasswordStrengthProps) {
-  const getStrength = (pwd: string): { score: number; label: string; color: string } => {
-    let score = 0
+export function PasswordStrength({
+  password,
+  className,
+}: PasswordStrengthProps) {
+  const getStrength = (
+    pwd: string,
+  ): { score: number; label: string; color: string } => {
+    let score = 0;
 
-    if (pwd.length >= 8) score++
-    if (pwd.length >= 12) score++
-    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++
-    if (/\d/.test(pwd)) score++
-    if (/[^a-zA-Z0-9]/.test(pwd)) score++
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
+    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+    if (/\d/.test(pwd)) score++;
+    if (/[^a-zA-Z0-9]/.test(pwd)) score++;
 
-    if (score <= 1) return { score: 1, label: 'Weak', color: 'bg-red-500' }
-    if (score <= 2) return { score: 2, label: 'Fair', color: 'bg-yellow-500' }
-    if (score <= 3) return { score: 3, label: 'Good', color: 'bg-blue-500' }
-    return { score: 4, label: 'Strong', color: 'bg-green-500' }
-  }
+    if (score <= 1) return { score: 1, label: "Weak", color: "bg-red-500" };
+    if (score <= 2) return { score: 2, label: "Fair", color: "bg-yellow-500" };
+    if (score <= 3) return { score: 3, label: "Good", color: "bg-blue-500" };
+    return { score: 4, label: "Strong", color: "bg-green-500" };
+  };
 
-  if (!password) return null
+  if (!password) return null;
 
-  const strength = getStrength(password)
+  const strength = getStrength(password);
 
   return (
-    <div className={clsx('mt-2', className)}>
+    <div className={clsx("mt-2", className)}>
       <div className="flex gap-1 mb-1">
         {[1, 2, 3, 4].map((level) => (
           <div
             key={level}
             className={clsx(
-              'h-1 flex-1 rounded-full transition-colors duration-200',
-              level <= strength.score ? strength.color : 'bg-gray-200'
+              "h-1 flex-1 rounded-full transition-colors duration-200",
+              level <= strength.score ? strength.color : "bg-gray-200",
             )}
           />
         ))}
       </div>
-      <p className={clsx('text-xs', {
-        'text-red-600': strength.score === 1,
-        'text-yellow-600': strength.score === 2,
-        'text-blue-600': strength.score === 3,
-        'text-green-600': strength.score === 4,
-      })}>
+      <p
+        className={clsx("text-xs", {
+          "text-red-600": strength.score === 1,
+          "text-yellow-600": strength.score === 2,
+          "text-blue-600": strength.score === 3,
+          "text-green-600": strength.score === 4,
+        })}
+      >
         Password strength: {strength.label}
       </p>
     </div>
-  )
+  );
 }

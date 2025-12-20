@@ -1,21 +1,21 @@
-import { Fragment } from 'react'
-import { Menu, Transition } from '@headlessui/react'
-import { useAuth } from '../../hooks/useAuth'
+import { Fragment } from "react";
+import { Menu, Transition } from "@headlessui/react";
+import { useAuth } from "../../hooks/useAuth";
 import {
   Bars3Icon,
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
   Cog6ToothIcon,
-} from '@heroicons/react/24/outline'
-import { clsx } from 'clsx'
+} from "@heroicons/react/24/outline";
+import { clsx } from "clsx";
 
 interface HeaderProps {
-  onMenuClick?: () => void
-  title?: string
+  onMenuClick?: () => void;
+  title?: string;
 }
 
 export default function Header({ onMenuClick, title }: HeaderProps) {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
@@ -40,7 +40,9 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
           {/* User info for larger screens */}
           {user?.account && (
             <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-gray-900">{user.account.domain}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {user.account.domain}
+              </p>
               <p className="text-xs text-gray-500">{user.account.package}</p>
             </div>
           )}
@@ -66,8 +68,12 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
               <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-xl shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="p-1">
                   <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">{user?.username}</p>
-                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {user?.username}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user?.email}
+                    </p>
                   </div>
 
                   <Menu.Item>
@@ -75,8 +81,8 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
                       <a
                         href="/settings"
                         className={clsx(
-                          'flex items-center px-4 py-2 text-sm text-gray-700 rounded-lg mt-1',
-                          active && 'bg-gray-100'
+                          "flex items-center px-4 py-2 text-sm text-gray-700 rounded-lg mt-1",
+                          active && "bg-gray-100",
                         )}
                       >
                         <Cog6ToothIcon className="w-5 h-5 mr-3 text-gray-400" />
@@ -90,8 +96,8 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
                       <button
                         onClick={logout}
                         className={clsx(
-                          'flex items-center w-full px-4 py-2 text-sm text-red-600 rounded-lg',
-                          active && 'bg-red-50'
+                          "flex items-center w-full px-4 py-2 text-sm text-red-600 rounded-lg",
+                          active && "bg-red-50",
                         )}
                       >
                         <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
@@ -106,5 +112,5 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
         </div>
       </div>
     </header>
-  )
+  );
 }

@@ -505,13 +505,53 @@ php artisan view:clear
 - Audit logging for all administrative actions
 - Input validation and sanitization
 
+## Development
+
+For local development and contribution guidelines, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+### Quick Reference Commands
+
+**Backend:**
+```bash
+composer lint        # Check PHP formatting
+composer test        # Run PHPUnit tests
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm run lint         # ESLint
+npm run format       # Prettier
+npm run test:run     # Vitest
+npm run build        # Production build
+```
+
+**Full local validation:**
+```bash
+composer lint && composer test && \
+cd frontend && npm run lint && npm run format:check && npm run test:run && npm run build:prod
+```
+
+**Development servers:**
+```bash
+# Backend (terminal 1)
+php artisan serve
+
+# Frontend (terminal 2)
+cd frontend && npm run dev
+```
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit changes: `git commit -am 'Add new feature'`
-4. Push to branch: `git push origin feature/my-feature`
-5. Submit a pull request
+3. Make changes following code quality standards (see [DEVELOPMENT.md](DEVELOPMENT.md))
+4. Run tests and linting: `composer lint && composer test`
+5. Commit changes: `git commit -am 'feat: add new feature'`
+6. Push to branch: `git push origin feature/my-feature`
+7. Submit a pull request
+
+All pull requests must pass CI checks before merging.
 
 ## License
 

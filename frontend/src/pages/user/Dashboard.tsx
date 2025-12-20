@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuth } from '../../hooks/useAuth'
-import StatCard from '../../components/common/StatCard'
-import { Card, CardHeader, CardBody } from '../../components/common/Card'
-import ProgressBar from '../../components/common/ProgressBar'
-import Badge from '../../components/common/Badge'
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import StatCard from "../../components/common/StatCard";
+import { Card, CardHeader, CardBody } from "../../components/common/Card";
+import ProgressBar from "../../components/common/ProgressBar";
+import Badge from "../../components/common/Badge";
 import {
   AreaChart,
   Area,
@@ -16,13 +16,12 @@ import {
   PieChart,
   Pie,
   Cell,
-} from 'recharts'
+} from "recharts";
 import {
   GlobeAltIcon,
   EnvelopeIcon,
   CircleStackIcon,
   ServerIcon,
-  
   ArrowRightIcon,
   CubeIcon,
   LockClosedIcon,
@@ -31,124 +30,124 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ShieldCheckIcon,
-} from '@heroicons/react/24/outline'
+} from "@heroicons/react/24/outline";
 
 // Sample data for charts
 const bandwidthData = [
-  { name: 'Mon', value: 4 },
-  { name: 'Tue', value: 7 },
-  { name: 'Wed', value: 5 },
-  { name: 'Thu', value: 8 },
-  { name: 'Fri', value: 12 },
-  { name: 'Sat', value: 9 },
-  { name: 'Sun', value: 6 },
-]
+  { name: "Mon", value: 4 },
+  { name: "Tue", value: 7 },
+  { name: "Wed", value: 5 },
+  { name: "Thu", value: 8 },
+  { name: "Fri", value: 12 },
+  { name: "Sat", value: 9 },
+  { name: "Sun", value: 6 },
+];
 
 const diskUsageData = [
-  { name: 'Used', value: 2.4 },
-  { name: 'Free', value: 7.6 },
-]
+  { name: "Used", value: 2.4 },
+  { name: "Free", value: 7.6 },
+];
 
-const COLORS = ['#3b82f6', '#e5e7eb']
+const COLORS = ["#3b82f6", "#e5e7eb"];
 
 const quickActions = [
   {
-    name: 'Create Email',
-    description: 'Add new mailbox',
-    href: '/email',
+    name: "Create Email",
+    description: "Add new mailbox",
+    href: "/email",
     icon: EnvelopeIcon,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50 hover:bg-blue-100',
+    color: "text-blue-500",
+    bgColor: "bg-blue-50 hover:bg-blue-100",
   },
   {
-    name: 'Add Domain',
-    description: 'Setup new domain',
-    href: '/domains',
+    name: "Add Domain",
+    description: "Setup new domain",
+    href: "/domains",
     icon: GlobeAltIcon,
-    color: 'text-green-500',
-    bgColor: 'bg-green-50 hover:bg-green-100',
+    color: "text-green-500",
+    bgColor: "bg-green-50 hover:bg-green-100",
   },
   {
-    name: 'New Database',
-    description: 'Create MySQL DB',
-    href: '/databases',
+    name: "New Database",
+    description: "Create MySQL DB",
+    href: "/databases",
     icon: CircleStackIcon,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-50 hover:bg-purple-100',
+    color: "text-purple-500",
+    bgColor: "bg-purple-50 hover:bg-purple-100",
   },
   {
-    name: 'Install App',
-    description: 'WordPress & more',
-    href: '/apps',
+    name: "Install App",
+    description: "WordPress & more",
+    href: "/apps",
     icon: CubeIcon,
-    color: 'text-orange-500',
-    bgColor: 'bg-orange-50 hover:bg-orange-100',
+    color: "text-orange-500",
+    bgColor: "bg-orange-50 hover:bg-orange-100",
   },
   {
-    name: 'File Manager',
-    description: 'Browse files',
-    href: '/files',
+    name: "File Manager",
+    description: "Browse files",
+    href: "/files",
     icon: FolderIcon,
-    color: 'text-cyan-500',
-    bgColor: 'bg-cyan-50 hover:bg-cyan-100',
+    color: "text-cyan-500",
+    bgColor: "bg-cyan-50 hover:bg-cyan-100",
   },
   {
-    name: 'SSL Certificates',
-    description: 'Manage SSL',
-    href: '/ssl',
+    name: "SSL Certificates",
+    description: "Manage SSL",
+    href: "/ssl",
     icon: LockClosedIcon,
-    color: 'text-emerald-500',
-    bgColor: 'bg-emerald-50 hover:bg-emerald-100',
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-50 hover:bg-emerald-100",
   },
-]
+];
 
 const recentActivity = [
   {
-    action: 'SSL certificate renewed',
-    target: 'example.com',
-    time: '2 hours ago',
-    status: 'success',
+    action: "SSL certificate renewed",
+    target: "example.com",
+    time: "2 hours ago",
+    status: "success",
     icon: ShieldCheckIcon,
   },
   {
-    action: 'Email account created',
-    target: 'info@example.com',
-    time: '1 day ago',
-    status: 'success',
+    action: "Email account created",
+    target: "info@example.com",
+    time: "1 day ago",
+    status: "success",
     icon: EnvelopeIcon,
   },
   {
-    action: 'WordPress installed',
-    target: 'example.com/blog',
-    time: '3 days ago',
-    status: 'success',
+    action: "WordPress installed",
+    target: "example.com/blog",
+    time: "3 days ago",
+    status: "success",
     icon: CubeIcon,
   },
   {
-    action: 'Backup completed',
-    target: 'wp_database',
-    time: '1 week ago',
-    status: 'success',
+    action: "Backup completed",
+    target: "wp_database",
+    time: "1 week ago",
+    status: "success",
     icon: ArchiveBoxIcon,
   },
-]
+];
 
 export default function Dashboard() {
-  const { user } = useAuth()
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Simulate loading
-    const timer = setTimeout(() => setLoading(false), 500)
-    return () => clearTimeout(timer)
-  }, [])
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 18) return 'Good afternoon'
-    return 'Good evening'
-  }
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
 
   return (
     <div className="space-y-6">
@@ -163,7 +162,9 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="success" dot>All systems operational</Badge>
+          <Badge variant="success" dot>
+            All systems operational
+          </Badge>
         </div>
       </div>
 
@@ -209,7 +210,9 @@ export default function Dashboard() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Bandwidth Usage</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Bandwidth Usage
+              </h2>
               <span className="text-sm text-gray-500">Last 7 days</span>
             </div>
           </CardHeader>
@@ -218,32 +221,42 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={bandwidthData}>
                   <defs>
-                    <linearGradient id="colorBandwidth" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="colorBandwidth"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#e5e7eb"
+                  />
                   <XAxis
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    tick={{ fill: "#6b7280", fontSize: 12 }}
                     tickFormatter={(value) => `${value} GB`}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
-                    formatter={(value: number) => [`${value} GB`, 'Bandwidth']}
+                    formatter={(value: number) => [`${value} GB`, "Bandwidth"]}
                   />
                   <Area
                     type="monotone"
@@ -257,8 +270,13 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
             <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-gray-500">Total this month: <span className="font-medium text-gray-900">45 GB</span></span>
-              <span className="text-gray-500">Limit: <span className="font-medium text-gray-900">100 GB</span></span>
+              <span className="text-gray-500">
+                Total this month:{" "}
+                <span className="font-medium text-gray-900">45 GB</span>
+              </span>
+              <span className="text-gray-500">
+                Limit: <span className="font-medium text-gray-900">100 GB</span>
+              </span>
             </div>
           </CardBody>
         </Card>
@@ -282,15 +300,18 @@ export default function Dashboard() {
                     dataKey="value"
                   >
                     {diskUsageData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => [`${value} GB`, '']}
+                    formatter={(value: number) => [`${value} GB`, ""]}
                     contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
+                      backgroundColor: "#fff",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "8px",
                     }}
                   />
                 </PieChart>
@@ -319,7 +340,9 @@ export default function Dashboard() {
         {/* Resource Usage */}
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold text-gray-900">Resource Limits</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Resource Limits
+            </h2>
           </CardHeader>
           <CardBody className="space-y-5">
             <ProgressBar
@@ -363,7 +386,9 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Quick Actions
+            </h2>
           </CardHeader>
           <CardBody>
             <div className="grid grid-cols-2 gap-3">
@@ -373,12 +398,16 @@ export default function Dashboard() {
                   to={action.href}
                   className={`flex items-center p-4 rounded-xl transition-all duration-200 group ${action.bgColor}`}
                 >
-                  <action.icon className={`w-8 h-8 ${action.color} flex-shrink-0`} />
+                  <action.icon
+                    className={`w-8 h-8 ${action.color} flex-shrink-0`}
+                  />
                   <div className="ml-3 min-w-0">
                     <p className="font-medium text-gray-900 group-hover:text-gray-700 truncate">
                       {action.name}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">{action.description}</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {action.description}
+                    </p>
                   </div>
                 </Link>
               ))}
@@ -390,7 +419,9 @@ export default function Dashboard() {
       {/* Recent Activity */}
       <Card>
         <CardHeader className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Recent Activity
+          </h2>
           <Link
             to="/settings"
             className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
@@ -406,19 +437,29 @@ export default function Dashboard() {
                 key={index}
                 className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
               >
-                <div className={`p-2 rounded-lg ${
-                  item.status === 'success' ? 'bg-green-50' : 'bg-yellow-50'
-                }`}>
-                  <item.icon className={`w-5 h-5 ${
-                    item.status === 'success' ? 'text-green-600' : 'text-yellow-600'
-                  }`} />
+                <div
+                  className={`p-2 rounded-lg ${
+                    item.status === "success" ? "bg-green-50" : "bg-yellow-50"
+                  }`}
+                >
+                  <item.icon
+                    className={`w-5 h-5 ${
+                      item.status === "success"
+                        ? "text-green-600"
+                        : "text-yellow-600"
+                    }`}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{item.action}</p>
-                  <p className="text-sm text-gray-500 truncate">{item.target}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {item.action}
+                  </p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {item.target}
+                  </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {item.status === 'success' ? (
+                  {item.status === "success" ? (
                     <CheckCircleIcon className="w-5 h-5 text-green-500" />
                   ) : (
                     <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />
@@ -433,5 +474,5 @@ export default function Dashboard() {
         </CardBody>
       </Card>
     </div>
-  )
+  );
 }
