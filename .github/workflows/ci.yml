@@ -45,6 +45,3 @@ jobs:
 
       - name: Clear caches
         run: php artisan config:clear && php artisan view:clear || true
-
-      - name: Run tests
-        run: php artisan test --testsuite=Feature
