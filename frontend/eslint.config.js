@@ -1,14 +1,16 @@
+import tsParser from "@typescript-eslint/parser";
+
 export default [
   {
-    ignores: ['dist', '.vite', 'build', 'node_modules', 'coverage'],
+    ignores: ["dist", ".vite", "build", "node_modules", "coverage"],
   },
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    files: ["**/*.{js,jsx,ts,tsx}"],
     languageOptions: {
-      parser: '@typescript-eslint/parser',
+      parser: tsParser,
       parserOptions: {
         ecmaVersion: 2020,
-        sourceType: 'module',
+        sourceType: "module",
         ecmaFeatures: {
           jsx: true,
         },

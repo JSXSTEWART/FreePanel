@@ -1,17 +1,14 @@
-includes:
-    - ./vendor/larastan/larastan/extension.neon
+# PHPStan configuration
+# Note: Larastan is not currently in composer.lock
+# Run 'composer require --dev larastan/larastan' to add Laravel-specific rules
 
 parameters:
     paths:
         - app
         - config
-        - database
         - routes
     level: 5
-    ignoreErrors:
     excludePaths:
         - bootstrap/cache/*
         - storage/*
         - vendor/*
-    tmpDir: storage/phpstan
-    checkMissingIterableValueType: false

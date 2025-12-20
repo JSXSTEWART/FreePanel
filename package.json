@@ -12,14 +12,14 @@
   },
   "lint-staged": {
     "*.php": [
-      "composer lint"
+      "./vendor/bin/pint"
     ],
     "frontend/**/*.{ts,tsx,js,jsx}": [
-      "cd frontend && npm run lint -- --fix",
-      "cd frontend && npm run format"
+      "npm run lint --prefix frontend -- --fix",
+      "npm run format --prefix frontend"
     ],
     "frontend/**/*.{json,css,md}": [
-      "cd frontend && npm run format"
+      "npm run format --prefix frontend"
     ]
   }
 }

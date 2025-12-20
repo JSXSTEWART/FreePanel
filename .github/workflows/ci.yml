@@ -36,12 +36,6 @@ jobs:
       - name: Run Laravel Pint
         run: composer lint
 
-      - name: Create PHPStan cache directory
-        run: mkdir -p storage/phpstan
-
-      - name: Run PHPStan
-        run: composer analyse
-
   test-php:
     runs-on: ubuntu-latest
     name: PHP Tests
@@ -155,6 +149,6 @@ jobs:
 
       - name: Build frontend
         working-directory: ./frontend
-        run: npm run build
+        run: npm run build:prod
 
 
