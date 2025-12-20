@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import toast from 'react-hot-toast'
+import { getStorageString, removeStorageItem, setStorageString } from '../utils/storage'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1'
 
@@ -15,7 +16,7 @@ const client = axios.create({
 // Request interceptor - add auth token
 client.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token')
+    const token = getStorageString('token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -36,8 +37,8 @@ client.interceptors.response.use(
     switch (status) {
       case 401:
         // Unauthorized - clear token and redirect to login
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
+        removeStorageItem('token')
+        removeStorageItem('user')
         if (window.location.pathname !== '/login') {
           window.location.href = '/login'
         }
@@ -70,12 +71,12 @@ export default client
 // Helper functions
 export const setAuthToken = (token: string | null) => {
   if (token) {
-    localStorage.setItem('token', token)
+    setStorageString('token', token)
   } else {
-    localStorage.removeItem('token')
+    removeStorageItem('token')
   }
 }
 
 export const getAuthToken = (): string | null => {
-  return localStorage.getItem('token')
+  return getStorageString('token')
 }
