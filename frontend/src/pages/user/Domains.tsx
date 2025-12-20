@@ -103,6 +103,9 @@ export default function Domains() {
       ) {
         errors.subdomain = "Please enter a valid subdomain";
       }
+      if (!selectedDomain) {
+        errors.parentDomain = 'Please select a parent domain'
+      }
     }
 
     setFormErrors(errors);
@@ -129,10 +132,16 @@ export default function Domains() {
           <h1 className="text-2xl font-bold text-gray-900">Domains</h1>
           <p className="text-gray-500">Manage your domains and subdomains</p>
         </div>
-        <Button variant="primary" onClick={() => setShowAddModal(true)}>
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Add Domain
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={fetchDomains}>
+            <ArrowPathIcon className="w-5 h-5 mr-2" />
+            Refresh
+          </Button>
+          <Button variant="primary" onClick={() => setShowAddModal(true)}>
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Add Domain
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -220,7 +229,7 @@ export default function Domains() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {domains.map((domain) => (
-                    <tr key={domain.id} className="table-row">
+                    <tr key={`${domain.type}-${domain.id}`} className="table-row">
                       <td className="table-cell">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-gray-100 rounded-lg">
@@ -293,7 +302,12 @@ export default function Domains() {
       {/* Add Domain Modal */}
       <Modal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false)
+          setFormErrors({})
+          setFormData({ domain: '', subdomain: '', documentRoot: '', parentDomain: '' })
+          setSelectedDomain(null)
+        }}
         title="Add Domain"
         description="Add a new domain or subdomain to your account"
       >
@@ -374,7 +388,14 @@ export default function Domains() {
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowAddModal(false)
+              setFormErrors({})
+            }}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button variant="primary" onClick={handleAddDomain}>
@@ -444,7 +465,7 @@ export default function Domains() {
         onConfirm={handleDelete}
         title="Delete Domain"
         message={`Are you sure you want to delete "${deleteConfirm?.name}"? All files in the document root will remain but the domain will no longer be accessible.`}
-        confirmLabel="Delete Domain"
+        confirmLabel={submitting ? 'Deleting...' : 'Delete Domain'}
         variant="danger"
       />
     </div>

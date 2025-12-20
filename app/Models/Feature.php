@@ -12,12 +12,14 @@ class Feature extends Model
 
     protected $fillable = [
         'name',
+        'display_name',
         'description',
-        'is_active',
+        'category',
+        'is_default',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_default' => 'boolean',
     ];
 
     public function accounts(): BelongsToMany

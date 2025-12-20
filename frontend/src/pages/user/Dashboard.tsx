@@ -149,6 +149,34 @@ export default function Dashboard() {
     return "Good evening";
   };
 
+  const formatBytes = (bytes: number) => {
+    if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(1)} GB`
+    if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${bytes} B`
+  }
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat().format(num)
+  }
+
+  // Prepare bandwidth chart data
+  const bandwidthChartData = bandwidthStats?.history
+    ? Object.entries(bandwidthStats.history).map(([date, value]) => ({
+        name: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+        value: value / 1073741824, // Convert to GB
+      }))
+    : []
+
+  // Prepare disk usage pie data
+  const diskUsedGB = resourceUsage ? resourceUsage.disk.used / 1073741824 : 0
+  const diskLimitGB = resourceUsage ? resourceUsage.disk.limit / 1073741824 : 10
+  const diskFreeGB = diskLimitGB - diskUsedGB
+  const diskUsageData = [
+    { name: 'Used', value: diskUsedGB },
+    { name: 'Free', value: diskFreeGB > 0 ? diskFreeGB : 0 },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
@@ -172,32 +200,34 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard
           title="Domains"
-          value="3"
-          subtitle="2 active, 1 parked"
+          value={resourceUsage?.quotas.domains.used.toString() || '0'}
+          subtitle={`of ${resourceUsage?.quotas.domains.limit || 0} available`}
           icon={GlobeAltIcon}
           color="blue"
           loading={loading}
         />
         <StatCard
           title="Email Accounts"
-          value="12"
-          subtitle="of 100 available"
+          value={resourceUsage?.quotas.email_accounts.used.toString() || '0'}
+          subtitle={`of ${resourceUsage?.quotas.email_accounts.limit || 0} available`}
           icon={EnvelopeIcon}
           color="green"
           loading={loading}
         />
         <StatCard
           title="Databases"
-          value="5"
-          subtitle="of 10 available"
+          value={resourceUsage?.quotas.databases.used.toString() || '0'}
+          subtitle={`of ${resourceUsage?.quotas.databases.limit || 0} available`}
           icon={CircleStackIcon}
           color="purple"
           loading={loading}
         />
         <StatCard
           title="Disk Usage"
-          value="2.4 GB"
-          subtitle="of 10 GB (24%)"
+          value={resourceUsage ? formatBytes(resourceUsage.disk.used) : '0 B'}
+          subtitle={`of ${resourceUsage ? formatBytes(resourceUsage.disk.limit) : '0 B'} (${
+            resourceUsage?.disk.percent || 0
+          }%)`}
           icon={ServerIcon}
           color="yellow"
           loading={loading}
@@ -318,8 +348,12 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
             <div className="text-center mt-2">
-              <p className="text-2xl font-bold text-gray-900">2.4 GB</p>
-              <p className="text-sm text-gray-500">of 10 GB used</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {resourceUsage ? formatBytes(resourceUsage.disk.used) : '0 B'}
+              </p>
+              <p className="text-sm text-gray-500">
+                of {resourceUsage ? formatBytes(resourceUsage.disk.limit) : '0 B'} used
+              </p>
             </div>
             <div className="mt-4 flex items-center justify-center gap-4 text-sm">
               <span className="flex items-center gap-2">
@@ -345,41 +379,59 @@ export default function Dashboard() {
             </h2>
           </CardHeader>
           <CardBody className="space-y-5">
-            <ProgressBar
-              value={2.4}
-              max={10}
-              label="Disk Space"
-              showValue
-              valueLabel="2.4 GB / 10 GB"
-            />
-            <ProgressBar
-              value={45}
-              max={100}
-              label="Bandwidth"
-              showValue
-              valueLabel="45 GB / 100 GB"
-            />
-            <ProgressBar
-              value={25420}
-              max={100000}
-              label="Inodes"
-              showValue
-              valueLabel="25,420 / 100,000"
-            />
-            <ProgressBar
-              value={12}
-              max={100}
-              label="Email Accounts"
-              showValue
-              valueLabel="12 / 100"
-            />
-            <ProgressBar
-              value={5}
-              max={10}
-              label="MySQL Databases"
-              showValue
-              valueLabel="5 / 10"
-            />
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
+              </div>
+            ) : resourceUsage ? (
+              <>
+                <ProgressBar
+                  value={resourceUsage.disk.used}
+                  max={resourceUsage.disk.limit}
+                  label="Disk Space"
+                  showValue
+                  valueLabel={`${formatBytes(resourceUsage.disk.used)} / ${formatBytes(
+                    resourceUsage.disk.limit
+                  )}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.bandwidth.used}
+                  max={resourceUsage.bandwidth.limit}
+                  label="Bandwidth"
+                  showValue
+                  valueLabel={`${formatBytes(resourceUsage.bandwidth.used)} / ${formatBytes(
+                    resourceUsage.bandwidth.limit
+                  )}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.inodes.used}
+                  max={resourceUsage.inodes.limit}
+                  label="Inodes"
+                  showValue
+                  valueLabel={`${formatNumber(resourceUsage.inodes.used)} / ${formatNumber(
+                    resourceUsage.inodes.limit
+                  )}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.quotas.email_accounts.used}
+                  max={resourceUsage.quotas.email_accounts.limit}
+                  label="Email Accounts"
+                  showValue
+                  valueLabel={`${resourceUsage.quotas.email_accounts.used} / ${resourceUsage.quotas.email_accounts.limit}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.quotas.databases.used}
+                  max={resourceUsage.quotas.databases.limit}
+                  label="MySQL Databases"
+                  showValue
+                  valueLabel={`${resourceUsage.quotas.databases.used} / ${resourceUsage.quotas.databases.limit}`}
+                />
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Unable to load resource usage
+              </div>
+            )}
           </CardBody>
         </Card>
 
@@ -464,9 +516,7 @@ export default function Dashboard() {
                   ) : (
                     <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />
                   )}
-                  <span className="text-sm text-gray-400 whitespace-nowrap">
-                    {item.time}
-                  </span>
+                  <span className="text-sm text-gray-400 whitespace-nowrap">{item.time}</span>
                 </div>
               </div>
             ))}
