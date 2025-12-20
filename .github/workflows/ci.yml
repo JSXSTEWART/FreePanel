@@ -40,11 +40,29 @@ jobs:
       - name: Install composer deps
         run: composer install --prefer-dist --no-progress --no-suggest --no-interaction
 
+      - name: Setup environment
+        run: |
+          cp .env.example .env
+          mkdir -p database
+          touch database/database.sqlite
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+
       - name: Generate app key
-        run: php artisan key:generate --ansi || true
+        run: php artisan key:generate --ansi
 
       - name: Clear caches
         run: php artisan config:clear && php artisan view:clear || true
 
+      - name: Run migrations
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+
       - name: Run tests
         run: php artisan test --testsuite=Feature
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
