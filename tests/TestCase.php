@@ -37,7 +37,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected function resetTestingEnvironmentFile(): void
     {
-        $root = dirname(__DIR__, 2);
+        $root = dirname(__DIR__);
         $path = $root . '/.env.testing';
         $content = <<<'ENV'
 APP_ENV=testing

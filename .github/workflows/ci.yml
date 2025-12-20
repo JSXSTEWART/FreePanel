@@ -93,11 +93,12 @@ jobs:
       - name: Install composer deps
         run: composer install --prefer-dist --no-progress --no-suggest --no-interaction
 
-      - name: Generate app key
-        run: php artisan key:generate --ansi || true
-
-      - name: Clear caches
-        run: php artisan config:clear && php artisan view:clear || true
+      - name: Setup test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+          mkdir -p storage/framework/{cache,sessions,views}
+          chmod -R 775 storage bootstrap/cache
 
       - name: Run tests
         run: php artisan test --testsuite=Feature
