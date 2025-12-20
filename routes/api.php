@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\Auth\OAuthController;
 
 use App\Http\Controllers\Api\V1\User\DomainController;
 use App\Http\Controllers\Api\V1\User\DnsController;
@@ -74,6 +75,10 @@ Route::prefix('v1/auth')->group(function () {
     // Password Reset
     Route::post('/password/forgot', [LoginController::class, 'forgotPassword'])->middleware('throttle:auth');
     Route::post('/password/reset', [LoginController::class, 'resetPassword'])->middleware('throttle:auth');
+
+    // OAuth Authentication
+    Route::get('/oauth/{provider}/redirect', [OAuthController::class, 'redirect']);
+    Route::get('/oauth/{provider}/callback', [OAuthController::class, 'callback']);
 });
 
 // Protected API Routes
