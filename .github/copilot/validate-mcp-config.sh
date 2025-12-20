@@ -5,6 +5,10 @@
 # This script validates the FreePanel MCP configuration files to ensure they are properly formatted
 # and contain all required fields.
 #
+# Usage:
+#   chmod +x .github/copilot/validate-mcp-config.sh
+#   .github/copilot/validate-mcp-config.sh
+#
 
 set -e
 

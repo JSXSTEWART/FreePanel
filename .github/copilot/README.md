@@ -39,6 +39,12 @@ export FREEPANEL_API_TOKEN="your_bearer_token_here"
 export ZAPIER_WEBHOOK_SECRET="your_webhook_secret_here"  # Optional, for webhook signature verification
 ```
 
+### VS Code Integration
+
+The `.vscode/settings.json` file includes a reference MCP server configuration. Note that the exact format may vary depending on your VS Code MCP extension. The provided configuration is a reference implementation - adjust based on your specific MCP extension's requirements.
+
+For GitHub Copilot integration, environment variables are the primary configuration method. The VS Code settings provide additional context but are not required for basic operation.
+
 ### Using MCP Tools in Copilot
 
 Once configured, you can ask GitHub Copilot to perform FreePanel operations:
