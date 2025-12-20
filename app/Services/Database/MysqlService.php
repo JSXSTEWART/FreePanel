@@ -19,14 +19,16 @@ class MysqlService implements DatabaseInterface
     {
         $this->validateName($name);
 
-        $this->pdo->exec("CREATE DATABASE IF NOT EXISTS `{$name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $quotedName = $this->quoteIdentifier($name);
+        $this->pdo->exec("CREATE DATABASE IF NOT EXISTS {$quotedName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     }
 
     public function dropDatabase(string $name): void
     {
         $this->validateName($name);
 
-        $this->pdo->exec("DROP DATABASE IF EXISTS `{$name}`");
+        $quotedName = $this->quoteIdentifier($name);
+        $this->pdo->exec("DROP DATABASE IF EXISTS {$quotedName}");
     }
 
     public function databaseExists(string $name): bool
@@ -86,8 +88,9 @@ class MysqlService implements DatabaseInterface
     {
         $this->validateName($username);
 
-        $this->pdo->exec("DROP USER IF EXISTS '{$username}'@'localhost'");
-        $this->pdo->exec("DROP USER IF EXISTS '{$username}'@'127.0.0.1'");
+        $quotedUser = $this->quoteUsername($username);
+        $this->pdo->exec("DROP USER IF EXISTS {$quotedUser}@'localhost'");
+        $this->pdo->exec("DROP USER IF EXISTS {$quotedUser}@'127.0.0.1'");
     }
 
     public function changePassword(string $username, string $password): void
@@ -130,8 +133,10 @@ class MysqlService implements DatabaseInterface
 
         $privilegeStr = implode(', ', $grantPrivileges);
 
-        $this->pdo->exec("GRANT {$privilegeStr} ON `{$database}`.* TO '{$username}'@'localhost'");
-        $this->pdo->exec("GRANT {$privilegeStr} ON `{$database}`.* TO '{$username}'@'127.0.0.1'");
+        $quotedDb = $this->quoteIdentifier($database);
+        $quotedUser = $this->quoteUsername($username);
+        $this->pdo->exec("GRANT {$privilegeStr} ON {$quotedDb}.* TO {$quotedUser}@'localhost'");
+        $this->pdo->exec("GRANT {$privilegeStr} ON {$quotedDb}.* TO {$quotedUser}@'127.0.0.1'");
         $this->pdo->exec("FLUSH PRIVILEGES");
     }
 
@@ -140,8 +145,10 @@ class MysqlService implements DatabaseInterface
         $this->validateName($username);
         $this->validateName($database);
 
-        $this->pdo->exec("REVOKE ALL PRIVILEGES ON `{$database}`.* FROM '{$username}'@'localhost'");
-        $this->pdo->exec("REVOKE ALL PRIVILEGES ON `{$database}`.* FROM '{$username}'@'127.0.0.1'");
+        $quotedDb = $this->quoteIdentifier($database);
+        $quotedUser = $this->quoteUsername($username);
+        $this->pdo->exec("REVOKE ALL PRIVILEGES ON {$quotedDb}.* FROM {$quotedUser}@'localhost'");
+        $this->pdo->exec("REVOKE ALL PRIVILEGES ON {$quotedDb}.* FROM {$quotedUser}@'127.0.0.1'");
         $this->pdo->exec("FLUSH PRIVILEGES");
     }
 
@@ -227,5 +234,27 @@ class MysqlService implements DatabaseInterface
         if (strlen($name) > 64) {
             throw new \InvalidArgumentException('Name exceeds maximum length');
         }
+    }
+
+    /**
+     * Quote a MySQL identifier (database name, table name) with backticks.
+     * Escapes any backticks within the identifier to prevent SQL injection.
+     */
+    protected function quoteIdentifier(string $identifier): string
+    {
+        // Escape backticks by doubling them (MySQL standard)
+        $escaped = str_replace('`', '``', $identifier);
+        return "`{$escaped}`";
+    }
+
+    /**
+     * Quote a MySQL username with single quotes.
+     * Escapes any single quotes within the username to prevent SQL injection.
+     */
+    protected function quoteUsername(string $username): string
+    {
+        // Escape single quotes by doubling them (MySQL standard)
+        $escaped = str_replace("'", "''", $username);
+        return "'{$escaped}'";
     }
 }
