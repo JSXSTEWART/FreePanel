@@ -25,6 +25,12 @@
   },
   "mcp.servers": [
     {
+      "name": "freepanel-api",
+      "type": "http",
+      "url": "${FREEPANEL_API_URL}",
+      "description": "FreePanel API server for hosting management. Set FREEPANEL_API_URL and FREEPANEL_API_TOKEN environment variables. See .github/copilot/README.md for setup."
+    },
+    {
       "name": "zapier-mcp-vscode",
       "type": "http",
       "url": "https://mcp.zapier.com/api/mcp/s/YOUR_UNIQUE_SERVER_ID/mcp",
