@@ -160,6 +160,7 @@ install_dependencies() {
         ubuntu|debian)
             $PKG_INSTALL curl wget git unzip tar gzip bzip2 \
                 vim nano htop lsof net-tools \
+                openssl \
                 openssl ca-certificates gnupg \
                 cron logrotate acl rsync \
                 software-properties-common apt-transport-https

@@ -19,6 +19,7 @@ export interface User {
   username: string
   email: string
   role: 'admin' | 'reseller' | 'user'
+  oauth_provider?: string | null
   two_factor_enabled: boolean
   last_login_at: string | null
   account?: {
@@ -114,4 +115,24 @@ export const resetPassword = async (
     password,
     password_confirmation,
   })
+}
+
+// OAuth login - get redirect URL
+export const getOAuthRedirectUrl = async (provider: string): Promise<string> => {
+  const response = await client.get<{ success: boolean; url: string }>(`/auth/oauth/${provider}/redirect`)
+  return response.data.url
+}
+
+// OAuth callback - exchange code for token
+export const handleOAuthCallback = async (provider: string, params: URLSearchParams): Promise<LoginResponse> => {
+  const response = await client.get<LoginResponse>(`/auth/oauth/${provider}/callback?${params.toString()}`)
+
+  if (response.data.token) {
+    setAuthToken(response.data.token)
+    if (response.data.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+    }
+  }
+
+  return response.data
 }

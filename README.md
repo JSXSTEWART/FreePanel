@@ -20,7 +20,7 @@ A modern, open-source web hosting control panel built with Laravel and React.
 - **Frontend**: React 18 + TypeScript + Tailwind CSS
 - **Database**: MySQL/MariaDB
 - **Cache/Queue**: Redis
-- **Authentication**: Laravel Sanctum (JWT)
+- **Authentication**: Laravel Sanctum (JWT) + OAuth 2.0 / OpenID Connect
 
 ## Requirements
 
@@ -205,6 +205,71 @@ FreePanel integrates with:
 - **BIND** - DNS server
 - **Pure-FTPd** - FTP server
 - **Certbot** - Let's Encrypt SSL
+
+### OAuth Authentication (Optional)
+
+FreePanel supports OAuth 2.0 / OpenID Connect authentication, allowing users to sign in with their existing accounts from supported providers.
+
+**Supported Providers:**
+- Google
+- GitHub
+- Microsoft
+- Generic OpenID Connect (OIDC)
+
+**Configuration:**
+
+1. **Enable OAuth providers** in `.env`:
+```bash
+# Comma-separated list of providers to enable
+OAUTH_PROVIDERS=google,github
+```
+
+2. **Configure Google OAuth** (if using):
+```bash
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_REDIRECT_URI=http://localhost:1455/auth/callback
+```
+
+3. **Configure GitHub OAuth** (if using):
+```bash
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_REDIRECT_URI=http://localhost:1455/auth/callback
+```
+
+4. **Configure Microsoft OAuth** (if using):
+```bash
+MICROSOFT_CLIENT_ID=your-microsoft-client-id
+MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
+MICROSOFT_REDIRECT_URI=http://localhost:1455/auth/callback
+```
+
+5. **Configure Generic OIDC** (if using a custom provider):
+```bash
+OIDC_CLIENT_ID=your-oidc-client-id
+OIDC_CLIENT_SECRET=your-oidc-client-secret
+OIDC_REDIRECT_URI=http://localhost:1455/auth/callback
+OIDC_AUTHORIZE_URL=https://your-provider.com/oauth/authorize
+OIDC_TOKEN_URL=https://your-provider.com/oauth/token
+OIDC_USERINFO_URL=https://your-provider.com/oauth/userinfo
+```
+
+**Database Migration:**
+
+After configuring OAuth, run the migration to add OAuth fields to the users table:
+
+```bash
+php artisan migrate
+```
+
+**How it works:**
+- Users can click "Sign in with Google" or "Sign in with GitHub" on the login page
+- On first sign-in, a new user account is automatically created
+- On subsequent sign-ins, the existing account is used
+- If a user signs in with OAuth using an email that already exists, the OAuth account is linked to that user
+- OAuth users don't need a password (password field is optional when OAuth is used)
+
 
 ## Post-Installation
 

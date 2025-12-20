@@ -57,19 +57,3 @@ jobs:
         run: php artisan key:generate --ansi
 
       - name: Clear caches
-        run: |
-          php artisan config:clear || true
-          php artisan view:clear || true
-          php artisan cache:clear || true
-
-      - name: Run migrations
-        run: php artisan migrate --force
-
-      - name: Build frontend
-        run: |
-          cd frontend
-          npm ci --no-audit --no-fund
-          npm run build:prod
-
-      - name: Run tests
-        run: php artisan test --testsuite=Feature

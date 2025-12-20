@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Auth\OAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,15 @@ Route::get('/up', function () {
         'version' => config('freepanel.version'),
         'timestamp' => now()->toIso8601String(),
     ]);
+});
+
+// OAuth callback route (web route for browser redirects)
+Route::get('/auth/callback', function () {
+    // Simply pass through all OAuth params to the React frontend
+    // The frontend will handle provider determination
+    $params = http_build_query(request()->all());
+    
+    return redirect(config('app.frontend_url', config('app.url')) . '/auth/callback?' . $params);
 });
 
 // SPA catch-all route - serve the React app
