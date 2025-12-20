@@ -71,6 +71,11 @@ const authSlice = createSlice({
       state.requires2FA = false
       state.tempToken = null
     },
+    setUser: (state, action) => {
+      state.user = action.payload
+      state.isAuthenticated = true
+      state.error = null
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -135,5 +140,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { clearError, clear2FA } = authSlice.actions
+export const { clearError, clear2FA, setUser } = authSlice.actions
 export default authSlice.reducer
