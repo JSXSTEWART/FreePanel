@@ -346,6 +346,32 @@ Quick setup:
 - [ZAPIER_INTEGRATION.md](ZAPIER_INTEGRATION.md) - Complete integration guide
 - [.mcp/servers.yaml](.mcp/servers.yaml) - MCP server configuration
 
+### GitHub Copilot MCP Configuration
+
+FreePanel includes a comprehensive MCP (Model Context Protocol) configuration that extends GitHub Copilot with FreePanel-specific tools and capabilities.
+
+**What's Included:**
+- ✅ **API Tools**: Direct access to FreePanel REST API endpoints
+- ✅ **Webhook Events**: Event schemas for automation
+- ✅ **Pre-configured Prompts**: Optimized commands for common tasks
+- ✅ **System Capabilities**: Documentation of all FreePanel features
+
+**Configuration File:** [`.github/copilot/mcp.json`](.github/copilot/mcp.json)
+
+**Quick Start:**
+```bash
+# Set environment variables
+export FREEPANEL_API_URL="https://panel.example.com"
+export FREEPANEL_API_TOKEN="your_bearer_token"
+
+# Ask GitHub Copilot to help with FreePanel tasks:
+# "Create a hosting account for john@example.com"
+# "List all SSL certificates expiring soon"
+# "Check quota usage for account ID 123"
+```
+
+**Documentation:** See [.github/copilot/README.md](.github/copilot/README.md) for complete usage guide.
+
 ## Management Scripts
 
 FreePanel includes helper scripts for common operations:
