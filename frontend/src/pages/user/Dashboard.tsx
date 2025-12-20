@@ -22,7 +22,6 @@ import {
   EnvelopeIcon,
   CircleStackIcon,
   ServerIcon,
-  
   ArrowRightIcon,
   CubeIcon,
   LockClosedIcon,
@@ -32,22 +31,7 @@ import {
   ExclamationTriangleIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline'
-
-// Sample data for charts
-const bandwidthData = [
-  { name: 'Mon', value: 4 },
-  { name: 'Tue', value: 7 },
-  { name: 'Wed', value: 5 },
-  { name: 'Thu', value: 8 },
-  { name: 'Fri', value: 12 },
-  { name: 'Sat', value: 9 },
-  { name: 'Sun', value: 6 },
-]
-
-const diskUsageData = [
-  { name: 'Used', value: 2.4 },
-  { name: 'Free', value: 7.6 },
-]
+import { statsApi, ResourceUsage, BandwidthStats } from '../../api'
 
 const COLORS = ['#3b82f6', '#e5e7eb']
 
@@ -136,11 +120,29 @@ const recentActivity = [
 export default function Dashboard() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
+  const [resourceUsage, setResourceUsage] = useState<ResourceUsage | null>(null)
+  const [bandwidthStats, setBandwidthStats] = useState<BandwidthStats | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setLoading(false), 500)
-    return () => clearTimeout(timer)
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const [resources, bandwidth] = await Promise.all([
+          statsApi.getResourceUsage(),
+          statsApi.getBandwidth('week'),
+        ])
+        setResourceUsage(resources)
+        setBandwidthStats(bandwidth)
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err)
+        setError('Failed to load dashboard data')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [])
 
   const getGreeting = () => {
@@ -149,6 +151,34 @@ export default function Dashboard() {
     if (hour < 18) return 'Good afternoon'
     return 'Good evening'
   }
+
+  const formatBytes = (bytes: number) => {
+    if (bytes >= 1073741824) return `${(bytes / 1073741824).toFixed(1)} GB`
+    if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`
+    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${bytes} B`
+  }
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat().format(num)
+  }
+
+  // Prepare bandwidth chart data
+  const bandwidthChartData = bandwidthStats?.history
+    ? Object.entries(bandwidthStats.history).map(([date, value]) => ({
+        name: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
+        value: value / 1073741824, // Convert to GB
+      }))
+    : []
+
+  // Prepare disk usage pie data
+  const diskUsedGB = resourceUsage ? resourceUsage.disk.used / 1073741824 : 0
+  const diskLimitGB = resourceUsage ? resourceUsage.disk.limit / 1073741824 : 10
+  const diskFreeGB = diskLimitGB - diskUsedGB
+  const diskUsageData = [
+    { name: 'Used', value: diskUsedGB },
+    { name: 'Free', value: diskFreeGB > 0 ? diskFreeGB : 0 },
+  ]
 
   return (
     <div className="space-y-6">
@@ -163,7 +193,15 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="success" dot>All systems operational</Badge>
+          {error ? (
+            <Badge variant="warning" dot>
+              Unable to load stats
+            </Badge>
+          ) : (
+            <Badge variant="success" dot>
+              All systems operational
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -171,32 +209,34 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard
           title="Domains"
-          value="3"
-          subtitle="2 active, 1 parked"
+          value={resourceUsage?.quotas.domains.used.toString() || '0'}
+          subtitle={`of ${resourceUsage?.quotas.domains.limit || 0} available`}
           icon={GlobeAltIcon}
           color="blue"
           loading={loading}
         />
         <StatCard
           title="Email Accounts"
-          value="12"
-          subtitle="of 100 available"
+          value={resourceUsage?.quotas.email_accounts.used.toString() || '0'}
+          subtitle={`of ${resourceUsage?.quotas.email_accounts.limit || 0} available`}
           icon={EnvelopeIcon}
           color="green"
           loading={loading}
         />
         <StatCard
           title="Databases"
-          value="5"
-          subtitle="of 10 available"
+          value={resourceUsage?.quotas.databases.used.toString() || '0'}
+          subtitle={`of ${resourceUsage?.quotas.databases.limit || 0} available`}
           icon={CircleStackIcon}
           color="purple"
           loading={loading}
         />
         <StatCard
           title="Disk Usage"
-          value="2.4 GB"
-          subtitle="of 10 GB (24%)"
+          value={resourceUsage ? formatBytes(resourceUsage.disk.used) : '0 B'}
+          subtitle={`of ${resourceUsage ? formatBytes(resourceUsage.disk.limit) : '0 B'} (${
+            resourceUsage?.disk.percent || 0
+          }%)`}
           icon={ServerIcon}
           color="yellow"
           loading={loading}
@@ -215,50 +255,70 @@ export default function Dashboard() {
           </CardHeader>
           <CardBody>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={bandwidthData}>
-                  <defs>
-                    <linearGradient id="colorBandwidth" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#6b7280', fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#6b7280', fontSize: 12 }}
-                    tickFormatter={(value) => `${value} GB`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                    }}
-                    formatter={(value: number) => [`${value} GB`, 'Bandwidth']}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    fillOpacity={1}
-                    fill="url(#colorBandwidth)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+                </div>
+              ) : bandwidthChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={bandwidthChartData}>
+                    <defs>
+                      <linearGradient id="colorBandwidth" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      tickFormatter={(value) => `${value.toFixed(1)} GB`}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      }}
+                      formatter={(value: number) => [`${value.toFixed(2)} GB`, 'Bandwidth']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorBandwidth)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No bandwidth data available
+                </div>
+              )}
             </div>
             <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-gray-500">Total this month: <span className="font-medium text-gray-900">45 GB</span></span>
-              <span className="text-gray-500">Limit: <span className="font-medium text-gray-900">100 GB</span></span>
+              <span className="text-gray-500">
+                Total this month:{' '}
+                <span className="font-medium text-gray-900">
+                  {bandwidthStats ? formatBytes(bandwidthStats.current_usage) : '0 B'}
+                </span>
+              </span>
+              <span className="text-gray-500">
+                Limit:{' '}
+                <span className="font-medium text-gray-900">
+                  {bandwidthStats ? formatBytes(bandwidthStats.limit) : '0 B'}
+                </span>
+              </span>
             </div>
           </CardBody>
         </Card>
@@ -270,35 +330,45 @@ export default function Dashboard() {
           </CardHeader>
           <CardBody>
             <div className="h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={diskUsageData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {diskUsageData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number) => [`${value} GB`, '']}
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={diskUsageData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={70}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {diskUsageData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => [`${value.toFixed(2)} GB`, '']}
+                      contentStyle={{
+                        backgroundColor: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
             <div className="text-center mt-2">
-              <p className="text-2xl font-bold text-gray-900">2.4 GB</p>
-              <p className="text-sm text-gray-500">of 10 GB used</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {resourceUsage ? formatBytes(resourceUsage.disk.used) : '0 B'}
+              </p>
+              <p className="text-sm text-gray-500">
+                of {resourceUsage ? formatBytes(resourceUsage.disk.limit) : '0 B'} used
+              </p>
             </div>
             <div className="mt-4 flex items-center justify-center gap-4 text-sm">
               <span className="flex items-center gap-2">
@@ -322,41 +392,59 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold text-gray-900">Resource Limits</h2>
           </CardHeader>
           <CardBody className="space-y-5">
-            <ProgressBar
-              value={2.4}
-              max={10}
-              label="Disk Space"
-              showValue
-              valueLabel="2.4 GB / 10 GB"
-            />
-            <ProgressBar
-              value={45}
-              max={100}
-              label="Bandwidth"
-              showValue
-              valueLabel="45 GB / 100 GB"
-            />
-            <ProgressBar
-              value={25420}
-              max={100000}
-              label="Inodes"
-              showValue
-              valueLabel="25,420 / 100,000"
-            />
-            <ProgressBar
-              value={12}
-              max={100}
-              label="Email Accounts"
-              showValue
-              valueLabel="12 / 100"
-            />
-            <ProgressBar
-              value={5}
-              max={10}
-              label="MySQL Databases"
-              showValue
-              valueLabel="5 / 10"
-            />
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600" />
+              </div>
+            ) : resourceUsage ? (
+              <>
+                <ProgressBar
+                  value={resourceUsage.disk.used}
+                  max={resourceUsage.disk.limit}
+                  label="Disk Space"
+                  showValue
+                  valueLabel={`${formatBytes(resourceUsage.disk.used)} / ${formatBytes(
+                    resourceUsage.disk.limit
+                  )}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.bandwidth.used}
+                  max={resourceUsage.bandwidth.limit}
+                  label="Bandwidth"
+                  showValue
+                  valueLabel={`${formatBytes(resourceUsage.bandwidth.used)} / ${formatBytes(
+                    resourceUsage.bandwidth.limit
+                  )}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.inodes.used}
+                  max={resourceUsage.inodes.limit}
+                  label="Inodes"
+                  showValue
+                  valueLabel={`${formatNumber(resourceUsage.inodes.used)} / ${formatNumber(
+                    resourceUsage.inodes.limit
+                  )}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.quotas.email_accounts.used}
+                  max={resourceUsage.quotas.email_accounts.limit}
+                  label="Email Accounts"
+                  showValue
+                  valueLabel={`${resourceUsage.quotas.email_accounts.used} / ${resourceUsage.quotas.email_accounts.limit}`}
+                />
+                <ProgressBar
+                  value={resourceUsage.quotas.databases.used}
+                  max={resourceUsage.quotas.databases.limit}
+                  label="MySQL Databases"
+                  showValue
+                  valueLabel={`${resourceUsage.quotas.databases.used} / ${resourceUsage.quotas.databases.limit}`}
+                />
+              </>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Unable to load resource usage
+              </div>
+            )}
           </CardBody>
         </Card>
 
@@ -406,12 +494,16 @@ export default function Dashboard() {
                 key={index}
                 className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors"
               >
-                <div className={`p-2 rounded-lg ${
-                  item.status === 'success' ? 'bg-green-50' : 'bg-yellow-50'
-                }`}>
-                  <item.icon className={`w-5 h-5 ${
-                    item.status === 'success' ? 'text-green-600' : 'text-yellow-600'
-                  }`} />
+                <div
+                  className={`p-2 rounded-lg ${
+                    item.status === 'success' ? 'bg-green-50' : 'bg-yellow-50'
+                  }`}
+                >
+                  <item.icon
+                    className={`w-5 h-5 ${
+                      item.status === 'success' ? 'text-green-600' : 'text-yellow-600'
+                    }`}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900">{item.action}</p>
@@ -423,9 +515,7 @@ export default function Dashboard() {
                   ) : (
                     <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />
                   )}
-                  <span className="text-sm text-gray-400 whitespace-nowrap">
-                    {item.time}
-                  </span>
+                  <span className="text-sm text-gray-400 whitespace-nowrap">{item.time}</span>
                 </div>
               </div>
             ))}

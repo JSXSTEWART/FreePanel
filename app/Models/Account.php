@@ -151,7 +151,57 @@ class Account extends Model
             return Feature::where('name', $featureName)->where('is_default', true)->exists();
         }
 
-        return $feature->pivot->enabled;
+        return (bool) $feature->pivot->enabled;
+    }
+
+    /**
+     * Enable a feature for this account.
+     */
+    public function enableFeature(string $featureName): void
+    {
+        $feature = Feature::where('name', $featureName)->first();
+        if ($feature) {
+            $this->features()->syncWithoutDetaching([
+                $feature->id => ['enabled' => true]
+            ]);
+        }
+    }
+
+    /**
+     * Disable a feature for this account.
+     */
+    public function disableFeature(string $featureName): void
+    {
+        $feature = Feature::where('name', $featureName)->first();
+        if ($feature) {
+            $this->features()->syncWithoutDetaching([
+                $feature->id => ['enabled' => false]
+            ]);
+        }
+    }
+
+    /**
+     * Get all available features with their status for this account.
+     */
+    public function getAllFeatures(): array
+    {
+        $allFeatures = Feature::all();
+        $accountFeatures = $this->features()->get()->keyBy('id');
+
+        return $allFeatures->map(function ($feature) use ($accountFeatures) {
+            $accountFeature = $accountFeatures->get($feature->id);
+            return [
+                'id' => $feature->id,
+                'name' => $feature->name,
+                'display_name' => $feature->display_name,
+                'description' => $feature->description,
+                'category' => $feature->category,
+                'is_enabled' => $accountFeature
+                    ? (bool) $accountFeature->pivot->enabled
+                    : $feature->is_default,
+                'is_default' => $feature->is_default,
+            ];
+        })->toArray();
     }
 
     /**

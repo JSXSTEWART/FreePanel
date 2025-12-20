@@ -1,4 +1,5 @@
-import { Card, CardBody } from '../../components/common/Card'
+import { useState, useEffect } from 'react'
+import { Card, CardBody, CardHeader } from '../../components/common/Card'
 import Button from '../../components/common/Button'
 import Modal, { ModalBody, ModalFooter } from '../../components/common/Modal'
 import Input from '../../components/common/Input'
@@ -7,6 +8,7 @@ import EmptyState from '../../components/common/EmptyState'
 import ConfirmDialog from '../../components/common/ConfirmDialog'
 import Tooltip from '../../components/common/Tooltip'
 import toast from 'react-hot-toast'
+import { domainsApi, Domain, Subdomain } from '../../api'
 import {
   PlusIcon,
   GlobeAltIcon,
@@ -16,44 +18,19 @@ import {
   FolderIcon,
   ServerStackIcon,
   Cog6ToothIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline'
 
-interface Domain {
+// Extended domain interface for UI display
+interface DomainDisplay {
   id: number
   name: string
   type: 'main' | 'addon' | 'subdomain' | 'parked'
   documentRoot: string
   ssl: 'active' | 'inactive' | 'pending'
   createdAt: string
+  domainId?: number // For subdomains, reference to parent domain
 }
-
-// Sample data
-const sampleDomains: Domain[] = [
-  {
-    id: 1,
-    name: 'example.com',
-    type: 'main',
-    documentRoot: '/public_html',
-    ssl: 'active',
-    createdAt: '2024-01-01',
-  },
-  {
-    id: 2,
-    name: 'blog.example.com',
-    type: 'subdomain',
-    documentRoot: '/public_html/blog',
-    ssl: 'active',
-    createdAt: '2024-01-05',
-  },
-  {
-    id: 3,
-    name: 'shop.example.com',
-    type: 'subdomain',
-    documentRoot: '/public_html/shop',
-    ssl: 'pending',
-    createdAt: '2024-01-10',
-  },
-]
 
 const typeConfig = {
   main: { label: 'Main', variant: 'primary' as const },
@@ -69,22 +46,79 @@ const sslConfig = {
 }
 
 export default function Domains() {
-  const [domains] = useState<Domain[]>(sampleDomains)
+  const [domains, setDomains] = useState<DomainDisplay[]>([])
+  const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
-  const [showDnsModal, setShowDnsModal] = useState<Domain | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<Domain | null>(null)
+  const [showDnsModal, setShowDnsModal] = useState<DomainDisplay | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<DomainDisplay | null>(null)
   const [addType, setAddType] = useState<'domain' | 'subdomain'>('domain')
+  const [submitting, setSubmitting] = useState(false)
+  const [selectedDomain, setSelectedDomain] = useState<number | null>(null)
+  const [mainDomainsList, setMainDomainsList] = useState<Domain[]>([])
   const [formData, setFormData] = useState({
     domain: '',
     subdomain: '',
     documentRoot: '',
+    parentDomain: '',
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+
+  // Fetch domains from API
+  const fetchDomains = async () => {
+    try {
+      setLoading(true)
+      const apiDomains = await domainsApi.list()
+      setMainDomainsList(apiDomains)
+
+      // Transform API domains to display format
+      const displayDomains: DomainDisplay[] = []
+
+      for (const domain of apiDomains) {
+        // Add main domain
+        displayDomains.push({
+          id: domain.id,
+          name: domain.name,
+          type: domain.is_main ? 'main' : 'addon',
+          documentRoot: domain.document_root,
+          ssl: domain.ssl_certificate ?
+            (new Date(domain.ssl_certificate.expires_at) > new Date() ? 'active' : 'inactive')
+            : 'inactive',
+          createdAt: domain.created_at,
+        })
+
+        // Add subdomains
+        if (domain.subdomains) {
+          for (const sub of domain.subdomains) {
+            displayDomains.push({
+              id: sub.id,
+              name: `${sub.name}.${domain.name}`,
+              type: 'subdomain',
+              documentRoot: sub.document_root,
+              ssl: 'inactive', // Subdomains need their own SSL check
+              createdAt: sub.created_at,
+              domainId: domain.id,
+            })
+          }
+        }
+      }
+
+      setDomains(displayDomains)
+    } catch (error) {
+      toast.error('Failed to load domains')
+      console.error('Error fetching domains:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDomains()
+  }, [])
 
   const mainDomains = domains.filter(d => d.type === 'main' || d.type === 'addon')
   const subdomains = domains.filter(d => d.type === 'subdomain')
 
-  const handleAddDomain = () => {
+  const handleAddDomain = async () => {
     const errors: Record<string, string> = {}
 
     if (addType === 'domain') {
@@ -95,20 +129,85 @@ export default function Domains() {
       if (!formData.subdomain || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(formData.subdomain)) {
         errors.subdomain = 'Please enter a valid subdomain'
       }
+      if (!selectedDomain) {
+        errors.parentDomain = 'Please select a parent domain'
+      }
     }
 
     setFormErrors(errors)
     if (Object.keys(errors).length > 0) return
 
-    toast.success(`${addType === 'domain' ? 'Domain' : 'Subdomain'} added successfully`)
-    setShowAddModal(false)
-    setFormData({ domain: '', subdomain: '', documentRoot: '' })
+    try {
+      setSubmitting(true)
+
+      if (addType === 'domain') {
+        await domainsApi.create({
+          name: formData.domain,
+          document_root: formData.documentRoot || undefined,
+        })
+        toast.success('Domain added successfully')
+      } else {
+        if (selectedDomain) {
+          await domainsApi.createSubdomain(selectedDomain, {
+            name: formData.subdomain,
+            document_root: formData.documentRoot || undefined,
+          })
+          toast.success('Subdomain added successfully')
+        }
+      }
+
+      setShowAddModal(false)
+      setFormData({ domain: '', subdomain: '', documentRoot: '', parentDomain: '' })
+      setSelectedDomain(null)
+      fetchDomains()
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to add domain')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteConfirm) return
-    toast.success('Domain deleted successfully')
-    setDeleteConfirm(null)
+
+    try {
+      setSubmitting(true)
+
+      if (deleteConfirm.type === 'subdomain' && deleteConfirm.domainId) {
+        await domainsApi.deleteSubdomain(deleteConfirm.domainId, deleteConfirm.id)
+      } else {
+        await domainsApi.delete(deleteConfirm.id)
+      }
+
+      toast.success('Domain deleted successfully')
+      setDeleteConfirm(null)
+      fetchDomains()
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } }
+      toast.error(err.response?.data?.message || 'Failed to delete domain')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Domains</h1>
+            <p className="text-gray-500">Manage your domains and subdomains</p>
+          </div>
+        </div>
+        <Card>
+          <CardBody className="flex items-center justify-center py-12">
+            <ArrowPathIcon className="w-8 h-8 text-gray-400 animate-spin" />
+            <span className="ml-3 text-gray-500">Loading domains...</span>
+          </CardBody>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -119,10 +218,16 @@ export default function Domains() {
           <h1 className="text-2xl font-bold text-gray-900">Domains</h1>
           <p className="text-gray-500">Manage your domains and subdomains</p>
         </div>
-        <Button variant="primary" onClick={() => setShowAddModal(true)}>
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Add Domain
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={fetchDomains}>
+            <ArrowPathIcon className="w-5 h-5 mr-2" />
+            Refresh
+          </Button>
+          <Button variant="primary" onClick={() => setShowAddModal(true)}>
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Add Domain
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -168,7 +273,7 @@ export default function Domains() {
               <FolderIcon className="w-5 h-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-xl font-bold text-gray-900">{mainDomains.length}</p>
+              <p className="text-xl font-bold text-gray-900">{mainDomains.filter(d => d.type === 'addon').length}</p>
               <p className="text-xs text-gray-500">Addon Domains</p>
             </div>
           </CardBody>
@@ -204,7 +309,7 @@ export default function Domains() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {domains.map((domain) => (
-                    <tr key={domain.id} className="table-row">
+                    <tr key={`${domain.type}-${domain.id}`} className="table-row">
                       <td className="table-cell">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-gray-100 rounded-lg">
@@ -277,7 +382,12 @@ export default function Domains() {
       {/* Add Domain Modal */}
       <Modal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={() => {
+          setShowAddModal(false)
+          setFormErrors({})
+          setFormData({ domain: '', subdomain: '', documentRoot: '', parentDomain: '' })
+          setSelectedDomain(null)
+        }}
         title="Add Domain"
         description="Add a new domain or subdomain to your account"
       >
@@ -320,17 +430,39 @@ export default function Domains() {
               hint="Enter the domain name without www"
             />
           ) : (
-            <div className="flex gap-2 items-end">
-              <Input
-                label="Subdomain"
-                placeholder="blog"
-                value={formData.subdomain}
-                onChange={(e) => setFormData({ ...formData, subdomain: e.target.value.toLowerCase() })}
-                error={formErrors.subdomain}
-                className="flex-1"
-              />
-              <div className="pb-2 text-gray-500">.example.com</div>
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Domain</label>
+                <select
+                  value={selectedDomain || ''}
+                  onChange={(e) => setSelectedDomain(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="">Select a domain</option>
+                  {mainDomainsList.map((domain) => (
+                    <option key={domain.id} value={domain.id}>
+                      {domain.name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.parentDomain && (
+                  <p className="mt-1 text-sm text-red-600">{formErrors.parentDomain}</p>
+                )}
+              </div>
+              <div className="flex gap-2 items-end">
+                <Input
+                  label="Subdomain"
+                  placeholder="blog"
+                  value={formData.subdomain}
+                  onChange={(e) => setFormData({ ...formData, subdomain: e.target.value.toLowerCase() })}
+                  error={formErrors.subdomain}
+                  className="flex-1"
+                />
+                <div className="pb-2 text-gray-500">
+                  .{selectedDomain ? mainDomainsList.find(d => d.id === selectedDomain)?.name || 'domain.com' : 'domain.com'}
+                </div>
+              </div>
+            </>
           )}
 
           <Input
@@ -342,11 +474,18 @@ export default function Domains() {
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowAddModal(false)
+              setFormErrors({})
+            }}
+            disabled={submitting}
+          >
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleAddDomain}>
-            Add {addType === 'domain' ? 'Domain' : 'Subdomain'}
+          <Button variant="primary" onClick={handleAddDomain} disabled={submitting}>
+            {submitting ? 'Adding...' : `Add ${addType === 'domain' ? 'Domain' : 'Subdomain'}`}
           </Button>
         </ModalFooter>
       </Modal>
@@ -409,7 +548,7 @@ export default function Domains() {
         onConfirm={handleDelete}
         title="Delete Domain"
         message={`Are you sure you want to delete "${deleteConfirm?.name}"? All files in the document root will remain but the domain will no longer be accessible.`}
-        confirmLabel="Delete Domain"
+        confirmLabel={submitting ? 'Deleting...' : 'Delete Domain'}
         variant="danger"
       />
     </div>
