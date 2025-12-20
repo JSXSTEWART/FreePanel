@@ -12,7 +12,8 @@ This report analyzes the FreePanel project dependencies for outdated packages, s
 | Security Vulnerabilities (npm) | ✅ 0 vulnerabilities |
 | Security Vulnerabilities (Composer) | ✅ No advisories found |
 | Outdated Packages | ⚠️ Several major updates available |
-| Missing Dependencies | ❌ Critical packages missing |
+| Missing Dependencies | ❌ Critical packages missing (typescript, tailwindcss, vitest, @testing-library/react) |
+| Missing npm Scripts | ⚠️ No test script defined |
 | JSON Syntax Errors | ✅ Fixed |
 | Duplicate Dependencies | ✅ Fixed |
 
@@ -103,6 +104,14 @@ The following packages are **used in the codebase but not listed in package.json
 | `vitest` | `src/hooks/__tests__/*.test.{ts,tsx}` | Test runner |
 | `@testing-library/react` | Test files | React component testing |
 
+### 4.3 Missing npm Scripts
+The `frontend/package.json` is missing a `test` script. Add:
+```json
+"scripts": {
+  "test": "vitest"
+}
+```
+
 **Action Required:** These dependencies must be added to `package.json`:
 
 ```bash
@@ -123,9 +132,10 @@ npm install --save-dev typescript tailwindcss vitest @testing-library/react
 
 2. **ESLint Migration to v9 (Flat Config)**
    - ESLint 8 is EOL and no longer receives security updates
+   - Note: Both `.eslintrc.cjs` (legacy) and `eslint.config.js` (flat config) exist - consolidate to flat config only
    - Migrate to ESLint 9 with flat config using the [official migration guide](https://eslint.org/docs/latest/use/migrate-to-9.0.0)
    ```bash
-   npx @eslint/migrate-config .eslintrc.js
+   npx @eslint/migrate-config .eslintrc.cjs
    ```
 
 ### 5.2 Short-Term Actions (Priority: Medium)
@@ -158,7 +168,7 @@ npm install --save-dev typescript tailwindcss vitest @testing-library/react
 
 ### 6.1 Dependency Count
 - **Frontend:** 23 direct dependencies (357 total with transitive)
-- **Backend:** 11 production + 8 dev dependencies
+- **Backend:** 10 production packages + 8 dev packages (PHP 8.2+ required)
 
 ### 6.2 Potential Optimizations
 
@@ -167,6 +177,7 @@ npm install --save-dev typescript tailwindcss vitest @testing-library/react
 | `jsdom` in devDependencies | Useful for testing, keep if using vitest |
 | `recharts` (large bundle) | Consider lighter alternatives like `lightweight-charts` if only basic charts needed |
 | Duplicate test files | `useAuth.test.tsx` and `useAuth.test.ts` exist - consolidate |
+| Duplicate ESLint configs | Both `.eslintrc.cjs` and `eslint.config.js` exist - remove legacy file after migration |
 
 ### 6.3 Build Optimization Suggestions
 - Consider enabling Vite's `build.minify: 'terser'` for smaller bundles
