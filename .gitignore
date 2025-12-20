@@ -16,7 +16,9 @@
 /npm-debug.log
 /yarn-error.log
 /.idea
-/.vscode
+# VS Code - exclude personal settings but include shared configuration
+/.vscode/*
+!/.vscode/settings.json
 /.claude
 *.swp
 *.swo
