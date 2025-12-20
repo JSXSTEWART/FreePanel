@@ -5,5 +5,5 @@ servers:
     note: "Added per request — used for future MCP automation / integrations. The UUID in the URL is a non-sensitive server identifier and is not used for authentication or authorization."
   
   - name: zapier-mcp-vscode
-    url: "https://mcp.zapier.com/api/mcp/s/ZjFkMGE0MTktNTgzYi00NTdmLTk3Y2EtODdlY2E2MjYwNmFmOjYzOTA5MTU4LTlmOGItNGEzNC05NzA2LWZiMTEyMzk2NDc0NA==/mcp"
-    note: "Zapier MCP server for Visual Studio Code integration. Enables GitHub Copilot to access Zapier automation tools. See VSCODE_MCP_SETUP.md for configuration instructions."
+    url: "https://mcp.zapier.com/api/mcp/s/YOUR_UNIQUE_SERVER_ID/mcp"
+    note: "Zapier MCP server for Visual Studio Code integration. Replace YOUR_UNIQUE_SERVER_ID with your actual server ID from https://mcp.zapier.com. See VSCODE_MCP_SETUP.md for configuration instructions."

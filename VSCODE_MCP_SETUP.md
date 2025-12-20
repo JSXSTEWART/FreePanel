@@ -26,11 +26,19 @@ The Zapier MCP integration allows GitHub Copilot in VS Code to access and execut
 
 ### Step 3: Configure Server URL
 
-Paste the following server URL into the "Server URL" field and press Enter:
+**Important**: You need to obtain your own Zapier MCP server URL from your Zapier account.
 
+1. Visit [https://mcp.zapier.com](https://mcp.zapier.com) and log in to your Zapier account
+2. Navigate to the MCP configuration section
+3. Copy your personal MCP server URL (it will look like: `https://mcp.zapier.com/api/mcp/s/YOUR_SERVER_ID/mcp`)
+4. Paste your server URL into the "Server URL" field in VS Code and press Enter
+
+**Example URL format:**
 ```
-https://mcp.zapier.com/api/mcp/s/ZjFkMGE0MTktNTgzYi00NTdmLTk3Y2EtODdlY2E2MjYwNmFmOjYzOTA5MTU4LTlmOGItNGEzNC05NzA2LWZiMTEyMzk2NDc0NA==/mcp
+https://mcp.zapier.com/api/mcp/s/YOUR_UNIQUE_SERVER_ID/mcp
 ```
+
+⚠️ **Security Note**: Your MCP server URL contains authentication credentials. Keep it private and do not share it publicly or commit it to version control.
 
 ### Step 4: Name the Server
 
@@ -99,6 +107,16 @@ Visit [https://mcp.zapier.com](https://mcp.zapier.com) to configure your availab
 
 ## Security Considerations
 
+### Obtaining Your Server URL
+
+Your Zapier MCP server URL is unique to your account and contains authentication credentials:
+
+1. Visit [https://mcp.zapier.com](https://mcp.zapier.com)
+2. Log in with your Zapier account
+3. Navigate to your MCP server settings or configuration page
+4. Copy your personal MCP server URL
+5. The URL format will be: `https://mcp.zapier.com/api/mcp/s/[YOUR_UNIQUE_ID]/mcp`
+
 ### Server URL Security
 
 ⚠️ **Important**: The server URL contains authentication tokens. 
@@ -122,7 +140,7 @@ The MCP server has access to actions you've configured in Zapier:
 You can also configure the MCP server directly in VS Code settings:
 
 1. Open VS Code settings (JSON)
-2. Add the following configuration:
+2. Add the following configuration (replace `YOUR_UNIQUE_SERVER_ID` with your actual server ID from Zapier):
 
 ```json
 {
@@ -130,15 +148,30 @@ You can also configure the MCP server directly in VS Code settings:
     {
       "name": "zapier-mcp",
       "type": "http",
-      "url": "https://mcp.zapier.com/api/mcp/s/ZjFkMGE0MTktNTgzYi00NTdmLTk3Y2EtODdlY2E2MjYwNmFmOjYzOTA5MTU4LTlmOGItNGEzNC05NzA2LWZiMTEyMzk2NDc0NA==/mcp"
+      "url": "https://mcp.zapier.com/api/mcp/s/YOUR_UNIQUE_SERVER_ID/mcp"
     }
   ]
 }
 ```
 
+⚠️ **Important**: Replace `YOUR_UNIQUE_SERVER_ID` with your actual server ID obtained from [https://mcp.zapier.com](https://mcp.zapier.com).
+
 ### Using MCP Configuration File
 
-FreePanel includes an `.mcp/servers.yaml` file for MCP server configuration. See that file for additional server configurations.
+FreePanel includes an `.mcp/servers.yaml` file for MCP server configuration. 
+
+**For local development with your personal credentials:**
+
+1. Copy the example file:
+   ```bash
+   cp .mcp/servers.local.yaml.example .mcp/servers.local.yaml
+   ```
+
+2. Edit `.mcp/servers.local.yaml` and replace the placeholder URL with your actual server URL from Zapier
+
+3. The `.mcp/servers.local.yaml` file is gitignored to prevent accidentally committing your credentials
+
+See the main `.mcp/servers.yaml` file for additional server configurations.
 
 ## Integration with FreePanel
 

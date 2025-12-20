@@ -27,8 +27,8 @@
     {
       "name": "zapier-mcp-vscode",
       "type": "http",
-      "url": "https://mcp.zapier.com/api/mcp/s/ZjFkMGE0MTktNTgzYi00NTdmLTk3Y2EtODdlY2E2MjYwNmFmOjYzOTA5MTU4LTlmOGItNGEzNC05NzA2LWZiMTEyMzk2NDc0NA==/mcp",
-      "description": "Zapier MCP server for automation tools. See VSCODE_MCP_SETUP.md for setup instructions."
+      "url": "https://mcp.zapier.com/api/mcp/s/YOUR_UNIQUE_SERVER_ID/mcp",
+      "description": "Zapier MCP server for automation tools. Replace YOUR_UNIQUE_SERVER_ID with your server ID from https://mcp.zapier.com. See VSCODE_MCP_SETUP.md for setup instructions."
     }
   ]
 }

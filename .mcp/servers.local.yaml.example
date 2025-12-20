@@ -1,0 +1,8 @@
+# Example local MCP servers configuration
+# Copy this file to servers.local.yaml and replace with your actual server URLs
+# The servers.local.yaml file is gitignored to prevent committing credentials
+
+servers:
+  - name: zapier-mcp-vscode
+    url: "https://mcp.zapier.com/api/mcp/s/ZjFkMGE0MTktNTgzYi00NTdmLTk3Y2EtODdlY2E2MjYwNmFmOjYzOTA5MTU4LTlmOGItNGEzNC05NzA2LWZiMTEyMzk2NDc0NA==/mcp"
+    note: "Replace this with your actual Zapier MCP server URL from https://mcp.zapier.com"

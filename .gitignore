@@ -20,6 +20,9 @@
 /.vscode/*
 !/.vscode/settings.json
 /.claude
+
+# MCP local configuration (contains credentials)
+/.mcp/servers.local.yaml
 *.swp
 *.swo
 .DS_Store
