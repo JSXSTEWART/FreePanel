@@ -1,8 +1,25 @@
 # Example local MCP servers configuration
-# Copy this file to servers.local.yaml and replace with your actual server URLs
-# The servers.local.yaml file is gitignored to prevent committing credentials
+# 
+# ⚠️  SECURITY WARNING ⚠️
+# This file contains an EXAMPLE server URL for demonstration purposes only.
+# DO NOT use this URL directly - it may be invalid or belong to another user.
+#
+# To use this configuration:
+# 1. Copy this file: cp .mcp/servers.local.yaml.example .mcp/servers.local.yaml
+# 2. Visit https://mcp.zapier.com and log in to get YOUR OWN server URL
+# 3. Replace the URL below with your personal server URL
+# 4. The servers.local.yaml file is gitignored to prevent committing your credentials
+#
+# Your server URL will look like:
+# https://mcp.zapier.com/api/mcp/s/[YOUR_UNIQUE_ID]/mcp
 
 servers:
   - name: zapier-mcp-vscode
-    url: "https://mcp.zapier.com/api/mcp/s/ZjFkMGE0MTktNTgzYi00NTdmLTk3Y2EtODdlY2E2MjYwNmFmOjYzOTA5MTU4LTlmOGItNGEzNC05NzA2LWZiMTEyMzk2NDc0NA==/mcp"
-    note: "Replace this with your actual Zapier MCP server URL from https://mcp.zapier.com"
+    url: "YOUR_SERVER_URL_HERE"
+    note: "Replace with your actual Zapier MCP server URL from https://mcp.zapier.com"
+    
+# Example format (DO NOT USE THIS):
+# servers:
+#   - name: zapier-mcp-vscode-example
+#     url: "https://mcp.zapier.com/api/mcp/s/ZjFkMGE0MTktNTgzYi00NTdmLTk3Y2EtODdlY2E2MjYwNmFmOjYzOTA5MTU4LTlmOGItNGEzNC05NzA2LWZiMTEyMzk2NDc0NA==/mcp"
+#     note: "EXAMPLE ONLY - Get your own URL from https://mcp.zapier.com"

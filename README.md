@@ -337,8 +337,9 @@ Quick setup:
 1. Open VS Code Command Palette (`⇧+⌘+P` on Mac, `Ctrl+Shift+P` on Windows)
 2. Run `MCP: Add Server...`
 3. Choose `HTTP (HTTP or Server-Sent Events)`
-4. Configure the server using the URL from `.mcp/servers.yaml`
-5. Set GitHub Copilot to "Agent" mode
+4. Obtain your personal server URL from [https://mcp.zapier.com](https://mcp.zapier.com) (see [VSCODE_MCP_SETUP.md](VSCODE_MCP_SETUP.md) for details)
+5. Configure the server with your URL
+6. Set GitHub Copilot to "Agent" mode
 
 **Additional Zapier Documentation:**
 - [ZAPIER_MCP_EMBED.md](ZAPIER_MCP_EMBED.md) - Embedding Zapier MCP in FreePanel UI
