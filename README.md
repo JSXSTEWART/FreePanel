@@ -323,6 +323,29 @@ npm run dev
 php artisan test
 ```
 
+## Integrations
+
+### Zapier MCP (Model Context Protocol)
+
+FreePanel supports Zapier MCP integration, allowing AI assistants like GitHub Copilot to access Zapier automation tools.
+
+**Visual Studio Code Setup:**
+
+See [VSCODE_MCP_SETUP.md](VSCODE_MCP_SETUP.md) for detailed instructions on configuring Zapier MCP in VS Code.
+
+Quick setup:
+1. Open VS Code Command Palette (`⇧+⌘+P` on Mac, `Ctrl+Shift+P` on Windows)
+2. Run `MCP: Add Server...`
+3. Choose `HTTP (HTTP or Server-Sent Events)`
+4. Obtain your personal server URL from [https://mcp.zapier.com](https://mcp.zapier.com) (see [VSCODE_MCP_SETUP.md](VSCODE_MCP_SETUP.md) for details)
+5. Configure the server with your URL
+6. Set GitHub Copilot to "Agent" mode
+
+**Additional Zapier Documentation:**
+- [ZAPIER_MCP_EMBED.md](ZAPIER_MCP_EMBED.md) - Embedding Zapier MCP in FreePanel UI
+- [ZAPIER_INTEGRATION.md](ZAPIER_INTEGRATION.md) - Complete integration guide
+- [.mcp/servers.yaml](.mcp/servers.yaml) - MCP server configuration
+
 ## Management Scripts
 
 FreePanel includes helper scripts for common operations:

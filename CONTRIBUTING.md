@@ -120,6 +120,18 @@ npm run format:check
 
 An `.editorconfig` file is provided for consistent editor settings. Most editors support EditorConfig natively or via plugins.
 
+### Visual Studio Code
+
+A `.vscode/settings.json` file is included with recommended settings for:
+- Code formatting on save
+- File and search exclusions
+- Language-specific formatters
+- Zapier MCP integration for AI-powered automation
+
+**Zapier MCP Integration:**
+
+If using GitHub Copilot in VS Code, you can enable Zapier automation tools. See [VSCODE_MCP_SETUP.md](VSCODE_MCP_SETUP.md) for setup instructions.
+
 ## Testing
 
 ### PHP Tests

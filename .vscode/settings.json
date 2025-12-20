@@ -1,0 +1,34 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[php]": {
+    "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/vendor": true,
+    "**/.phpunit.result.cache": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/vendor": true,
+    "**/dist": true,
+    "**/build": true
+  },
+  "mcp.servers": [
+    {
+      "name": "zapier-mcp-vscode",
+      "type": "http",
+      "url": "https://mcp.zapier.com/api/mcp/s/YOUR_UNIQUE_SERVER_ID/mcp",
+      "description": "Zapier MCP server for automation tools. Replace YOUR_UNIQUE_SERVER_ID with your server ID from https://mcp.zapier.com. See VSCODE_MCP_SETUP.md for setup instructions."
+    }
+  ]
+}
