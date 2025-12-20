@@ -40,17 +40,6 @@ jobs:
       - name: Install composer deps
         run: composer install --prefer-dist --no-progress --no-suggest --no-interaction
 
-      - name: Create testing env
-        run: |
-          cp .env.example .env || true
-          cat > .env.testing <<'ENV'
-APP_ENV=testing
-APP_KEY=
-APP_DEBUG=true
-DB_CONNECTION=sqlite
-DB_DATABASE=:memory:
-ENV
-
       - name: Generate app key
         run: php artisan key:generate --ansi || true
 
