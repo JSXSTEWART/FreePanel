@@ -8,6 +8,7 @@ import UserLayout from './components/layout/UserLayout'
 
 // Auth Pages
 import Login from './pages/auth/Login'
+import OAuthCallback from './pages/auth/OAuthCallback'
 import Setup from './pages/Setup'
 
 // Admin Pages
@@ -98,6 +99,18 @@ function App() {
             <Navigate to="/setup" replace />
           ) : (
             <Login />
+          )
+        }
+      />
+
+      {/* OAuth Callback Route */}
+      <Route
+        path="/auth/callback"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/" replace />
+          ) : (
+            <OAuthCallback />
           )
         }
       />
