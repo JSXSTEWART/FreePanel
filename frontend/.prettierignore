@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+dist
+build
+
+# Production builds
+*.min.js
+*.min.css
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Test coverage
+coverage
+
+# Build artifacts
+.vite
+.turbo

@@ -1,0 +1,22 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - app
+        - config
+        - routes
+    excludePaths:
+        - bootstrap
+        - storage
+        - vendor
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    ignoreErrors:
+        # Ignore dynamic property access common in Laravel
+        - '#Access to an undefined property [a-zA-Z0-9\\_]+::\$[a-zA-Z0-9_]+#'
+        # Ignore facades (static calls)
+        - '#Call to an undefined static method [a-zA-Z0-9\\_]+::[a-zA-Z0-9_]+#'
+    reportUnmatchedIgnoredErrors: false
+    tmpDir: storage/phpstan

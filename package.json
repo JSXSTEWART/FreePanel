@@ -1,0 +1,36 @@
+{
+  "name": "freepanel",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "prepare": "husky",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:test": "cd frontend && npm test",
+    "frontend:lint": "cd frontend && npm run lint",
+    "frontend:format": "cd frontend && npm run format",
+    "backend:lint": "composer lint",
+    "backend:format": "composer format",
+    "backend:analyse": "composer analyse",
+    "backend:test": "php artisan test"
+  },
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2"
+  },
+  "lint-staged": {
+    "app/**/*.php": [
+      "./vendor/bin/pint"
+    ],
+    "frontend/src/**/*.{ts,tsx,js,jsx}": [
+      "cd frontend && prettier --write",
+      "cd frontend && eslint --fix"
+    ],
+    "frontend/src/**/*.{json,css,md}": [
+      "cd frontend && prettier --write"
+    ]
+  }
+}
