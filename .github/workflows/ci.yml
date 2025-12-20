@@ -138,7 +138,7 @@ jobs:
         run: php artisan key:generate
 
       - name: Run migrations
-        run: php artisan migrate --database=sqlite
+        run: php artisan migrate
 
       - name: Run backend tests
         run: php artisan test
