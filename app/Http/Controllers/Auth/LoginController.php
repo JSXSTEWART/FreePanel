@@ -28,7 +28,20 @@ class LoginController extends Controller
             ->orWhere('email', $request->username)
             ->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'username' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // Check if user is OAuth-only (no password set)
+        if (empty($user->password) && $user->oauth_provider) {
+            throw ValidationException::withMessages([
+                'username' => ['This account uses ' . ucfirst($user->oauth_provider) . ' authentication. Please sign in with ' . ucfirst($user->oauth_provider) . '.'],
+            ]);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'username' => ['The provided credentials are incorrect.'],
             ]);

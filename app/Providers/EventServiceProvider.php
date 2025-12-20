@@ -13,6 +13,8 @@ use App\Events\Account\AccountCreated;
 use App\Events\Account\AccountSuspended;
 use App\Listeners\Domain\DomainEventSubscriber;
 use App\Listeners\Account\AccountEventSubscriber;
+use App\Listeners\Account\SendAccountCreatedToZapier;
+use App\Listeners\Account\SendAccountSuspendedToZapier;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -24,6 +26,12 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+        AccountCreated::class => [
+            SendAccountCreatedToZapier::class,
+        ],
+        AccountSuspended::class => [
+            SendAccountSuspendedToZapier::class,
         ],
     ];
 

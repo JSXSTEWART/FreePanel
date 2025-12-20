@@ -23,6 +23,9 @@ abstract class TestCase extends BaseTestCase
             try {
                 $this->artisan('config:clear');
                 $this->artisan('view:clear');
+
+                // Ensure migrations are run in the test environment so DB-backed features are available
+                $this->artisan('migrate', ['--force' => true]);
             } catch (\Exception $e) {
                 // Non-fatal during some environments
             }
@@ -34,7 +37,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected function resetTestingEnvironmentFile(): void
     {
-        $root = dirname(__DIR__, 2);
+        $root = dirname(__DIR__);
         $path = $root . '/.env.testing';
         $content = <<<'ENV'
 APP_ENV=testing

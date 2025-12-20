@@ -27,6 +27,10 @@ class User extends Authenticatable
         'password',
         'role',
         'parent_id',
+        'oauth_provider',
+        'oauth_provider_id',
+        'oauth_access_token',
+        'oauth_refresh_token',
         'two_factor_secret',
         'two_factor_enabled',
         'two_factor_recovery_codes',
@@ -43,6 +47,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'oauth_access_token',
+        'oauth_refresh_token',
         'two_factor_secret',
         'two_factor_recovery_codes',
     ];

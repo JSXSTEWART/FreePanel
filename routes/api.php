@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\Auth\OAuthController;
 
 use App\Http\Controllers\Api\V1\User\DomainController;
 use App\Http\Controllers\Api\V1\User\DnsController;
@@ -42,6 +43,9 @@ use App\Http\Controllers\Api\V1\Admin\SshController;
 use App\Http\Controllers\Api\V1\Admin\MailQueueController;
 use App\Http\Controllers\Api\V1\Admin\ModSecurityController;
 
+use App\Http\Controllers\Api\V1\WebhookController;
+use App\Http\Controllers\Api\V1\ZapierConnectionController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -71,6 +75,10 @@ Route::prefix('v1/auth')->group(function () {
     // Password Reset
     Route::post('/password/forgot', [LoginController::class, 'forgotPassword'])->middleware('throttle:auth');
     Route::post('/password/reset', [LoginController::class, 'resetPassword'])->middleware('throttle:auth');
+
+    // OAuth Authentication
+    Route::get('/oauth/{provider}/redirect', [OAuthController::class, 'redirect']);
+    Route::get('/oauth/{provider}/callback', [OAuthController::class, 'callback']);
 });
 
 // Protected API Routes
@@ -86,6 +94,15 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
     Route::apiResource('domains', DomainController::class);
     Route::post('domains/{domain}/redirects', [DomainController::class, 'addRedirect']);
     Route::delete('domains/{domain}/redirects/{redirect}', [DomainController::class, 'removeRedirect']);
+
+    // Zapier Integration
+    Route::prefix('zapier')->group(function () {
+        Route::post('/connect', [ZapierConnectionController::class, 'store']);
+        Route::get('/connection', [ZapierConnectionController::class, 'show']);
+        Route::get('/tools', [ZapierConnectionController::class, 'listTools']);
+        Route::post('/execute', [ZapierConnectionController::class, 'executeTool']);
+        Route::delete('/disconnect', [ZapierConnectionController::class, 'destroy']);
+    });
 
     // Subdomains
     Route::apiResource('subdomains', DomainController::class . '@subdomains');
@@ -466,4 +483,23 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
             Route::post('/install-owasp-crs', [ModSecurityController::class, 'installOwaspCrs']);
         });
     });
+});
+
+// Webhook Routes (Public - for external integrations, but requires signature verification)
+Route::prefix('v1/webhooks')->group(function () {
+    // Zapier webhook receiver (requires HMAC-SHA256 signature verification)
+    Route::post('zapier/receive', [WebhookController::class, 'receive'])
+        ->middleware(\App\Http\Middleware\VerifyZapierWebhookSignature::class)
+        ->name('webhooks.zapier.receive');
+    
+    // Zapier health check (public, no auth required)
+    Route::get('zapier/health', [WebhookController::class, 'health'])
+        ->name('webhooks.zapier.health');
+});
+
+// Authenticated Webhook Routes (Protected)
+Route::prefix('v1/webhooks')->middleware(['auth:sanctum', 'audit'])->group(function () {
+    // Send webhook (requires authentication)
+    Route::post('send', [WebhookController::class, 'send'])
+        ->name('webhooks.send');
 });
