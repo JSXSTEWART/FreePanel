@@ -1,48 +1,48 @@
-import { clsx } from 'clsx'
+import { clsx } from "clsx";
 
 interface SkeletonProps {
-  className?: string
-  variant?: 'text' | 'circular' | 'rectangular'
-  width?: string | number
-  height?: string | number
-  lines?: number
+  className?: string;
+  variant?: "text" | "circular" | "rectangular";
+  width?: string | number;
+  height?: string | number;
+  lines?: number;
 }
 
 export function Skeleton({
   className,
-  variant = 'text',
+  variant = "text",
   width,
   height,
   lines = 1,
 }: SkeletonProps) {
-  const baseClasses = 'animate-pulse bg-gray-200'
+  const baseClasses = "animate-pulse bg-gray-200";
 
   const variantClasses = {
-    text: 'rounded',
-    circular: 'rounded-full',
-    rectangular: 'rounded-lg',
-  }
+    text: "rounded",
+    circular: "rounded-full",
+    rectangular: "rounded-lg",
+  };
 
   const style = {
-    width: width ?? (variant === 'text' ? '100%' : undefined),
-    height: height ?? (variant === 'text' ? '1rem' : undefined),
-  }
+    width: width ?? (variant === "text" ? "100%" : undefined),
+    height: height ?? (variant === "text" ? "1rem" : undefined),
+  };
 
   if (lines > 1) {
     return (
-      <div className={clsx('space-y-2', className)}>
+      <div className={clsx("space-y-2", className)}>
         {Array.from({ length: lines }).map((_, i) => (
           <div
             key={i}
             className={clsx(baseClasses, variantClasses[variant])}
             style={{
               ...style,
-              width: i === lines - 1 ? '75%' : style.width,
+              width: i === lines - 1 ? "75%" : style.width,
             }}
           />
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -50,23 +50,28 @@ export function Skeleton({
       className={clsx(baseClasses, variantClasses[variant], className)}
       style={style}
     />
-  )
+  );
 }
 
 // Pre-built skeleton components for common use cases
 export function SkeletonCard({ className }: { className?: string }) {
   return (
-    <div className={clsx('card p-6', className)}>
+    <div className={clsx("card p-6", className)}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <Skeleton width="40%" height="0.875rem" className="mb-3" />
           <Skeleton width="60%" height="1.75rem" className="mb-2" />
           <Skeleton width="50%" height="0.75rem" />
         </div>
-        <Skeleton variant="rectangular" width="3rem" height="3rem" className="rounded-xl" />
+        <Skeleton
+          variant="rectangular"
+          width="3rem"
+          height="3rem"
+          className="rounded-xl"
+        />
       </div>
     </div>
-  )
+  );
 }
 
 export function SkeletonTableRow({ columns = 5 }: { columns?: number }) {
@@ -74,14 +79,20 @@ export function SkeletonTableRow({ columns = 5 }: { columns?: number }) {
     <tr>
       {Array.from({ length: columns }).map((_, i) => (
         <td key={i} className="px-6 py-4">
-          <Skeleton height="1rem" width={i === 0 ? '80%' : '60%'} />
+          <Skeleton height="1rem" width={i === 0 ? "80%" : "60%"} />
         </td>
       ))}
     </tr>
-  )
+  );
 }
 
-export function SkeletonTable({ rows = 5, columns = 5 }: { rows?: number; columns?: number }) {
+export function SkeletonTable({
+  rows = 5,
+  columns = 5,
+}: {
+  rows?: number;
+  columns?: number;
+}) {
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
@@ -103,7 +114,7 @@ export function SkeletonTable({ rows = 5, columns = 5 }: { rows?: number; column
         </table>
       </div>
     </div>
-  )
+  );
 }
 
 export function SkeletonStatCards({ count = 4 }: { count?: number }) {
@@ -113,5 +124,5 @@ export function SkeletonStatCards({ count = 4 }: { count?: number }) {
         <SkeletonCard key={i} />
       ))}
     </div>
-  )
+  );
 }

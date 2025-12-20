@@ -1,22 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Card, CardBody } from '../../components/common/Card'
-import Button from '../../components/common/Button'
-import Modal, { ModalBody, ModalFooter } from '../../components/common/Modal'
-import Badge from '../../components/common/Badge'
-import EmptyState from '../../components/common/EmptyState'
-import ConfirmDialog from '../../components/common/ConfirmDialog'
-import toast from 'react-hot-toast'
-import { backupsApi, Backup } from '../../api'
-import {
-  ArchiveBoxIcon,
-  ArrowDownTrayIcon,
-  ArrowPathIcon,
-  TrashIcon,
-  ClockIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ExclamationTriangleIcon,
-} from '@heroicons/react/24/outline'
+import { Card, CardBody } from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import { ArchiveBoxIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 
 export default function Backups() {
   const [backups, setBackups] = useState<Backup[]>([])
@@ -185,89 +169,62 @@ export default function Backups() {
 
       <Card>
         <CardBody className="p-0">
-          {backups.length === 0 ? (
-            <EmptyState
-              title="No backups"
-              description="Create your first backup to protect your data."
-              action={{ label: 'Create Backup', onClick: () => setShowCreateModal(true) }}
-            />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Backup</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Includes</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {backups.map((backup) => (
-                    <tr key={backup.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <ArchiveBoxIcon className="w-5 h-5 text-gray-400 mr-3" />
-                          <span className="font-medium text-gray-900">{backup.filename}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant={backup.type === 'full' ? 'primary' : 'default'}>
-                          {backup.type === 'full' ? 'Full' : 'Partial'}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex gap-1">
-                          {backup.includes.files && <Badge variant="default" size="sm">Files</Badge>}
-                          {backup.includes.databases && <Badge variant="default" size="sm">DB</Badge>}
-                          {backup.includes.emails && <Badge variant="default" size="sm">Email</Badge>}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatSize(backup.size)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(backup.status)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(backup.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {backup.status === 'completed' && (
-                          <>
-                            <button
-                              onClick={() => handleDownload(backup)}
-                              disabled={downloading === backup.id}
-                              className="text-primary-600 hover:text-primary-800 mr-3 inline-flex items-center disabled:opacity-50"
-                            >
-                              <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
-                              {downloading === backup.id ? 'Downloading...' : 'Download'}
-                            </button>
-                            <button
-                              onClick={() => setShowRestoreModal(backup)}
-                              className="text-gray-600 hover:text-gray-800 mr-3"
-                            >
-                              Restore
-                            </button>
-                          </>
-                        )}
-                        {backup.status === 'failed' && backup.error_message && (
-                          <span className="text-red-600 text-xs mr-3" title={backup.error_message}>
-                            <ExclamationTriangleIcon className="w-4 h-4 inline" />
-                          </span>
-                        )}
-                        <button
-                          onClick={() => setDeleteConfirm(backup)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <TrashIcon className="w-5 h-5 inline" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Backup
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Size
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Created
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <ArchiveBoxIcon className="w-5 h-5 text-gray-400 mr-3" />
+                    <span className="font-medium text-gray-900">
+                      backup_20240115.tar.gz
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    Full
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  1.2 GB
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  Jan 15, 2024
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <button className="text-primary-600 hover:text-primary-800 mr-3 inline-flex items-center">
+                    <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
+                    Download
+                  </button>
+                  <button className="text-gray-600 hover:text-gray-800 mr-3">
+                    Restore
+                  </button>
+                  <button className="text-red-600 hover:text-red-800">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </CardBody>
       </Card>
 
@@ -416,5 +373,5 @@ export default function Backups() {
         variant="danger"
       />
     </div>
-  )
+  );
 }

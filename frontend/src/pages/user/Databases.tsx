@@ -1,23 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Card, CardBody } from '../../components/common/Card'
-import Button from '../../components/common/Button'
-import Modal, { ModalBody, ModalFooter } from '../../components/common/Modal'
-import Input from '../../components/common/Input'
-import Badge from '../../components/common/Badge'
-import EmptyState from '../../components/common/EmptyState'
-import ConfirmDialog from '../../components/common/ConfirmDialog'
-import toast from 'react-hot-toast'
-import { databasesApi, Database, DatabaseUser } from '../../api'
-import {
-  PlusIcon,
-  CircleStackIcon,
-  ArrowPathIcon,
-  TrashIcon,
-  UserIcon,
-  KeyIcon,
-} from '@heroicons/react/24/outline'
-
-type TabType = 'databases' | 'users'
+import { Card, CardBody } from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import { PlusIcon, CircleStackIcon } from "@heroicons/react/24/outline";
 
 export default function Databases() {
   const [activeTab, setActiveTab] = useState<TabType>('databases')
@@ -231,102 +214,53 @@ export default function Databases() {
 
       <Card>
         <CardBody className="p-0">
-          {activeTab === 'databases' && (
-            databases.length === 0 ? (
-              <EmptyState title="No databases" description="Create your first MySQL database to get started." action={{ label: 'Create Database', onClick: () => setShowCreateModal(true) }} />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Database</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tables</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {databases.map((db) => (
-                      <tr key={db.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <CircleStackIcon className="w-5 h-5 text-gray-400 mr-3" />
-                            <span className="font-medium text-gray-900">{db.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatSize(db.size)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{db.tables_count || 0} tables</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(db.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button onClick={() => window.open('/phpmyadmin', '_blank')} className="text-primary-600 hover:text-primary-800 mr-3">phpMyAdmin</button>
-                          <button onClick={() => setDeleteConfirm({ type: 'databases', item: db })} className="text-red-600 hover:text-red-800">
-                            <TrashIcon className="w-5 h-5 inline" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-
-          {activeTab === 'users' && (
-            users.length === 0 ? (
-              <EmptyState title="No database users" description="Create a database user to access your databases." action={{ label: 'Add User', onClick: () => setShowCreateModal(true) }} />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Host</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Databases</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <UserIcon className="w-5 h-5 text-gray-400 mr-3" />
-                            <span className="font-medium text-gray-900">{user.username}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.host}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {user.databases.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {user.databases.slice(0, 3).map((db) => (
-                                <Badge key={db} variant="default" size="sm">{db}</Badge>
-                              ))}
-                              {user.databases.length > 3 && (
-                                <Badge variant="default" size="sm">+{user.databases.length - 3}</Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400">No databases</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(user.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button onClick={() => setShowPasswordModal(user)} className="text-primary-600 hover:text-primary-800 mr-3">
-                            <KeyIcon className="w-5 h-5 inline mr-1" />Password
-                          </button>
-                          <button onClick={() => setDeleteConfirm({ type: 'users', item: user })} className="text-red-600 hover:text-red-800">
-                            <TrashIcon className="w-5 h-5 inline" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Database
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Size
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Users
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <CircleStackIcon className="w-5 h-5 text-gray-400 mr-3" />
+                    <span className="font-medium text-gray-900">
+                      user_wordpress
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  24.5 MB
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  1 user
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <button className="text-primary-600 hover:text-primary-800 mr-3">
+                    phpMyAdmin
+                  </button>
+                  <button className="text-gray-600 hover:text-gray-800 mr-3">
+                    Users
+                  </button>
+                  <button className="text-red-600 hover:text-red-800">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </CardBody>
       </Card>
 
@@ -364,5 +298,5 @@ export default function Databases() {
 
       <ConfirmDialog isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} onConfirm={handleDelete} title="Delete Confirmation" message={`Are you sure you want to delete this ${deleteConfirm?.type === 'databases' ? 'database' : 'user'}? This action cannot be undone.`} confirmLabel={submitting ? 'Deleting...' : 'Delete'} variant="danger" />
     </div>
-  )
+  );
 }

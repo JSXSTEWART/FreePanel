@@ -1,16 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Card, CardBody } from '../../components/common/Card'
-import Button from '../../components/common/Button'
-import Modal from '../../components/common/Modal'
-import {
-  LockClosedIcon,
-  ShieldCheckIcon,
-  ExclamationTriangleIcon,
-  PlusIcon,
-  ArrowPathIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline'
-import { sslApi, SslCertificate, domainsApi } from '../../api'
+import { Card, CardBody } from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import { LockClosedIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 export default function Ssl() {
   const [certificates, setCertificates] = useState<SslCertificate[]>([])
@@ -194,8 +184,12 @@ export default function Ssl() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">SSL/TLS Certificates</h1>
-          <p className="text-gray-500">Manage SSL certificates for your domains</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            SSL/TLS Certificates
+          </h1>
+          <p className="text-gray-500">
+            Manage SSL certificates for your domains
+          </p>
         </div>
         <div className="flex space-x-3">
           <Button variant="secondary" onClick={() => setShowInstallModal(true)}>
@@ -211,94 +205,60 @@ export default function Ssl() {
 
       <Card>
         <CardBody className="p-0">
-          {certificates.length === 0 ? (
-            <div className="text-center py-12">
-              <LockClosedIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No SSL certificates</h3>
-              <p className="text-gray-500 mb-4">
-                Secure your domains with SSL certificates
-              </p>
-              <Button variant="primary" onClick={() => setShowLetsEncryptModal(true)}>
-                <ShieldCheckIcon className="w-5 h-5 mr-2" />
-                Get Free SSL with Let's Encrypt
-              </Button>
-            </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Domain
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Expires
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {certificates.map((cert) => (
-                  <tr key={cert.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <LockClosedIcon
-                          className={`w-5 h-5 mr-3 ${
-                            cert.is_valid ? 'text-green-500' : 'text-red-500'
-                          }`}
-                        />
-                        <span className="font-medium text-gray-900">{cert.domain}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getTypeBadge(cert.type)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(cert.valid_to)} ({getDaysUntilExpiry(cert.valid_to)} days)
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(cert)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {cert.type === 'lets_encrypt' && (
-                        <button
-                          onClick={async () => {
-                            try {
-                              await sslApi.requestLetsEncrypt(cert.domain)
-                              fetchCertificates()
-                            } catch {
-                              alert('Failed to renew certificate')
-                            }
-                          }}
-                          className="text-primary-600 hover:text-primary-800 mr-3"
-                        >
-                          <ArrowPathIcon className="w-4 h-4 inline mr-1" />
-                          Renew
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setSelectedCert(cert)
-                          setShowDeleteModal(true)
-                        }}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <TrashIcon className="w-4 h-4 inline mr-1" />
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Domain
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Expires
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <LockClosedIcon className="w-5 h-5 text-green-500 mr-3" />
+                    <span className="font-medium text-gray-900">
+                      example.com
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                    Let's Encrypt
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  Mar 15, 2024 (60 days)
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                    Active
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <button className="text-primary-600 hover:text-primary-800 mr-3">
+                    Renew
+                  </button>
+                  <button className="text-gray-600 hover:text-gray-800">
+                    View
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </CardBody>
       </Card>
 
@@ -431,5 +391,5 @@ export default function Ssl() {
         </div>
       </Modal>
     </div>
-  )
+  );
 }

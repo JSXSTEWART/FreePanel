@@ -1,1 +1,14 @@
-includes:
+# PHPStan configuration
+# Note: Larastan is not currently in composer.lock
+# Run 'composer require --dev larastan/larastan' to add Laravel-specific rules
+
+parameters:
+    paths:
+        - app
+        - config
+        - routes
+    level: 5
+    excludePaths:
+        - bootstrap/cache/*
+        - storage/*
+        - vendor/*

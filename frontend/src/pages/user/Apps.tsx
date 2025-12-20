@@ -1,15 +1,38 @@
-import { useState, useEffect } from 'react'
-import { Card, CardBody } from '../../components/common/Card'
-import Button from '../../components/common/Button'
-import Modal from '../../components/common/Modal'
-import {
-  CubeIcon,
-  ArrowPathIcon,
-  TrashIcon,
-  ExclamationTriangleIcon,
-  Cog6ToothIcon,
-} from '@heroicons/react/24/outline'
-import { appsApi, AvailableApp, InstalledApp, domainsApi } from '../../api'
+import { Card, CardBody } from "../../components/common/Card";
+
+const apps = [
+  {
+    name: "WordPress",
+    version: "6.4",
+    icon: "🔵",
+    description: "Popular blogging and CMS platform",
+  },
+  {
+    name: "Joomla",
+    version: "5.0",
+    icon: "🟠",
+    description: "Flexible content management system",
+  },
+  {
+    name: "Drupal",
+    version: "10.2",
+    icon: "💧",
+    description: "Enterprise-grade CMS",
+  },
+  {
+    name: "PrestaShop",
+    version: "8.1",
+    icon: "🛒",
+    description: "E-commerce platform",
+  },
+  { name: "phpBB", version: "3.3", icon: "💬", description: "Forum software" },
+  {
+    name: "Nextcloud",
+    version: "28",
+    icon: "☁️",
+    description: "File sync and share",
+  },
+];
 
 export default function Apps() {
   const [availableApps, setAvailableApps] = useState<AvailableApp[]>([])
@@ -168,60 +191,34 @@ export default function Apps() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Application Installer</h1>
-        <p className="text-gray-500">One-click install popular web applications</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Application Installer
+        </h1>
+        <p className="text-gray-500">
+          One-click install popular web applications
+        </p>
       </div>
 
       {/* Available Apps */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {availableApps.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <CubeIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No apps available</h3>
-            <p className="text-gray-500">Applications will appear here when available</p>
-          </div>
-        ) : (
-          availableApps.map((app) => (
-            <Card key={app.id} className="hover:shadow-md transition-shadow">
-              <CardBody>
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    {app.icon ? (
-                      <img src={app.icon} alt={app.name} className="w-8 h-8" />
-                    ) : (
-                      <CubeIcon className="w-8 h-8 text-gray-400" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900">{app.name}</h3>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(
-                          app.category
-                        )}`}
-                      >
-                        {app.category}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 line-clamp-2">{app.description}</p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-xs text-gray-400">v{app.version}</span>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => openInstallModal(app)}
-                      >
-                        Install
-                      </Button>
-                    </div>
-                    {app.requirements && (
-                      <div className="mt-2 text-xs text-gray-400">
-                        {app.requirements.php_version && (
-                          <span>PHP {app.requirements.php_version}+</span>
-                        )}
-                        {app.requirements.database && <span> | MySQL required</span>}
-                      </div>
-                    )}
+        {apps.map((app) => (
+          <Card
+            key={app.name}
+            className="hover:shadow-md transition-shadow cursor-pointer"
+          >
+            <CardBody>
+              <div className="flex items-start space-x-4">
+                <div className="text-4xl">{app.icon}</div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{app.name}</h3>
+                  <p className="text-sm text-gray-500">{app.description}</p>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-xs text-gray-400">
+                      v{app.version}
+                    </span>
+                    <button className="text-sm text-primary-600 hover:text-primary-800 font-medium">
+                      Install
+                    </button>
                   </div>
                 </div>
               </CardBody>
@@ -232,90 +229,53 @@ export default function Apps() {
 
       {/* Installed Apps */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Installed Applications</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          Installed Applications
+        </h2>
         <Card>
           <CardBody className="p-0">
-            {installedApps.length === 0 ? (
-              <div className="text-center py-12">
-                <CubeIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No apps installed</h3>
-                <p className="text-gray-500">Install an application to get started</p>
-              </div>
-            ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Application
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Domain
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Version
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Installed
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {installedApps.map((app) => (
-                    <tr key={app.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <CubeIcon className="w-5 h-5 text-primary-500 mr-3" />
-                          <span className="font-medium text-gray-900">{app.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {app.domain}
-                        {app.path !== '/' && app.path}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {app.version}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(app.installed_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        {app.admin_url && (
-                          <a
-                            href={app.admin_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-600 hover:text-primary-800 mr-3"
-                          >
-                            <Cog6ToothIcon className="w-4 h-4 inline mr-1" />
-                            Manage
-                          </a>
-                        )}
-                        <button
-                          onClick={() => handleUpdate(app)}
-                          className="text-gray-600 hover:text-gray-800 mr-3"
-                        >
-                          <ArrowPathIcon className="w-4 h-4 inline mr-1" />
-                          Update
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedInstalled(app)
-                            setShowUninstallModal(true)
-                          }}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <TrashIcon className="w-4 h-4 inline mr-1" />
-                          Uninstall
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Application
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Domain
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Version
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                    WordPress
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    example.com/blog
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    6.4.2
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <button className="text-primary-600 hover:text-primary-800 mr-3">
+                      Manage
+                    </button>
+                    <button className="text-gray-600 hover:text-gray-800 mr-3">
+                      Update
+                    </button>
+                    <button className="text-red-600 hover:text-red-800">
+                      Uninstall
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </CardBody>
         </Card>
       </div>
@@ -443,5 +403,5 @@ export default function Apps() {
         </div>
       </Modal>
     </div>
-  )
+  );
 }

@@ -1,5 +1,25 @@
 {
   "name": "freepanel",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "prepare": "husky install",
+    "postinstall": "cd frontend && npm install"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.php": [
+      "./vendor/bin/pint"
+    ],
+    "frontend/**/*.{ts,tsx,js,jsx}": [
+      "npm run lint --prefix frontend -- --fix",
+      "npm run format --prefix frontend"
+    ],
+    "frontend/**/*.{json,css,md}": [
+      "npm run format --prefix frontend"
+    ]
+  }
 }

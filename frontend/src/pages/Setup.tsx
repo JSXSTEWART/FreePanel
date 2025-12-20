@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import Button from '../components/common/Button'
-import Input, { PasswordStrength } from '../components/common/Input'
-import Badge from '../components/common/Badge'
-import { Card, CardBody } from '../components/common/Card'
-import toast from 'react-hot-toast'
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Button from "../components/common/Button";
+import Input, { PasswordStrength } from "../components/common/Input";
+import Badge from "../components/common/Badge";
+import { Card, CardBody } from "../components/common/Card";
+import toast from "react-hot-toast";
 import {
   CheckCircleIcon,
   XCircleIcon,
@@ -15,121 +15,128 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   ShieldCheckIcon,
-} from '@heroicons/react/24/outline'
-import setupApi, { SetupStatus, Requirement } from '../api/setup'
+} from "@heroicons/react/24/outline";
+import setupApi, { SetupStatus, Requirement } from "../api/setup";
 
 const steps = [
-  { id: 'welcome', name: 'Welcome', icon: RocketLaunchIcon },
-  { id: 'requirements', name: 'Requirements', icon: ServerIcon },
-  { id: 'admin', name: 'Admin Account', icon: UserIcon },
-  { id: 'server', name: 'Server Config', icon: Cog6ToothIcon },
-  { id: 'complete', name: 'Complete', icon: CheckCircleIcon },
-]
+  { id: "welcome", name: "Welcome", icon: RocketLaunchIcon },
+  { id: "requirements", name: "Requirements", icon: ServerIcon },
+  { id: "admin", name: "Admin Account", icon: UserIcon },
+  { id: "server", name: "Server Config", icon: Cog6ToothIcon },
+  { id: "complete", name: "Complete", icon: CheckCircleIcon },
+];
 
 export default function Setup() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  const [currentStep, setCurrentStep] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
-  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null)
-  const [requirements, setRequirements] = useState<Requirement[]>([])
-  const [allRequirementsMet, setAllRequirementsMet] = useState(false)
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
+  const [requirements, setRequirements] = useState<Requirement[]>([]);
+  const [allRequirementsMet, setAllRequirementsMet] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState({
-    admin_username: '',
-    admin_email: '',
-    admin_password: '',
-    admin_password_confirmation: '',
-    server_hostname: '',
-    server_ip: '',
-    nameservers: ['', '', '', ''],
-  })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+    admin_username: "",
+    admin_email: "",
+    admin_password: "",
+    admin_password_confirmation: "",
+    server_hostname: "",
+    server_ip: "",
+    nameservers: ["", "", "", ""],
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Check setup status on mount
   useEffect(() => {
-    checkSetupStatus()
-  }, [])
+    checkSetupStatus();
+  }, []);
 
   const checkSetupStatus = async () => {
     try {
-      const status = await setupApi.getStatus()
-      setSetupStatus(status)
-      setRequirements(status.requirements)
-      setAllRequirementsMet(status.requirements.every(r => r.status))
+      const status = await setupApi.getStatus();
+      setSetupStatus(status);
+      setRequirements(status.requirements);
+      setAllRequirementsMet(status.requirements.every((r) => r.status));
 
       // If setup not required, redirect to login
       if (!status.setup_required) {
-        navigate('/login')
-        return
+        navigate("/login");
+        return;
       }
     } catch (error) {
-      toast.error('Failed to check setup status')
+      toast.error("Failed to check setup status");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const validateStep = (): boolean => {
-    const newErrors: Record<string, string> = {}
+    const newErrors: Record<string, string> = {};
 
     if (currentStep === 2) {
       // Admin account validation
       if (!formData.admin_username || formData.admin_username.length < 3) {
-        newErrors.admin_username = 'Username must be at least 3 characters'
+        newErrors.admin_username = "Username must be at least 3 characters";
       } else if (!/^[a-z0-9]+$/.test(formData.admin_username)) {
-        newErrors.admin_username = 'Username can only contain lowercase letters and numbers'
+        newErrors.admin_username =
+          "Username can only contain lowercase letters and numbers";
       }
 
-      if (!formData.admin_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email)) {
-        newErrors.admin_email = 'Please enter a valid email address'
+      if (
+        !formData.admin_email ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email)
+      ) {
+        newErrors.admin_email = "Please enter a valid email address";
       }
 
       if (!formData.admin_password || formData.admin_password.length < 8) {
-        newErrors.admin_password = 'Password must be at least 8 characters'
+        newErrors.admin_password = "Password must be at least 8 characters";
       }
 
       if (formData.admin_password !== formData.admin_password_confirmation) {
-        newErrors.admin_password_confirmation = 'Passwords do not match'
+        newErrors.admin_password_confirmation = "Passwords do not match";
       }
     }
 
     if (currentStep === 3) {
       // Server config validation (optional fields, but validate format if provided)
-      if (formData.server_ip && !/^(\d{1,3}\.){3}\d{1,3}$/.test(formData.server_ip)) {
-        newErrors.server_ip = 'Please enter a valid IP address'
+      if (
+        formData.server_ip &&
+        !/^(\d{1,3}\.){3}\d{1,3}$/.test(formData.server_ip)
+      ) {
+        newErrors.server_ip = "Please enter a valid IP address";
       }
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleNext = () => {
     if (currentStep === 1 && !allRequirementsMet) {
-      toast.error('Please ensure all requirements are met before continuing')
-      return
+      toast.error("Please ensure all requirements are met before continuing");
+      return;
     }
 
-    if (!validateStep()) return
+    if (!validateStep()) return;
 
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     }
-  }
+  };
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep(currentStep - 1);
     }
-  }
+  };
 
   const handleComplete = async () => {
-    if (!validateStep()) return
+    if (!validateStep()) return;
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       const response = await setupApi.initialize({
         admin_username: formData.admin_username,
@@ -138,37 +145,38 @@ export default function Setup() {
         admin_password_confirmation: formData.admin_password_confirmation,
         server_hostname: formData.server_hostname || undefined,
         server_ip: formData.server_ip || undefined,
-        nameservers: formData.nameservers.filter(ns => ns.trim()) || undefined,
-      })
+        nameservers:
+          formData.nameservers.filter((ns) => ns.trim()) || undefined,
+      });
 
       if (response.success && response.token) {
         // Store token and user
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("user", JSON.stringify(response.user));
 
-        toast.success('Setup completed successfully!')
-        setCurrentStep(4) // Go to complete step
+        toast.success("Setup completed successfully!");
+        setCurrentStep(4); // Go to complete step
 
         // Redirect after a delay
         setTimeout(() => {
-          navigate('/admin')
-        }, 2000)
+          navigate("/admin");
+        }, 2000);
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Setup failed'
-      toast.error(message)
+      const message = error.response?.data?.message || "Setup failed";
+      toast.error(message);
 
       if (error.response?.data?.errors) {
-        const apiErrors: Record<string, string> = {}
+        const apiErrors: Record<string, string> = {};
         Object.entries(error.response.data.errors).forEach(([key, value]) => {
-          apiErrors[key] = Array.isArray(value) ? value[0] : String(value)
-        })
-        setErrors(apiErrors)
+          apiErrors[key] = Array.isArray(value) ? value[0] : String(value);
+        });
+        setErrors(apiErrors);
       }
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -178,7 +186,7 @@ export default function Setup() {
           <p className="mt-4 text-white">Checking setup status...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -198,10 +206,10 @@ export default function Setup() {
                 <div
                   className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
                     index < currentStep
-                      ? 'bg-green-500 text-white'
+                      ? "bg-green-500 text-white"
                       : index === currentStep
-                      ? 'bg-white text-primary-600'
-                      : 'bg-primary-500/30 text-primary-300'
+                        ? "bg-white text-primary-600"
+                        : "bg-primary-500/30 text-primary-300"
                   }`}
                 >
                   {index < currentStep ? (
@@ -213,7 +221,7 @@ export default function Setup() {
                 {index < steps.length - 1 && (
                   <div
                     className={`w-12 sm:w-20 h-1 mx-2 rounded transition-colors ${
-                      index < currentStep ? 'bg-green-500' : 'bg-primary-500/30'
+                      index < currentStep ? "bg-green-500" : "bg-primary-500/30"
                     }`}
                   />
                 )}
@@ -225,7 +233,7 @@ export default function Setup() {
               <span
                 key={step.id}
                 className={`text-xs ${
-                  index <= currentStep ? 'text-white' : 'text-primary-300'
+                  index <= currentStep ? "text-white" : "text-primary-300"
                 }`}
               >
                 {step.name}
@@ -247,11 +255,13 @@ export default function Setup() {
                   Welcome to FreePanel
                 </h2>
                 <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Thank you for choosing FreePanel! This wizard will help you configure your server
-                  and create your administrator account.
+                  Thank you for choosing FreePanel! This wizard will help you
+                  configure your server and create your administrator account.
                 </p>
                 <div className="bg-blue-50 rounded-lg p-4 text-left max-w-md mx-auto">
-                  <h3 className="font-semibold text-blue-900 mb-2">Setup includes:</h3>
+                  <h3 className="font-semibold text-blue-900 mb-2">
+                    Setup includes:
+                  </h3>
                   <ul className="text-sm text-blue-700 space-y-1">
                     <li className="flex items-center gap-2">
                       <CheckCircleIcon className="w-4 h-4 text-blue-500" />
@@ -282,7 +292,9 @@ export default function Setup() {
                   <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <ServerIcon className="w-8 h-8 text-primary-600" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">System Requirements</h2>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    System Requirements
+                  </h2>
                   <p className="text-gray-600 mt-1">
                     Checking if your server meets all requirements
                   </p>
@@ -293,7 +305,7 @@ export default function Setup() {
                     <div
                       key={index}
                       className={`flex items-center justify-between p-3 rounded-lg ${
-                        req.status ? 'bg-green-50' : 'bg-red-50'
+                        req.status ? "bg-green-50" : "bg-red-50"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -303,13 +315,15 @@ export default function Setup() {
                           <XCircleIcon className="w-5 h-5 text-red-500" />
                         )}
                         <div>
-                          <p className="font-medium text-gray-900">{req.name}</p>
+                          <p className="font-medium text-gray-900">
+                            {req.name}
+                          </p>
                           <p className="text-sm text-gray-500">
                             Required: {req.required}
                           </p>
                         </div>
                       </div>
-                      <Badge variant={req.status ? 'success' : 'danger'}>
+                      <Badge variant={req.status ? "success" : "danger"}>
                         {req.current}
                       </Badge>
                     </div>
@@ -319,8 +333,8 @@ export default function Setup() {
                 {!allRequirementsMet && (
                   <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
                     <p className="text-sm text-yellow-800">
-                      <strong>Note:</strong> Some requirements are not met. Please install the
-                      missing dependencies before continuing.
+                      <strong>Note:</strong> Some requirements are not met.
+                      Please install the missing dependencies before continuing.
                     </p>
                   </div>
                 )}
@@ -334,7 +348,9 @@ export default function Setup() {
                   <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <UserIcon className="w-8 h-8 text-primary-600" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">Administrator Account</h2>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Administrator Account
+                  </h2>
                   <p className="text-gray-600 mt-1">
                     Create your server administrator account
                   </p>
@@ -348,7 +364,9 @@ export default function Setup() {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        admin_username: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''),
+                        admin_username: e.target.value
+                          .toLowerCase()
+                          .replace(/[^a-z0-9]/g, ""),
                       })
                     }
                     error={errors.admin_username}
@@ -361,7 +379,9 @@ export default function Setup() {
                     type="email"
                     placeholder="admin@example.com"
                     value={formData.admin_email}
-                    onChange={(e) => setFormData({ ...formData, admin_email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, admin_email: e.target.value })
+                    }
                     error={errors.admin_email}
                   />
 
@@ -371,7 +391,12 @@ export default function Setup() {
                       type="password"
                       placeholder="Minimum 8 characters"
                       value={formData.admin_password}
-                      onChange={(e) => setFormData({ ...formData, admin_password: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          admin_password: e.target.value,
+                        })
+                      }
                       error={errors.admin_password}
                       showPasswordToggle
                     />
@@ -384,7 +409,10 @@ export default function Setup() {
                     placeholder="Re-enter password"
                     value={formData.admin_password_confirmation}
                     onChange={(e) =>
-                      setFormData({ ...formData, admin_password_confirmation: e.target.value })
+                      setFormData({
+                        ...formData,
+                        admin_password_confirmation: e.target.value,
+                      })
                     }
                     error={errors.admin_password_confirmation}
                     showPasswordToggle
@@ -400,7 +428,9 @@ export default function Setup() {
                   <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Cog6ToothIcon className="w-8 h-8 text-primary-600" />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">Server Configuration</h2>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Server Configuration
+                  </h2>
                   <p className="text-gray-600 mt-1">
                     Configure your server settings (optional)
                   </p>
@@ -411,7 +441,12 @@ export default function Setup() {
                     label="Server Hostname"
                     placeholder="server.example.com"
                     value={formData.server_hostname}
-                    onChange={(e) => setFormData({ ...formData, server_hostname: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        server_hostname: e.target.value,
+                      })
+                    }
                     hint="The hostname for this server"
                   />
 
@@ -419,7 +454,9 @@ export default function Setup() {
                     label="Server IP Address"
                     placeholder="192.168.1.100"
                     value={formData.server_ip}
-                    onChange={(e) => setFormData({ ...formData, server_ip: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, server_ip: e.target.value })
+                    }
                     error={errors.server_ip}
                     hint="Primary IP address of this server"
                   />
@@ -435,9 +472,9 @@ export default function Setup() {
                           placeholder={`ns${index + 1}.example.com`}
                           value={ns}
                           onChange={(e) => {
-                            const newNs = [...formData.nameservers]
-                            newNs[index] = e.target.value
-                            setFormData({ ...formData, nameservers: newNs })
+                            const newNs = [...formData.nameservers];
+                            newNs[index] = e.target.value;
+                            setFormData({ ...formData, nameservers: newNs });
                           }}
                         />
                       ))}
@@ -450,8 +487,9 @@ export default function Setup() {
 
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg max-w-md mx-auto">
                   <p className="text-sm text-gray-600">
-                    <strong>Note:</strong> These settings can be changed later from the admin panel.
-                    You can skip this step if you're not sure.
+                    <strong>Note:</strong> These settings can be changed later
+                    from the admin panel. You can skip this step if you're not
+                    sure.
                   </p>
                 </div>
               </div>
@@ -463,10 +501,12 @@ export default function Setup() {
                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <CheckCircleIcon className="w-10 h-10 text-green-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Setup Complete!</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Setup Complete!
+                </h2>
                 <p className="text-gray-600 mb-6">
-                  FreePanel has been successfully configured. You will be redirected to the admin
-                  dashboard.
+                  FreePanel has been successfully configured. You will be
+                  redirected to the admin dashboard.
                 </p>
                 <div className="bg-green-50 rounded-lg p-4 max-w-md mx-auto">
                   <div className="flex items-center justify-center gap-2 text-green-700">
@@ -517,5 +557,5 @@ export default function Setup() {
         </p>
       </div>
     </div>
-  )
+  );
 }

@@ -19,7 +19,6 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
-        "larastan/larastan": "^2.9",
         "laravel/pint": "^1.13",
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
@@ -55,7 +54,8 @@
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
             "@php artisan migrate --graceful --ansi"
         ],
-        "lint": "./vendor/bin/pint --test"
+        "lint": "./vendor/bin/pint --test",
+        "test": "./vendor/bin/phpunit"
     },
     "extra": {
         "laravel": {

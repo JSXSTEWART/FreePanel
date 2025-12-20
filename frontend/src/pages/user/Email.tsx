@@ -1,25 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Card, CardBody } from '../../components/common/Card'
-import Button from '../../components/common/Button'
-import Modal, { ModalBody, ModalFooter } from '../../components/common/Modal'
-import Input from '../../components/common/Input'
-import Badge from '../../components/common/Badge'
-import EmptyState from '../../components/common/EmptyState'
-import ConfirmDialog from '../../components/common/ConfirmDialog'
-import toast from 'react-hot-toast'
-import { emailApi, EmailAccount, EmailForwarder, EmailAutoresponder } from '../../api'
-import { QuotaBar } from '../../components/plan'
-import {
-  PlusIcon,
-  EnvelopeIcon,
-  ArrowPathIcon,
-  TrashIcon,
-  ArrowsRightLeftIcon,
-  ChatBubbleBottomCenterTextIcon,
-  KeyIcon,
-} from '@heroicons/react/24/outline'
-
-type TabType = 'accounts' | 'forwarders' | 'autoresponders'
+import { Card, CardBody } from "../../components/common/Card";
+import Button from "../../components/common/Button";
+import { PlusIcon, EnvelopeIcon } from "@heroicons/react/24/outline";
 
 export default function Email() {
   const [activeTab, setActiveTab] = useState<TabType>('accounts')
@@ -223,7 +204,9 @@ export default function Email() {
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Email Accounts</h1>
-          <p className="text-gray-500">Manage your email accounts and forwarders</p>
+          <p className="text-gray-500">
+            Manage your email accounts and forwarders
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={fetchData}>
@@ -259,121 +242,66 @@ export default function Email() {
 
       <Card>
         <CardBody className="p-0">
-          {activeTab === 'accounts' && (
-            accounts.length === 0 ? (
-              <EmptyState title="No email accounts" description="Create your first email account to get started." action={{ label: 'Create Email Account', onClick: () => setShowCreateModal(true) }} />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quota Used</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {accounts.map((account) => (
-                      <tr key={account.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <EnvelopeIcon className="w-5 h-5 text-gray-400 mr-3" />
-                            <span className="font-medium text-gray-900">{account.email}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="w-40">
-                            <QuotaBar used={account.quota_used} limit={account.quota * 1024 * 1024} size="sm" showValues />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(account.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button onClick={() => setShowPasswordModal(account)} className="text-primary-600 hover:text-primary-800 mr-3">
-                            <KeyIcon className="w-5 h-5 inline mr-1" />Password
-                          </button>
-                          <button onClick={() => window.open('/webmail', '_blank')} className="text-gray-600 hover:text-gray-800 mr-3">Webmail</button>
-                          <button onClick={() => setDeleteConfirm({ type: 'accounts', item: account })} className="text-red-600 hover:text-red-800">
-                            <TrashIcon className="w-5 h-5 inline" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-
-          {activeTab === 'forwarders' && (
-            forwarders.length === 0 ? (
-              <EmptyState title="No forwarders" description="Create a forwarder to redirect emails to another address." action={{ label: 'Create Forwarder', onClick: () => setShowCreateModal(true) }} />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">From</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">To</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {forwarders.map((forwarder) => (
-                      <tr key={forwarder.id}>
-                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{forwarder.source}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-500">{forwarder.destination}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(forwarder.created_at).toLocaleDateString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button onClick={() => setDeleteConfirm({ type: 'forwarders', item: forwarder })} className="text-red-600 hover:text-red-800">
-                            <TrashIcon className="w-5 h-5 inline" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
-
-          {activeTab === 'autoresponders' && (
-            autoresponders.length === 0 ? (
-              <EmptyState title="No autoresponders" description="Set up automatic replies for your email addresses." action={{ label: 'Create Autoresponder', onClick: () => setShowCreateModal(true) }} />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subject</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {autoresponders.map((ar) => (
-                      <tr key={ar.id}>
-                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{ar.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-gray-500">{ar.subject}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={ar.is_active ? 'success' : 'default'}>{ar.is_active ? 'Active' : 'Inactive'}</Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <button onClick={() => setDeleteConfirm({ type: 'autoresponders', item: ar })} className="text-red-600 hover:text-red-800">
-                            <TrashIcon className="w-5 h-5 inline" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )
-          )}
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Quota Used
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <EnvelopeIcon className="w-5 h-5 text-gray-400 mr-3" />
+                    <span className="font-medium text-gray-900">
+                      info@example.com
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="w-32">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>125 MB</span>
+                      <span>/ 1 GB</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className="bg-blue-500 h-1.5 rounded-full"
+                        style={{ width: "12.5%" }}
+                      ></div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                    Active
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <button className="text-primary-600 hover:text-primary-800 mr-3">
+                    Manage
+                  </button>
+                  <button className="text-gray-600 hover:text-gray-800 mr-3">
+                    Webmail
+                  </button>
+                  <button className="text-red-600 hover:text-red-800">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </CardBody>
       </Card>
 
@@ -433,5 +361,5 @@ export default function Email() {
 
       <ConfirmDialog isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} onConfirm={handleDelete} title="Delete Confirmation" message={`Are you sure you want to delete this ${deleteConfirm?.type.slice(0, -1)}? This action cannot be undone.`} confirmLabel={submitting ? 'Deleting...' : 'Delete'} variant="danger" />
     </div>
-  )
+  );
 }
