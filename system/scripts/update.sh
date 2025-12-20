@@ -91,8 +91,16 @@ update_dependencies() {
     log_info "Updating Node.js dependencies and rebuilding frontend..."
 
     cd "$FREEPANEL_DIR/frontend"
-    sudo -u $FREEPANEL_USER npm ci --no-audit
-    sudo -u $FREEPANEL_USER npm run build
+
+    # Use npm ci if package-lock.json exists, otherwise npm install
+    if [ -f "package-lock.json" ]; then
+        sudo -u $FREEPANEL_USER npm ci --no-audit --no-fund
+    else
+        sudo -u $FREEPANEL_USER npm install --no-audit --no-fund
+    fi
+
+    # Use build:prod to skip TypeScript check for faster builds
+    sudo -u $FREEPANEL_USER npm run build:prod
 
     log_success "Dependencies updated"
 }
