@@ -11,15 +11,18 @@ services:
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      - ./:/var/www/html
-      - ./storage:/var/www/html/storage
-      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+      - ./:/var/www/html:delegated
+      - ./storage:/var/www/html/storage:delegated
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache:delegated
+      - /var/www/html/vendor
+      - /var/www/html/node_modules
     ports:
       - "${APP_PORT:-8080}:80"
       - "${VITE_PORT:-5173}:5173"
     environment:
       - APP_ENV=${APP_ENV:-local}
       - APP_DEBUG=${APP_DEBUG:-true}
+      - APP_KEY=${APP_KEY}
       - DB_CONNECTION=mysql
       - DB_HOST=mysql
       - DB_PORT=3306
