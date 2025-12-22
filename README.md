@@ -49,12 +49,12 @@ A modern, open-source web hosting control panel built with Laravel and React.
 
 **FreePanel requires a dedicated server or VPS.** It cannot run in:
 
-| Environment | Reason |
-|-------------|--------|
-| Google Colab | No persistent services, no systemd, ephemeral filesystem |
-| Shared Hosting | No root access, cannot install system services |
-| Docker (partial) | Requires multiple containers for full functionality |
-| Serverless/Lambda | Not designed for stateless execution |
+| Environment | Status | Notes |
+|-------------|--------|-------|
+| Docker | ✅ Supported | **Recommended for development.** Full Docker setup available with docker-compose. See [DOCKER.md](DOCKER.md) |
+| Google Colab | ❌ Not Supported | No persistent services, no systemd, ephemeral filesystem |
+| Shared Hosting | ❌ Not Supported | No root access, cannot install system services |
+| Serverless/Lambda | ❌ Not Supported | Not designed for stateless execution |
 
 **Required System Services:**
 - **Web Server** (Apache/Nginx) - Virtual host management
@@ -68,7 +68,29 @@ These services require a full Linux server environment with persistent storage a
 
 ## Installation
 
-### Quick Install on AlmaLinux/Rocky Linux (Recommended)
+### Docker Installation (Recommended for Development)
+
+The easiest way to get started with FreePanel is using Docker:
+
+```bash
+git clone https://github.com/JSXSTEWART/FreePanel.git
+cd FreePanel
+chmod +x docker-setup.sh
+./docker-setup.sh
+```
+
+Access the application at `http://localhost:8080` and Mailpit at `http://localhost:8025`.
+
+**Quick Docker commands:**
+```bash
+docker-compose up -d       # Start all services
+docker-compose down        # Stop all services
+docker-compose logs -f     # View logs
+```
+
+For detailed Docker setup, configuration, and troubleshooting, see [DOCKER.md](DOCKER.md).
+
+### Production Installation on AlmaLinux/Rocky Linux
 
 Run this single command on a fresh AlmaLinux 8/9 or Rocky Linux 8/9 server:
 
@@ -90,7 +112,7 @@ curl -sSL https://raw.githubusercontent.com/JSXSTEWART/FreePanel/main/system/scr
 
 **Installation time:** ~10-15 minutes depending on server speed
 
-### Quick Install on Ubuntu/Debian
+### Production Installation on Ubuntu/Debian
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/JSXSTEWART/FreePanel/main/system/scripts/install.sh | sudo bash

@@ -1,0 +1,66 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Dependencies
+/vendor
+/node_modules
+/frontend/node_modules
+
+# Build artifacts
+/public/build
+/public/hot
+/public/storage
+/frontend/dist
+
+# Storage
+/storage/*.key
+/storage/pail
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea
+.vscode
+.phpactor.json
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Testing
+.phpunit.result.cache
+.phpunit.cache
+/coverage
+
+# Logs
+npm-debug.log
+yarn-error.log
+*.log
+
+# Laravel specific
+bootstrap/cache/*.php
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+
+# CI/CD
+.github
+.husky
+
+# Documentation
+*.md
+!README.md
+
+# Docker
+docker-compose.override.yml
+compose.yaml
+
+# Temporary files
+/tmp
+*.tmp

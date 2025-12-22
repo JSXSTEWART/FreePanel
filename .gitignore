@@ -9,6 +9,10 @@
 /.env.testing
 /.env.backup
 /.env.production
+
+# Docker
+compose.yaml
+docker-compose.override.yml
 /.phpactor.json
 /.phpunit.result.cache
 /Homestead.json
