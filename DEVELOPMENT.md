@@ -24,8 +24,27 @@ This guide provides a complete reference for the FreePanel development workflow,
 - **npm**: Latest stable version
 - **Git**: For version control
 - **SQLite**: For testing (or MySQL/MariaDB for production)
+- **Docker**: (Optional) For containerized development
 
-### Clone & Install
+### Option 1: Docker Setup (Recommended)
+
+The quickest way to get started:
+
+```bash
+# Clone the repository
+git clone https://github.com/JSXSTEWART/FreePanel.git
+cd FreePanel
+
+# Run the setup script
+chmod +x docker-setup.sh
+./docker-setup.sh
+
+# Access at http://localhost:8080
+```
+
+See [DOCKER_QUICK_START.md](DOCKER_QUICK_START.md) for more Docker commands.
+
+### Option 2: Local Setup
 
 ```bash
 # Clone the repository
