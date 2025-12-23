@@ -39,7 +39,7 @@ The application **orchestrates system services** on Linux servers:
 ### Instant Setup
 
 ```bash
-# Clone and install
+# Clone and install (adjust URL for your fork if needed)
 git clone https://github.com/JSXSTEWART/FreePanel.git
 cd FreePanel
 
@@ -1181,9 +1181,9 @@ protected $casts = [
 
 **Solution**:
 ```bash
-# For development (Linux)
-sudo chown -R $USER:$USER /home/runner/work/FreePanel/FreePanel
-chmod -R 755 /home/runner/work/FreePanel/FreePanel
+# For development (Linux) - use your actual project path
+sudo chown -R $USER:$USER $(pwd)
+chmod -R 755 $(pwd)
 chmod -R 775 storage bootstrap/cache
 
 # For production (AlmaLinux/Rocky Linux)
@@ -1409,6 +1409,8 @@ composer install --optimize-autoloader --no-dev  # Install production dependenci
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: 2025-12-23  
+**Version**: 1.0.0 (Initial Release)  
+**Last Updated**: December 2025  
 **Maintainer**: FreePanel Development Team
+
+> **Note**: This document is actively maintained. For the latest version, see the repository's main branch.
