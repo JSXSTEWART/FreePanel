@@ -1,0 +1,904 @@
+{
+  "mcpVersion": "1.0",
+  "name": "FreePanel",
+  "description": "Modern open-source web hosting control panel with Laravel backend and React frontend",
+  "version": "1.0.0",
+  "servers": [
+    {
+      "name": "freepanel-api",
+      "type": "http",
+      "description": "FreePanel REST API for hosting management operations",
+      "baseUrl": "${FREEPANEL_API_URL}",
+      "authentication": {
+        "type": "bearer",
+        "token": "${FREEPANEL_API_TOKEN}",
+        "header": "Authorization"
+      },
+      "tools": [
+        {
+          "name": "create_account",
+          "description": "Create a new hosting account with specified package and credentials",
+          "endpoint": "/api/v1/accounts",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "username": {
+                "type": "string",
+                "description": "Account username"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Account email address"
+              },
+              "password": {
+                "type": "string",
+                "description": "Account password"
+              },
+              "package_id": {
+                "type": "integer",
+                "description": "Hosting package ID"
+              }
+            },
+            "required": ["username", "email", "password", "package_id"]
+          }
+        },
+        {
+          "name": "list_accounts",
+          "description": "List all hosting accounts with optional filtering",
+          "endpoint": "/api/v1/accounts",
+          "method": "GET",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer",
+                "description": "Page number for pagination"
+              },
+              "per_page": {
+                "type": "integer",
+                "description": "Number of results per page"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["active", "suspended", "pending"],
+                "description": "Filter by account status"
+              }
+            }
+          }
+        },
+        {
+          "name": "get_account",
+          "description": "Get detailed information about a specific hosting account",
+          "endpoint": "/api/v1/accounts/{id}",
+          "method": "GET",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Account ID"
+              }
+            },
+            "required": ["id"]
+          }
+        },
+        {
+          "name": "suspend_account",
+          "description": "Suspend a hosting account",
+          "endpoint": "/api/v1/accounts/{id}/suspend",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Account ID"
+              },
+              "reason": {
+                "type": "string",
+                "description": "Reason for suspension"
+              }
+            },
+            "required": ["id"]
+          }
+        },
+        {
+          "name": "create_domain",
+          "description": "Add a domain to an existing hosting account",
+          "endpoint": "/api/v1/domains",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "integer",
+                "description": "Account ID"
+              },
+              "name": {
+                "type": "string",
+                "description": "Domain name (e.g., example.com)"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["primary", "addon", "subdomain", "parked"],
+                "description": "Domain type"
+              }
+            },
+            "required": ["account_id", "name", "type"]
+          }
+        },
+        {
+          "name": "list_domains",
+          "description": "List all domains or domains for a specific account",
+          "endpoint": "/api/v1/domains",
+          "method": "GET",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "integer",
+                "description": "Filter by account ID"
+              }
+            }
+          }
+        },
+        {
+          "name": "create_ssl_certificate",
+          "description": "Create or renew SSL certificate for a domain using Let's Encrypt",
+          "endpoint": "/api/v1/ssl/certificates",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "domain_id": {
+                "type": "integer",
+                "description": "Domain ID"
+              },
+              "provider": {
+                "type": "string",
+                "enum": ["letsencrypt", "custom"],
+                "description": "SSL certificate provider"
+              }
+            },
+            "required": ["domain_id"]
+          }
+        },
+        {
+          "name": "list_ssl_certificates",
+          "description": "List SSL certificates with expiration status",
+          "endpoint": "/api/v1/ssl/certificates",
+          "method": "GET",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "expiring_soon": {
+                "type": "boolean",
+                "description": "Filter certificates expiring within 30 days"
+              }
+            }
+          }
+        },
+        {
+          "name": "create_database",
+          "description": "Create a new MySQL/MariaDB database",
+          "endpoint": "/api/v1/databases",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "integer",
+                "description": "Account ID"
+              },
+              "name": {
+                "type": "string",
+                "description": "Database name"
+              }
+            },
+            "required": ["account_id", "name"]
+          }
+        },
+        {
+          "name": "create_email_account",
+          "description": "Create an email account for a domain",
+          "endpoint": "/api/v1/email/accounts",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "domain_id": {
+                "type": "integer",
+                "description": "Domain ID"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Email address (e.g., user@example.com)"
+              },
+              "password": {
+                "type": "string",
+                "description": "Email account password"
+              },
+              "quota": {
+                "type": "integer",
+                "description": "Mailbox quota in MB (0 for unlimited)"
+              }
+            },
+            "required": ["domain_id", "email", "password"]
+          }
+        },
+        {
+          "name": "create_backup",
+          "description": "Create a backup for an account",
+          "endpoint": "/api/v1/backups",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "integer",
+                "description": "Account ID"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["full", "files", "databases", "email"],
+                "description": "Backup type"
+              }
+            },
+            "required": ["account_id", "type"]
+          }
+        },
+        {
+          "name": "list_backups",
+          "description": "List available backups for an account",
+          "endpoint": "/api/v1/backups",
+          "method": "GET",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "integer",
+                "description": "Account ID"
+              }
+            },
+            "required": ["account_id"]
+          }
+        },
+        {
+          "name": "restore_backup",
+          "description": "Restore an account from a backup",
+          "endpoint": "/api/v1/backups/{id}/restore",
+          "method": "POST",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Backup ID"
+              }
+            },
+            "required": ["id"]
+          }
+        },
+        {
+          "name": "check_quotas",
+          "description": "Check resource quota usage for an account",
+          "endpoint": "/api/v1/quotas/{account_id}",
+          "method": "GET",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "integer",
+                "description": "Account ID"
+              }
+            },
+            "required": ["account_id"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "freepanel-webhooks",
+      "type": "other",
+      "description": "FreePanel webhook integration for event-driven automation",
+      "webhookEndpoint": "${FREEPANEL_API_URL}/api/v1/webhooks/zapier/receive",
+      "healthCheckEndpoint": "${FREEPANEL_API_URL}/api/v1/webhooks/zapier/health",
+      "authentication": {
+        "type": "hmac-sha256",
+        "headers": {
+          "X-Zapier-Signature": "HMAC-SHA256 signature of payload.timestamp",
+          "X-Zapier-Timestamp": "ISO 8601 or Unix timestamp"
+        },
+        "signingDetails": {
+          "algorithm": "HMAC-SHA256",
+          "signingString": "payload.timestamp",
+          "timestampToleranceSeconds": 300
+        }
+      },
+      "events": [
+        {
+          "name": "account.created",
+          "description": "Triggered when a new hosting account is created",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "account.created"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "ISO 8601 timestamp"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "description": "Account ID"
+                  },
+                  "username": {
+                    "type": "string",
+                    "description": "Account username"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Account email"
+                  },
+                  "package_id": {
+                    "type": "integer",
+                    "description": "Hosting package ID"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "account.suspended",
+          "description": "Triggered when an account is suspended",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "account.suspended"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for suspension"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "account.updated",
+          "description": "Triggered when account details are updated",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "account.updated"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "changed_fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "account.deleted",
+          "description": "Triggered when an account is permanently deleted",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "account.deleted"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "deleted_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "domain.created",
+          "description": "Triggered when a domain is added to an account",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "domain.created"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "account_id": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Domain name"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "domain.deleted",
+          "description": "Triggered when a domain is removed from an account",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "domain.deleted"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "account_id": {
+                    "type": "integer"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "deleted_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ssl.expiring",
+          "description": "Triggered when an SSL certificate is expiring soon (within 30 days)",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "ssl.expiring"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "certificate_id": {
+                    "type": "integer"
+                  },
+                  "domain_name": {
+                    "type": "string"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "days_until_expiry": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "ssl.renewed",
+          "description": "Triggered when an SSL certificate is successfully renewed",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "ssl.renewed"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "certificate_id": {
+                    "type": "integer"
+                  },
+                  "domain_name": {
+                    "type": "string"
+                  },
+                  "expires_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "backup.completed",
+          "description": "Triggered when a backup operation completes successfully",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "backup.completed"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "backup_id": {
+                    "type": "integer"
+                  },
+                  "account_id": {
+                    "type": "integer"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["full", "files", "databases", "email"]
+                  },
+                  "size_bytes": {
+                    "type": "integer"
+                  },
+                  "completed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "backup.failed",
+          "description": "Triggered when a backup operation fails",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "backup.failed"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "backup_id": {
+                    "type": "integer"
+                  },
+                  "account_id": {
+                    "type": "integer"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "error": {
+                    "type": "string",
+                    "description": "Error message"
+                  },
+                  "failed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "quota.exceeded",
+          "description": "Triggered when an account exceeds its resource quota",
+          "payloadSchema": {
+            "type": "object",
+            "properties": {
+              "event": {
+                "type": "string",
+                "const": "quota.exceeded"
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "data": {
+                "type": "object",
+                "properties": {
+                  "account_id": {
+                    "type": "integer"
+                  },
+                  "resource_type": {
+                    "type": "string",
+                    "enum": ["disk_space", "bandwidth", "databases", "email_accounts", "domains"]
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "usage": {
+                    "type": "integer"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "payloadFormats": [
+        {
+          "name": "json",
+          "contentType": "application/json",
+          "description": "Standard JSON format (default)"
+        },
+        {
+          "name": "form-encoded",
+          "contentType": "application/x-www-form-urlencoded",
+          "description": "URL-encoded form data"
+        },
+        {
+          "name": "xml",
+          "contentType": "application/xml",
+          "description": "XML format for legacy systems"
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "name": "api_documentation",
+      "type": "documentation",
+      "description": "FreePanel API documentation and usage examples",
+      "uri": "https://github.com/JSXSTEWART/FreePanel/blob/main/README.md"
+    },
+    {
+      "name": "webhook_integration_guide",
+      "type": "documentation",
+      "description": "Comprehensive guide for webhook integration",
+      "uri": "https://github.com/JSXSTEWART/FreePanel/blob/main/ZAPIER_WEBHOOK_INTEGRATION.md"
+    },
+    {
+      "name": "webhook_security_guide",
+      "type": "documentation",
+      "description": "Security implementation for webhook authentication",
+      "uri": "https://github.com/JSXSTEWART/FreePanel/blob/main/WEBHOOK_SECURITY.md"
+    },
+    {
+      "name": "vscode_mcp_setup",
+      "type": "documentation",
+      "description": "Guide for setting up MCP in Visual Studio Code",
+      "uri": "https://github.com/JSXSTEWART/FreePanel/blob/main/VSCODE_MCP_SETUP.md"
+    },
+    {
+      "name": "development_guide",
+      "type": "documentation",
+      "description": "Development setup and contributing guide",
+      "uri": "https://github.com/JSXSTEWART/FreePanel/blob/main/DEVELOPMENT.md"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "create_hosting_account",
+      "description": "Create a new hosting account with recommended defaults",
+      "arguments": [
+        {
+          "name": "username",
+          "description": "Username for the hosting account",
+          "required": true
+        },
+        {
+          "name": "email",
+          "description": "Email address for the account",
+          "required": true
+        },
+        {
+          "name": "package",
+          "description": "Hosting package name (e.g., 'basic', 'premium')",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "setup_domain_with_ssl",
+      "description": "Add a domain and automatically configure SSL certificate",
+      "arguments": [
+        {
+          "name": "account_id",
+          "description": "Account ID to add the domain to",
+          "required": true
+        },
+        {
+          "name": "domain",
+          "description": "Domain name to configure",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "check_system_health",
+      "description": "Check system health including expiring SSL certificates, quota usage, and backup status",
+      "arguments": []
+    }
+  ],
+  "configuration": {
+    "environmentVariables": [
+      {
+        "name": "FREEPANEL_API_URL",
+        "description": "Base URL for the FreePanel API (e.g., https://panel.example.com)",
+        "required": true
+      },
+      {
+        "name": "FREEPANEL_API_TOKEN",
+        "description": "Bearer token for API authentication",
+        "required": true,
+        "secret": true
+      },
+      {
+        "name": "ZAPIER_WEBHOOK_SECRET",
+        "description": "Secret key for HMAC-SHA256 webhook signature verification",
+        "required": false,
+        "secret": true
+      }
+    ],
+    "features": {
+      "multiTenant": true,
+      "rateLimiting": true,
+      "webhookSignatureVerification": true,
+      "asyncOperations": true
+    }
+  },
+  "capabilities": {
+    "accountManagement": {
+      "create": true,
+      "read": true,
+      "update": true,
+      "delete": true,
+      "suspend": true,
+      "restore": true
+    },
+    "domainManagement": {
+      "create": true,
+      "list": true,
+      "delete": true,
+      "types": ["primary", "addon", "subdomain", "parked"]
+    },
+    "sslManagement": {
+      "providers": ["letsencrypt", "custom"],
+      "autoRenewal": true,
+      "expirationWarnings": true
+    },
+    "emailManagement": {
+      "createAccounts": true,
+      "setQuotas": true,
+      "protocols": ["IMAP", "POP3", "SMTP"]
+    },
+    "backupManagement": {
+      "types": ["full", "files", "databases", "email"],
+      "scheduled": true,
+      "manual": true,
+      "restore": true
+    },
+    "databaseManagement": {
+      "engines": ["MySQL", "MariaDB"],
+      "createDatabases": true,
+      "createUsers": true,
+      "managePrivileges": true
+    },
+    "systemServices": {
+      "webServers": ["Apache", "Nginx"],
+      "mailServers": ["Dovecot", "Exim"],
+      "dnsServer": "BIND",
+      "ftpServer": "Pure-FTPd"
+    }
+  },
+  "metadata": {
+    "repository": "https://github.com/JSXSTEWART/FreePanel",
+    "license": "MIT",
+    "author": "JSXSTEWART",
+    "techStack": {
+      "backend": "Laravel 11 (PHP 8.2+)",
+      "frontend": "React 18 + TypeScript",
+      "database": "MySQL/MariaDB",
+      "cache": "Redis"
+    },
+    "supportedOS": [
+      "AlmaLinux 8/9",
+      "Rocky Linux 8/9",
+      "RHEL 8/9",
+      "Ubuntu 22.04+",
+      "Debian 12+"
+    ]
+  }
+}
