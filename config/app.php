@@ -36,6 +36,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | HTTPS enforcement
+    |--------------------------------------------------------------------------
+    |
+    | When true, the ForceHttps middleware redirects http:// requests to
+    | https:// and emits a Strict-Transport-Security header. Defaults to
+    | true in production, false elsewhere. Set APP_FORCE_HTTPS=false if a
+    | trusted reverse proxy terminates TLS and forwards internally.
+    */
+
+    'force_https' => env('APP_FORCE_HTTPS', env('APP_ENV', 'production') === 'production'),
+    'hsts_max_age' => (int) env('APP_HSTS_MAX_AGE', 31_536_000),
+    'hsts_include_subdomains' => (bool) env('APP_HSTS_INCLUDE_SUBDOMAINS', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Server Identity
     |--------------------------------------------------------------------------
     */

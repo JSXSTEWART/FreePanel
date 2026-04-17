@@ -121,6 +121,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Optional Features
+    |--------------------------------------------------------------------------
+    |
+    | These surface high-risk functionality to hosting customers. Keep them
+    | off by default; operators who accept the risk can opt in per host.
+    | - terminal: web terminal that shells into the account's Linux user.
+    | - cron_shell_execution: allow generic `bash -c`/`php -r` style cron
+    |   commands rather than the conservative allowlist.
+    */
+
+    'features' => [
+        'terminal' => env('FREEPANEL_FEATURE_TERMINAL', false),
+        'cron_shell_execution' => env('FREEPANEL_FEATURE_CRON_SHELL', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Backup Settings
     |--------------------------------------------------------------------------
     */

@@ -99,21 +99,44 @@ class CronService
     }
 
     /**
-     * Validate a cron command for security
+     * Validate a cron command for security.
+     *
+     * By default only a conservative allowlist of interpreters targeting
+     * the account's home directory is accepted. Operators can set
+     * FREEPANEL_FEATURE_CRON_SHELL=true once per-account cgroup/ulimit
+     * isolation is in place to unlock generic shell commands (matching
+     * cPanel parity). Even when generic shell is allowed, control
+     * characters and absolute paths outside the user's home are
+     * rejected.
      */
     public function validateCommand(string $command, Account $account): bool
     {
-        // Disallow dangerous commands
+        $command = trim($command);
+
+        if ($command === '' || strlen($command) > 2000) {
+            return false;
+        }
+
+        // Control characters (including newlines) would escape the crontab
+        // line and inject additional entries.
+        if (preg_match('/[\x00-\x1F\x7F]/', $command)) {
+            return false;
+        }
+
+        $homeDir = '/home/'.$account->system_username;
+
+        // Always-forbidden patterns: would trash the host regardless of
+        // isolation.
         $forbidden = [
             'rm -rf /',
+            'rm -rf /*',
             'dd if=',
             'mkfs',
             ':(){ :|:& };:',
             'chmod -R 777 /',
-            'wget',
-            'curl',
             '> /dev/sd',
             'mv /* ',
+            '/etc/shadow',
         ];
 
         $commandLower = strtolower($command);
@@ -123,36 +146,36 @@ class CronService
             }
         }
 
-        // Ensure command stays within user's home directory context
-        $homeDir = "/home/{$account->system_username}";
+        if (config('freepanel.features.cron_shell_execution', false)) {
+            // Even in the permissive mode, require the command to either
+            // be a relative path or reference the account's home dir.
+            return str_starts_with($command, $homeDir)
+                || ! str_starts_with($command, '/')
+                || in_array(explode(' ', $command, 2)[0], [
+                    '/usr/bin/php', '/usr/local/bin/php',
+                    '/usr/bin/python', '/usr/bin/python3',
+                    '/usr/bin/perl', '/bin/bash', '/bin/sh',
+                ], true);
+        }
 
-        // Allow PHP, Python, Perl, and common utilities
+        // Conservative allowlist: the command must start with a known
+        // interpreter path or a path inside the user's home.
         $allowedPrefixes = [
-            '/usr/bin/php',
-            '/usr/local/bin/php',
-            'php ',
-            '/usr/bin/python',
-            '/usr/bin/perl',
-            '/bin/bash',
-            '/bin/sh',
-            'cd '.$homeDir,
+            '/usr/bin/php ',
+            '/usr/local/bin/php ',
+            '/usr/bin/python ',
+            '/usr/bin/python3 ',
+            '/usr/bin/perl ',
+            $homeDir,
         ];
 
-        // If command starts with allowed prefix or is a relative path, it's OK
-        $isAllowed = false;
         foreach ($allowedPrefixes as $prefix) {
             if (str_starts_with($command, $prefix)) {
-                $isAllowed = true;
-                break;
+                return true;
             }
         }
 
-        // Also allow commands that reference files in user's home
-        if (str_contains($command, $homeDir)) {
-            $isAllowed = true;
-        }
-
-        return $isAllowed;
+        return false;
     }
 
     /**

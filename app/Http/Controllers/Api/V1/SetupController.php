@@ -3,17 +3,39 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Models\Package;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
 class SetupController extends Controller
 {
+    /**
+     * Absolute path to the marker file that records a completed setup.
+     * If this file exists, `initialize` will refuse to run — even if the
+     * admin user is deleted from the database by a separate bug.
+     */
+    protected function setupLockPath(): string
+    {
+        return storage_path('app/setup.lock');
+    }
+
+    /**
+     * Absolute path to the one-time install token. The server operator
+     * must create this file (e.g. `php artisan freepanel:install-token`)
+     * before initial setup can run. This proves shell access to the host
+     * and prevents anyone who can merely reach the HTTP endpoint from
+     * seizing admin.
+     */
+    protected function installTokenPath(): string
+    {
+        return storage_path('app/install.token');
+    }
+
     /**
      * Check if initial setup is required
      */
@@ -21,6 +43,7 @@ class SetupController extends Controller
     {
         // Check if any admin user exists
         $hasAdmin = User::where('role', 'admin')->exists();
+        $setupLocked = file_exists($this->setupLockPath());
 
         // Check if default package exists
         $hasDefaultPackage = Package::where('is_default', true)->exists();
@@ -29,8 +52,10 @@ class SetupController extends Controller
         $requirements = $this->checkRequirements();
 
         return response()->json([
-            'setup_required' => !$hasAdmin,
+            'setup_required' => ! $hasAdmin && ! $setupLocked,
             'has_admin' => $hasAdmin,
+            'setup_locked' => $setupLocked,
+            'install_token_present' => file_exists($this->installTokenPath()),
             'has_default_package' => $hasDefaultPackage,
             'requirements' => $requirements,
             'version' => config('app.version', '1.0.0'),
@@ -46,7 +71,7 @@ class SetupController extends Controller
 
         return response()->json([
             'requirements' => $requirements,
-            'all_met' => collect($requirements)->every(fn($r) => $r['status']),
+            'all_met' => collect($requirements)->every(fn ($r) => $r['status']),
         ]);
     }
 
@@ -55,12 +80,46 @@ class SetupController extends Controller
      */
     public function initialize(Request $request)
     {
-        // Check if setup already completed
+        // 1. Refuse if a previous setup has already completed, even if the
+        //    admin user was later deleted from the database.
+        if (file_exists($this->setupLockPath())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Setup has already been completed. To re-run setup, an operator must clear the setup lock on the host.',
+            ], 409);
+        }
+
+        // 2. Refuse if an admin already exists (first-line defense).
         if (User::where('role', 'admin')->exists()) {
+            // Self-heal: the lock should exist. Write it so future attempts
+            // are caught by the fast path above.
+            $this->writeSetupLock();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Setup has already been completed.',
-            ], 400);
+            ], 409);
+        }
+
+        // 3. Require a one-time install token written to disk by the
+        //    operator. This proves shell access and prevents anyone who
+        //    can merely reach the HTTP endpoint from seizing admin.
+        $tokenFile = $this->installTokenPath();
+        if (! file_exists($tokenFile)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Install token not present. Run `php artisan freepanel:install-token` on the server to generate one.',
+            ], 403);
+        }
+
+        $expectedToken = trim((string) @file_get_contents($tokenFile));
+        $providedToken = (string) $request->input('install_token', '');
+
+        if ($expectedToken === '' || ! hash_equals($expectedToken, $providedToken)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid install token.',
+            ], 403);
         }
 
         // Validate input
@@ -96,7 +155,7 @@ class SetupController extends Controller
             ]);
 
             // Create default package if not exists
-            if (!Package::where('is_default', true)->exists()) {
+            if (! Package::where('is_default', true)->exists()) {
                 Package::create([
                     'name' => 'Default',
                     'description' => 'Default hosting package',
@@ -129,6 +188,13 @@ class SetupController extends Controller
 
             DB::commit();
 
+            // Mark setup as complete on disk and destroy the one-time
+            // install token so it can't be replayed. These failing is
+            // non-fatal — the DB-level admin check still gates future
+            // attempts — but surface a warning in logs if they do.
+            $this->writeSetupLock();
+            $this->consumeInstallToken();
+
             // Generate token for auto-login
             $token = $admin->createToken('api')->plainTextToken;
 
@@ -150,7 +216,7 @@ class SetupController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Setup failed: ' . $e->getMessage(),
+                'message' => 'Setup failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -231,12 +297,50 @@ class SetupController extends Controller
     }
 
     /**
+     * Record that setup has completed by writing a small marker file.
+     */
+    private function writeSetupLock(): void
+    {
+        $path = $this->setupLockPath();
+        $dir = dirname($path);
+
+        if (! is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        $payload = json_encode([
+            'completed_at' => now()->toIso8601String(),
+            'version' => config('app.version', '1.0.0'),
+        ]);
+
+        if (@file_put_contents($path, $payload, LOCK_EX) === false) {
+            \Log::warning('Failed to write setup lock file', ['path' => $path]);
+
+            return;
+        }
+
+        @chmod($path, 0600);
+    }
+
+    /**
+     * Remove the one-time install token once setup has consumed it.
+     */
+    private function consumeInstallToken(): void
+    {
+        $path = $this->installTokenPath();
+        if (file_exists($path) && ! @unlink($path)) {
+            \Log::warning('Failed to remove install token file', ['path' => $path]);
+        }
+    }
+
+    /**
      * Check database connection
      */
     private function checkDatabaseConnection(): bool
     {
         try {
             DB::connection()->getPdo();
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -313,7 +417,7 @@ class SetupController extends Controller
                 continue;
             }
 
-            $formatted['ns' . $counter] = $server;
+            $formatted['ns'.$counter] = $server;
             $counter++;
         }
 
@@ -327,17 +431,17 @@ class SetupController extends Controller
     {
         $envPath = app()->environmentFilePath();
         $envContent = file_exists($envPath) ? file_get_contents($envPath) : '';
-        $pattern = '/^' . preg_quote($envKey, '/') . '=.*$/m';
-        $replacement = $envKey . '=' . $value;
+        $pattern = '/^'.preg_quote($envKey, '/').'=.*$/m';
+        $replacement = $envKey.'='.$value;
 
         if (preg_match($pattern, $envContent)) {
             $envContent = preg_replace($pattern, $replacement, $envContent);
         } else {
-            if ($envContent !== '' && !str_ends_with($envContent, "\n")) {
+            if ($envContent !== '' && ! str_ends_with($envContent, "\n")) {
                 $envContent .= "\n";
             }
 
-            $envContent .= $replacement . "\n";
+            $envContent .= $replacement."\n";
         }
 
         file_put_contents($envPath, $envContent, LOCK_EX);

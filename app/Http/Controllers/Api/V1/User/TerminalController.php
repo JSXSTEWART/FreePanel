@@ -4,13 +4,26 @@ namespace App\Http\Controllers\Api\V1\User;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class TerminalController extends Controller
 {
+    /**
+     * The web terminal effectively grants customer-level shell access over
+     * HTTP. Shipping it disabled forces operators to make an explicit
+     * decision to enable it; they can set FREEPANEL_FEATURE_TERMINAL=true
+     * once they have per-account cgroup/resource isolation in place.
+     */
+    public function __construct()
+    {
+        if (! config('freepanel.features.terminal', false)) {
+            abort(404);
+        }
+    }
+
     /**
      * Create a new terminal session
      */
@@ -63,7 +76,7 @@ class TerminalController extends Controller
         // Get session
         $session = Cache::get("terminal_session:{$sessionId}");
 
-        if (!$session || $session['account_id'] !== $account->id) {
+        if (! $session || $session['account_id'] !== $account->id) {
             return $this->error('Invalid or expired session', 401);
         }
 
@@ -97,7 +110,7 @@ class TerminalController extends Controller
         $fullCommand = "cd {$cwd} && {$command}";
 
         $result = Process::timeout(30)->run(
-            "sudo -u {$account->username} bash -c " . escapeshellarg($fullCommand) . " 2>&1"
+            "sudo -u {$account->username} bash -c ".escapeshellarg($fullCommand).' 2>&1'
         );
 
         // Add to history
@@ -140,7 +153,7 @@ class TerminalController extends Controller
 
         $session = Cache::get("terminal_session:{$sessionId}");
 
-        if (!$session || $session['account_id'] !== $account->id) {
+        if (! $session || $session['account_id'] !== $account->id) {
             return $this->error('Invalid or expired session', 401);
         }
 
@@ -149,27 +162,27 @@ class TerminalController extends Controller
         $homeDir = "/home/{$account->username}";
 
         // Handle relative paths
-        if (!str_starts_with($newPath, '/')) {
+        if (! str_starts_with($newPath, '/')) {
             if ($newPath === '~' || $newPath === '') {
                 $newPath = $homeDir;
             } elseif (str_starts_with($newPath, '~/')) {
-                $newPath = $homeDir . substr($newPath, 1);
+                $newPath = $homeDir.substr($newPath, 1);
             } else {
-                $newPath = $currentCwd . '/' . $newPath;
+                $newPath = $currentCwd.'/'.$newPath;
             }
         }
 
         // Resolve the path
-        $result = Process::run("sudo -u {$account->username} bash -c 'cd " . escapeshellarg($newPath) . " && pwd' 2>&1");
+        $result = Process::run("sudo -u {$account->username} bash -c 'cd ".escapeshellarg($newPath)." && pwd' 2>&1");
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             return $this->error(trim($result->output()) ?: 'Directory not found', 400);
         }
 
         $resolvedPath = trim($result->output());
 
         // Security: ensure path is within user's allowed directories
-        if (!str_starts_with($resolvedPath, $homeDir) && !str_starts_with($resolvedPath, '/tmp')) {
+        if (! str_starts_with($resolvedPath, $homeDir) && ! str_starts_with($resolvedPath, '/tmp')) {
             return $this->error('Access denied: outside home directory', 403);
         }
 
@@ -200,7 +213,7 @@ class TerminalController extends Controller
 
         $session = Cache::get("terminal_session:{$sessionId}");
 
-        if (!$session || $session['account_id'] !== $account->id) {
+        if (! $session || $session['account_id'] !== $account->id) {
             return $this->error('Invalid or expired session', 401);
         }
 
@@ -253,7 +266,7 @@ class TerminalController extends Controller
 
         $session = Cache::get("terminal_session:{$sessionId}");
 
-        if (!$session || $session['account_id'] !== $account->id) {
+        if (! $session || $session['account_id'] !== $account->id) {
             return $this->error('Invalid or expired session', 401);
         }
 
@@ -266,13 +279,13 @@ class TerminalController extends Controller
         // File/directory completion
         if (str_contains($partial, '/') || str_contains($partial, '.')) {
             $result = Process::run(
-                "sudo -u {$account->username} bash -c 'cd {$cwd} && compgen -f " . escapeshellarg($partial) . "' 2>/dev/null"
+                "sudo -u {$account->username} bash -c 'cd {$cwd} && compgen -f ".escapeshellarg($partial)."' 2>/dev/null"
             );
             $completions = array_filter(explode("\n", $result->output()));
         } else {
             // Command completion
             $result = Process::run(
-                "sudo -u {$account->username} bash -c 'compgen -c " . escapeshellarg($partial) . "' 2>/dev/null | head -20"
+                "sudo -u {$account->username} bash -c 'compgen -c ".escapeshellarg($partial)."' 2>/dev/null | head -20"
             );
             $completions = array_filter(explode("\n", $result->output()));
         }
@@ -307,18 +320,18 @@ class TerminalController extends Controller
 
         foreach ($blockedCommands as $blocked) {
             if (str_contains(strtolower($command), strtolower($blocked))) {
-                return "Command blocked for security reasons";
+                return 'Command blocked for security reasons';
             }
         }
 
         // Block sudo unless explicitly allowed
         if (preg_match('/\bsudo\b/', $command)) {
-            return "sudo is not allowed in web terminal";
+            return 'sudo is not allowed in web terminal';
         }
 
         // Block su
         if (preg_match('/\bsu\b/', $command)) {
-            return "su is not allowed in web terminal";
+            return 'su is not allowed in web terminal';
         }
 
         return true;
@@ -331,6 +344,7 @@ class TerminalController extends Controller
     {
         $builtIns = ['cd', 'pwd', 'clear', 'exit', 'history'];
         $parts = preg_split('/\s+/', $command);
+
         return in_array($parts[0], $builtIns);
     }
 
@@ -345,6 +359,7 @@ class TerminalController extends Controller
         switch ($cmd) {
             case 'cd':
                 $path = $parts[1] ?? '~';
+
                 // CD is handled separately via the cd endpoint
                 return [
                     'output' => '',
@@ -355,7 +370,7 @@ class TerminalController extends Controller
 
             case 'pwd':
                 return [
-                    'output' => $session['cwd'] . "\n",
+                    'output' => $session['cwd']."\n",
                     'exit_code' => 0,
                     'update_session' => false,
                     'session_update' => [],
@@ -382,6 +397,7 @@ class TerminalController extends Controller
                 foreach ($session['history'] as $i => $entry) {
                     $output .= sprintf("%5d  %s\n", $i + 1, $entry['command']);
                 }
+
                 return [
                     'output' => $output,
                     'exit_code' => 0,
