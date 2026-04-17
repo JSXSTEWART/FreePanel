@@ -3,17 +3,31 @@
 namespace App\Services\System;
 
 use App\Models\Account;
-use App\Models\CronJob;
 use Illuminate\Support\Facades\Process;
 
 class CronService
 {
+    /**
+     * Defense-in-depth re-validation of the system username before it's
+     * passed to any shell-adjacent command. Usernames are validated at
+     * account creation but can be reloaded from the DB later; never trust
+     * that invariant across call boundaries.
+     */
+    protected function assertValidSystemUser(string $systemUser): void
+    {
+        if (! preg_match('/^[a-z][a-z0-9_-]{0,31}$/', $systemUser)) {
+            throw new \InvalidArgumentException("Invalid system username: {$systemUser}");
+        }
+    }
+
     /**
      * Sync all cron jobs for an account to the system crontab
      */
     public function syncCrontab(Account $account): void
     {
         $systemUser = $account->system_username;
+        $this->assertValidSystemUser($systemUser);
+
         $cronJobs = $account->cronJobs()->where('is_active', true)->get();
 
         // Build crontab content
@@ -36,17 +50,18 @@ class CronService
             }
         }
 
-        // Write to temporary file
+        // Write to temporary file with restrictive permissions
         $tempFile = tempnam(sys_get_temp_dir(), 'cron_');
+        chmod($tempFile, 0600);
         file_put_contents($tempFile, $crontab);
 
         // Install crontab for user
-        $result = Process::run("sudo crontab -u {$systemUser} {$tempFile}");
+        $result = Process::run(['sudo', 'crontab', '-u', $systemUser, $tempFile]);
 
         unlink($tempFile);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to install crontab: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to install crontab: '.$result->errorOutput());
         }
     }
 
@@ -56,7 +71,9 @@ class CronService
     public function getCrontab(Account $account): string
     {
         $systemUser = $account->system_username;
-        $result = Process::run("sudo crontab -u {$systemUser} -l 2>/dev/null");
+        $this->assertValidSystemUser($systemUser);
+
+        $result = Process::run(['sudo', 'crontab', '-u', $systemUser, '-l']);
 
         return $result->output() ?: '';
     }
@@ -118,7 +135,7 @@ class CronService
             '/usr/bin/perl',
             '/bin/bash',
             '/bin/sh',
-            'cd ' . $homeDir,
+            'cd '.$homeDir,
         ];
 
         // If command starts with allowed prefix or is a relative path, it's OK
@@ -144,6 +161,7 @@ class CronService
     public function removeCrontab(Account $account): void
     {
         $systemUser = $account->system_username;
-        Process::run("sudo crontab -u {$systemUser} -r 2>/dev/null");
+        $this->assertValidSystemUser($systemUser);
+        Process::run(['sudo', 'crontab', '-u', $systemUser, '-r']);
     }
 }

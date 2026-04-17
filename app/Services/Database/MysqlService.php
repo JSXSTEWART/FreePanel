@@ -3,6 +3,7 @@
 namespace App\Services\Database;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Process;
 use PDO;
 
 class MysqlService implements DatabaseInterface
@@ -35,7 +36,7 @@ class MysqlService implements DatabaseInterface
     {
         $this->validateName($name);
 
-        $stmt = $this->pdo->prepare("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?");
+        $stmt = $this->pdo->prepare('SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?');
         $stmt->execute([$name]);
 
         return $stmt->fetch() !== false;
@@ -45,11 +46,11 @@ class MysqlService implements DatabaseInterface
     {
         $this->validateName($name);
 
-        $stmt = $this->pdo->prepare("
+        $stmt = $this->pdo->prepare('
             SELECT SUM(data_length + index_length) as size
             FROM information_schema.TABLES
             WHERE table_schema = ?
-        ");
+        ');
         $stmt->execute([$name]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -60,11 +61,11 @@ class MysqlService implements DatabaseInterface
     {
         $this->validateName($name);
 
-        $stmt = $this->pdo->prepare("
+        $stmt = $this->pdo->prepare('
             SELECT COUNT(*) as count
             FROM information_schema.TABLES
             WHERE table_schema = ?
-        ");
+        ');
         $stmt->execute([$name]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -103,7 +104,7 @@ class MysqlService implements DatabaseInterface
         $stmt = $this->pdo->prepare("ALTER USER ?@'127.0.0.1' IDENTIFIED BY ?");
         $stmt->execute([$username, $password]);
 
-        $this->pdo->exec("FLUSH PRIVILEGES");
+        $this->pdo->exec('FLUSH PRIVILEGES');
     }
 
     public function grantPrivileges(string $username, string $database, array $privileges): void
@@ -116,7 +117,7 @@ class MysqlService implements DatabaseInterface
             'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP',
             'INDEX', 'ALTER', 'CREATE TEMPORARY TABLES', 'LOCK TABLES',
             'EXECUTE', 'CREATE VIEW', 'SHOW VIEW', 'CREATE ROUTINE',
-            'ALTER ROUTINE', 'EVENT', 'TRIGGER', 'ALL PRIVILEGES'
+            'ALTER ROUTINE', 'EVENT', 'TRIGGER', 'ALL PRIVILEGES',
         ];
 
         $grantPrivileges = [];
@@ -137,7 +138,7 @@ class MysqlService implements DatabaseInterface
         $quotedUser = $this->quoteUsername($username);
         $this->pdo->exec("GRANT {$privilegeStr} ON {$quotedDb}.* TO {$quotedUser}@'localhost'");
         $this->pdo->exec("GRANT {$privilegeStr} ON {$quotedDb}.* TO {$quotedUser}@'127.0.0.1'");
-        $this->pdo->exec("FLUSH PRIVILEGES");
+        $this->pdo->exec('FLUSH PRIVILEGES');
     }
 
     public function revokePrivileges(string $username, string $database): void
@@ -149,7 +150,7 @@ class MysqlService implements DatabaseInterface
         $quotedUser = $this->quoteUsername($username);
         $this->pdo->exec("REVOKE ALL PRIVILEGES ON {$quotedDb}.* FROM {$quotedUser}@'localhost'");
         $this->pdo->exec("REVOKE ALL PRIVILEGES ON {$quotedDb}.* FROM {$quotedUser}@'127.0.0.1'");
-        $this->pdo->exec("FLUSH PRIVILEGES");
+        $this->pdo->exec('FLUSH PRIVILEGES');
     }
 
     public function getPrivileges(string $username, string $database): array
@@ -180,25 +181,31 @@ class MysqlService implements DatabaseInterface
     {
         $this->validateName($database);
 
-        if (!file_exists($dumpFile)) {
+        if (! file_exists($dumpFile)) {
             throw new \InvalidArgumentException('Dump file does not exist');
         }
 
         $config = config('database.connections.mysql_admin');
+        $defaultsFile = $this->writeDefaultsFile($config);
 
-        $command = sprintf(
-            'mysql -h %s -u %s -p%s %s < %s',
-            escapeshellarg($config['host']),
-            escapeshellarg($config['username']),
-            escapeshellarg($config['password']),
-            escapeshellarg($database),
-            escapeshellarg($dumpFile)
-        );
+        try {
+            $dumpContents = file_get_contents($dumpFile);
+            if ($dumpContents === false) {
+                throw new \RuntimeException('Failed to read dump file');
+            }
 
-        exec($command, $output, $returnCode);
+            $result = Process::input($dumpContents)->run([
+                'mysql',
+                "--defaults-extra-file={$defaultsFile}",
+                '-h', (string) $config['host'],
+                $database,
+            ]);
 
-        if ($returnCode !== 0) {
-            throw new \RuntimeException('Failed to import database dump');
+            if (! $result->successful()) {
+                throw new \RuntimeException('Failed to import database dump: '.$result->errorOutput());
+            }
+        } finally {
+            @unlink($defaultsFile);
         }
     }
 
@@ -207,27 +214,67 @@ class MysqlService implements DatabaseInterface
         $this->validateName($database);
 
         $config = config('database.connections.mysql_admin');
+        $defaultsFile = $this->writeDefaultsFile($config);
 
-        $command = sprintf(
-            'mysqldump -h %s -u %s -p%s %s > %s',
-            escapeshellarg($config['host']),
-            escapeshellarg($config['username']),
-            escapeshellarg($config['password']),
-            escapeshellarg($database),
-            escapeshellarg($dumpFile)
-        );
+        try {
+            $result = Process::run([
+                'mysqldump',
+                "--defaults-extra-file={$defaultsFile}",
+                '-h', (string) $config['host'],
+                $database,
+            ]);
 
-        exec($command, $output, $returnCode);
+            if (! $result->successful()) {
+                throw new \RuntimeException('Failed to export database dump: '.$result->errorOutput());
+            }
 
-        if ($returnCode !== 0) {
-            throw new \RuntimeException('Failed to export database dump');
+            // Write dump to target file with 0600 permissions so backups do
+            // not leak on shared/NFS storage.
+            $old = umask(0077);
+            try {
+                if (file_put_contents($dumpFile, $result->output()) === false) {
+                    throw new \RuntimeException('Failed to write dump file');
+                }
+                @chmod($dumpFile, 0600);
+            } finally {
+                umask($old);
+            }
+        } finally {
+            @unlink($defaultsFile);
         }
+    }
+
+    /**
+     * Write a temporary `--defaults-extra-file` containing the MySQL
+     * credentials. Keeping credentials out of argv prevents them from
+     * appearing in `ps`, shell logs, and core dumps.
+     */
+    protected function writeDefaultsFile(array $config): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'fp_my_');
+        if ($path === false) {
+            throw new \RuntimeException('Failed to allocate temp file for MySQL credentials');
+        }
+        chmod($path, 0600);
+
+        $escape = static function (string $value): string {
+            // my.cnf accepts double-quoted values; escape embedded quotes/backslashes.
+            return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $value).'"';
+        };
+
+        $contents = "[client]\n"
+            .'user='.$escape((string) ($config['username'] ?? ''))."\n"
+            .'password='.$escape((string) ($config['password'] ?? ''))."\n";
+
+        file_put_contents($path, $contents);
+
+        return $path;
     }
 
     protected function validateName(string $name): void
     {
         // Prevent SQL injection by validating name format
-        if (!preg_match('/^[a-z][a-z0-9_]*$/i', $name)) {
+        if (! preg_match('/^[a-z][a-z0-9_]*$/i', $name)) {
             throw new \InvalidArgumentException('Invalid database/user name format');
         }
 
@@ -244,6 +291,7 @@ class MysqlService implements DatabaseInterface
     {
         // Escape backticks by doubling them (MySQL standard)
         $escaped = str_replace('`', '``', $identifier);
+
         return "`{$escaped}`";
     }
 
@@ -255,6 +303,7 @@ class MysqlService implements DatabaseInterface
     {
         // Escape single quotes by doubling them (MySQL standard)
         $escaped = str_replace("'", "''", $username);
+
         return "'{$escaped}'";
     }
 }
