@@ -28,6 +28,8 @@ class SetupConfigTest extends TestCase
             'nameservers' => ['ns1.example.com', 'ns2.example.com'],
         ];
 
+        $payload['install_token'] = $this->seedInstallToken();
+
         $response = $this->postJson('/api/v1/setup/initialize', $payload);
 
         $response->assertStatus(200)
@@ -51,7 +53,7 @@ class SetupConfigTest extends TestCase
             'ns2' => 'ns2.example.com',
         ], config('app.nameservers'));
 
-        $envContent = file_get_contents(dirname(__DIR__) . '/.env.testing');
+        $envContent = file_get_contents(dirname(__DIR__, 2).'/.env.testing');
         $this->assertStringContainsString('APP_HOSTNAME=panel.example.com', $envContent);
         $this->assertStringContainsString('FREEPANEL_SERVER_IP=203.0.113.10', $envContent);
         $this->assertStringContainsString('FREEPANEL_NAMESERVERS={"ns1":"ns1.example.com","ns2":"ns2.example.com"}', $envContent);
@@ -67,6 +69,8 @@ class SetupConfigTest extends TestCase
             'nameservers' => [' ns1.example.com ', null, '', 'ns2.example.com', '   '],
         ];
 
+        $payload['install_token'] = $this->seedInstallToken();
+
         $response = $this->postJson('/api/v1/setup/initialize', $payload);
 
         $response->assertStatus(200);
@@ -78,7 +82,7 @@ class SetupConfigTest extends TestCase
             'ns2' => 'ns2.example.com',
         ], config('freepanel.nameservers'));
 
-        $envContent = file_get_contents(dirname(__DIR__) . '/.env.testing');
+        $envContent = file_get_contents(dirname(__DIR__, 2).'/.env.testing');
         $this->assertStringContainsString('FREEPANEL_NAMESERVERS={"ns1":"ns1.example.com","ns2":"ns2.example.com"}', $envContent);
         $this->assertStringNotContainsString('APP_NAMESERVERS', $envContent);
     }
@@ -95,6 +99,8 @@ class SetupConfigTest extends TestCase
             'nameservers' => ['  ns1.trimmed.com', 'ns2.trimmed.com  '],
         ];
 
+        $payload['install_token'] = $this->seedInstallToken();
+
         $response = $this->postJson('/api/v1/setup/initialize', $payload);
 
         $response->assertStatus(200);
@@ -110,7 +116,7 @@ class SetupConfigTest extends TestCase
             'ns2' => 'ns2.trimmed.com',
         ], config('freepanel.nameservers'));
 
-        $envContent = file_get_contents(dirname(__DIR__) . '/.env.testing');
+        $envContent = file_get_contents(dirname(__DIR__, 2).'/.env.testing');
         $this->assertStringContainsString('APP_HOSTNAME=trimmed.example.com', $envContent);
         $this->assertStringContainsString('FREEPANEL_SERVER_IP=198.51.100.7', $envContent);
         $this->assertStringContainsString('FREEPANEL_NAMESERVERS={"ns1":"ns1.trimmed.com","ns2":"ns2.trimmed.com"}', $envContent);

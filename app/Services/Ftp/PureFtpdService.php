@@ -4,12 +4,12 @@ namespace App\Services\Ftp;
 
 use App\Models\Account;
 use App\Models\FtpAccount;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 
 class PureFtpdService implements FtpInterface
 {
     protected string $passwdFile;
+
     protected string $pdbFile;
 
     public function __construct()
@@ -18,29 +18,55 @@ class PureFtpdService implements FtpInterface
         $this->pdbFile = config('freepanel.ftp.pdb_file', '/etc/pureftpd.pdb');
     }
 
+    /**
+     * pure-pw accepts usernames in `name@virtualhost` form. Lock the
+     * character set explicitly; this is defense-in-depth on top of any
+     * validation done when the FtpAccount row was created.
+     */
+    protected function assertValidUsername(string $username): void
+    {
+        if (! preg_match('/^[A-Za-z0-9._-]+(@[A-Za-z0-9.-]+)?$/', $username) || strlen($username) > 128) {
+            throw new \InvalidArgumentException("Invalid FTP username: {$username}");
+        }
+    }
+
+    /**
+     * Passwords must not contain control characters or newlines since they
+     * are piped to pure-pw on stdin.
+     */
+    protected function assertValidPassword(string $password): void
+    {
+        if (preg_match('/[\x00-\x1F\x7F]/', $password)) {
+            throw new \InvalidArgumentException('Password contains disallowed control characters');
+        }
+    }
+
     public function createAccount(FtpAccount $account, string $password): void
     {
+        $this->assertValidUsername($account->username);
+        $this->assertValidPassword($password);
+
         $homeAccount = $account->account;
 
-        // Use pure-pw to create the user
-        $command = sprintf(
-            'pure-pw useradd %s -u %d -g %d -d %s -m',
-            escapeshellarg($account->username),
-            $homeAccount->uid,
-            $homeAccount->gid,
-            escapeshellarg($account->directory)
-        );
+        $cmd = [
+            'pure-pw', 'useradd', $account->username,
+            '-u', (string) (int) $homeAccount->uid,
+            '-g', (string) (int) $homeAccount->gid,
+            '-d', $account->directory,
+            '-m',
+        ];
 
         // Set quota if configured
         if ($account->quota > 0) {
-            $command .= sprintf(' -n %dM', $account->quota);
+            $cmd[] = '-n';
+            $cmd[] = ((int) $account->quota).'M';
         }
 
-        // Set password via stdin
-        $result = Process::run("echo " . escapeshellarg($password) . " | {$command}");
+        // pure-pw reads the password twice from stdin (new + confirm).
+        $result = Process::input("{$password}\n{$password}\n")->run($cmd);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to create FTP account: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to create FTP account: '.$result->errorOutput());
         }
 
         // Rebuild the PDB database
@@ -49,25 +75,27 @@ class PureFtpdService implements FtpInterface
 
     public function updateAccount(FtpAccount $account): void
     {
+        $this->assertValidUsername($account->username);
+
         $homeAccount = $account->account;
 
         // Update user details
-        $command = sprintf(
-            'pure-pw usermod %s -d %s',
-            escapeshellarg($account->username),
-            escapeshellarg($account->directory)
-        );
+        $cmd = [
+            'pure-pw', 'usermod', $account->username,
+            '-d', $account->directory,
+        ];
 
         if ($account->quota > 0) {
-            $command .= sprintf(' -n %dM', $account->quota);
+            $cmd[] = '-n';
+            $cmd[] = ((int) $account->quota).'M';
         } else {
-            $command .= ' -N'; // Remove quota
+            $cmd[] = '-N'; // Remove quota
         }
 
-        $result = Process::run($command);
+        $result = Process::run($cmd);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to update FTP account: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to update FTP account: '.$result->errorOutput());
         }
 
         $this->rebuildDatabase();
@@ -75,13 +103,12 @@ class PureFtpdService implements FtpInterface
 
     public function deleteAccount(FtpAccount $account): void
     {
-        $result = Process::run(sprintf(
-            'pure-pw userdel %s -m',
-            escapeshellarg($account->username)
-        ));
+        $this->assertValidUsername($account->username);
 
-        if (!$result->successful() && !str_contains($result->errorOutput(), 'not found')) {
-            throw new \RuntimeException("Failed to delete FTP account: " . $result->errorOutput());
+        $result = Process::run(['pure-pw', 'userdel', $account->username, '-m']);
+
+        if (! $result->successful() && ! str_contains($result->errorOutput(), 'not found')) {
+            throw new \RuntimeException('Failed to delete FTP account: '.$result->errorOutput());
         }
 
         $this->rebuildDatabase();
@@ -89,14 +116,15 @@ class PureFtpdService implements FtpInterface
 
     public function updatePassword(FtpAccount $account, string $password): void
     {
-        $result = Process::run(sprintf(
-            'echo %s | pure-pw passwd %s -m',
-            escapeshellarg($password),
-            escapeshellarg($account->username)
-        ));
+        $this->assertValidUsername($account->username);
+        $this->assertValidPassword($password);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to update FTP password: " . $result->errorOutput());
+        $result = Process::input("{$password}\n{$password}\n")->run([
+            'pure-pw', 'passwd', $account->username, '-m',
+        ]);
+
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to update FTP password: '.$result->errorOutput());
         }
 
         $this->rebuildDatabase();
@@ -107,9 +135,9 @@ class PureFtpdService implements FtpInterface
         $sessions = [];
 
         // Read pure-ftpwho output
-        $result = Process::run('pure-ftpwho -s 2>/dev/null');
+        $result = Process::run(['pure-ftpwho', '-s']);
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             return [];
         }
 
@@ -122,7 +150,7 @@ class PureFtpdService implements FtpInterface
                 $username = $parts[1];
 
                 // Only include sessions for this account's FTP users
-                if (str_contains($username, '@' . $account->domain)) {
+                if (str_contains($username, '@'.$account->domain)) {
                     $sessions[] = [
                         'id' => $parts[0],
                         'username' => $username,
@@ -140,6 +168,11 @@ class PureFtpdService implements FtpInterface
 
     public function killSession(string $sessionId, Account $account): void
     {
+        // Session IDs returned by pure-ftpwho are numeric PIDs.
+        if (! preg_match('/^[0-9]+$/', $sessionId)) {
+            throw new \InvalidArgumentException('Invalid session id');
+        }
+
         // Verify session belongs to this account before killing
         $sessions = $this->getActiveSessions($account);
         $found = false;
@@ -151,20 +184,20 @@ class PureFtpdService implements FtpInterface
             }
         }
 
-        if (!$found) {
-            throw new \InvalidArgumentException("Session not found or access denied");
+        if (! $found) {
+            throw new \InvalidArgumentException('Session not found or access denied');
         }
 
         // Kill the FTP session
-        $result = Process::run("pure-ftpwho -k {$sessionId}");
+        $result = Process::run(['pure-ftpwho', '-k', $sessionId]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to kill FTP session");
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to kill FTP session');
         }
     }
 
     protected function rebuildDatabase(): void
     {
-        Process::run("pure-pw mkdb {$this->pdbFile}");
+        Process::run(['pure-pw', 'mkdb', $this->pdbFile]);
     }
 }

@@ -1,0 +1,49 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to static method connection\(\) on an unknown class DB\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Admin/ServerController.php
+
+		-
+			message: '#^Call to static method warning\(\) on an unknown class Log\.$#'
+			identifier: class.notFound
+			count: 2
+			path: app/Http/Controllers/Api/V1/SetupController.php
+
+		-
+			message: '#^Call to static method driver\(\) on an unknown class Laravel\\Socialite\\Facades\\Socialite\.$#'
+			identifier: class.notFound
+			count: 2
+			path: app/Http/Controllers/Auth/OAuthController.php
+
+		-
+			message: '#^Class App\\Models\\ApplicationLog not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Application.php
+
+		-
+			message: '#^Class App\\Models\\ApplicationMetric not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Application.php
+
+		-
+			message: '#^Class App\\Models\\GitDeployKey not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/GitRepository.php
+
+		-
+			message: '#^Class App\\Models\\GitWebhook not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/GitRepository.php
+
+		-
+			message: '#^Undefined variable\: \$this$#'
+			identifier: variable.undefined
+			count: 1
+			path: routes/console.php

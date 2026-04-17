@@ -7,14 +7,28 @@ use Illuminate\Support\Facades\Process;
 class SystemdManager
 {
     /**
+     * Validate a systemd unit name. Allows letters, digits, and the
+     * characters systemd permits in unit names (`-`, `_`, `.`, `@`, `:`).
+     * Rejects anything that could be interpreted by a shell — although
+     * callers should already be using array-form Process::run.
+     */
+    protected function assertValidServiceName(string $service): void
+    {
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9@._:-]{0,127}$/', $service)) {
+            throw new \InvalidArgumentException("Invalid service name: {$service}");
+        }
+    }
+
+    /**
      * Start a service
      */
     public function start(string $service): void
     {
-        $result = Process::run("sudo /usr/bin/systemctl start {$service}");
+        $this->assertValidServiceName($service);
+        $result = Process::run(['sudo', '/usr/bin/systemctl', 'start', $service]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to start {$service}: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException("Failed to start {$service}: ".$result->errorOutput());
         }
     }
 
@@ -23,10 +37,11 @@ class SystemdManager
      */
     public function stop(string $service): void
     {
-        $result = Process::run("sudo /usr/bin/systemctl stop {$service}");
+        $this->assertValidServiceName($service);
+        $result = Process::run(['sudo', '/usr/bin/systemctl', 'stop', $service]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to stop {$service}: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException("Failed to stop {$service}: ".$result->errorOutput());
         }
     }
 
@@ -35,10 +50,11 @@ class SystemdManager
      */
     public function restart(string $service): void
     {
-        $result = Process::run("sudo /usr/bin/systemctl restart {$service}");
+        $this->assertValidServiceName($service);
+        $result = Process::run(['sudo', '/usr/bin/systemctl', 'restart', $service]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to restart {$service}: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException("Failed to restart {$service}: ".$result->errorOutput());
         }
     }
 
@@ -47,9 +63,10 @@ class SystemdManager
      */
     public function reload(string $service): void
     {
-        $result = Process::run("sudo /usr/bin/systemctl reload {$service}");
+        $this->assertValidServiceName($service);
+        $result = Process::run(['sudo', '/usr/bin/systemctl', 'reload', $service]);
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             // Fall back to restart if reload fails
             $this->restart($service);
         }
@@ -60,10 +77,11 @@ class SystemdManager
      */
     public function enable(string $service): void
     {
-        $result = Process::run("sudo /usr/bin/systemctl enable {$service}");
+        $this->assertValidServiceName($service);
+        $result = Process::run(['sudo', '/usr/bin/systemctl', 'enable', $service]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to enable {$service}: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException("Failed to enable {$service}: ".$result->errorOutput());
         }
     }
 
@@ -72,10 +90,11 @@ class SystemdManager
      */
     public function disable(string $service): void
     {
-        $result = Process::run("sudo /usr/bin/systemctl disable {$service}");
+        $this->assertValidServiceName($service);
+        $result = Process::run(['sudo', '/usr/bin/systemctl', 'disable', $service]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to disable {$service}: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException("Failed to disable {$service}: ".$result->errorOutput());
         }
     }
 
@@ -84,8 +103,20 @@ class SystemdManager
      */
     public function exists(string $service): bool
     {
-        $result = Process::run("sudo /usr/bin/systemctl list-unit-files {$service}.service 2>/dev/null | grep -q {$service}");
-        return $result->successful();
+        $this->assertValidServiceName($service);
+
+        $result = Process::run(['sudo', '/usr/bin/systemctl', 'list-unit-files', "{$service}.service"]);
+        if (! $result->successful()) {
+            return false;
+        }
+
+        foreach (explode("\n", $result->output()) as $line) {
+            if (str_starts_with(trim($line), "{$service}.service")) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -93,6 +124,8 @@ class SystemdManager
      */
     public function getStatus(string $service): array
     {
+        $this->assertValidServiceName($service);
+
         $status = [
             'service' => $service,
             'status' => 'unknown',
@@ -105,22 +138,22 @@ class SystemdManager
         ];
 
         // Check if running
-        $activeResult = Process::run("sudo /usr/bin/systemctl is-active {$service} 2>/dev/null");
+        $activeResult = Process::run(['sudo', '/usr/bin/systemctl', 'is-active', $service]);
         $status['status'] = trim($activeResult->output());
         $status['is_running'] = $status['status'] === 'active';
 
         // Check if enabled
-        $enabledResult = Process::run("sudo /usr/bin/systemctl is-enabled {$service} 2>/dev/null");
+        $enabledResult = Process::run(['sudo', '/usr/bin/systemctl', 'is-enabled', $service]);
         $status['is_enabled'] = trim($enabledResult->output()) === 'enabled';
 
         if ($status['is_running']) {
             // Get PID
-            $pidResult = Process::run("sudo /usr/bin/systemctl show {$service} --property=MainPID --value 2>/dev/null");
+            $pidResult = Process::run(['sudo', '/usr/bin/systemctl', 'show', $service, '--property=MainPID', '--value']);
             $pid = (int) trim($pidResult->output());
             $status['pid'] = $pid > 0 ? $pid : null;
 
             // Get uptime
-            $uptimeResult = Process::run("sudo /usr/bin/systemctl show {$service} --property=ActiveEnterTimestamp --value 2>/dev/null");
+            $uptimeResult = Process::run(['sudo', '/usr/bin/systemctl', 'show', $service, '--property=ActiveEnterTimestamp', '--value']);
             $timestamp = trim($uptimeResult->output());
             if ($timestamp) {
                 $startTime = strtotime($timestamp);
@@ -130,7 +163,7 @@ class SystemdManager
             }
 
             // Get memory usage
-            $memResult = Process::run("sudo /usr/bin/systemctl show {$service} --property=MemoryCurrent --value 2>/dev/null");
+            $memResult = Process::run(['sudo', '/usr/bin/systemctl', 'show', $service, '--property=MemoryCurrent', '--value']);
             $memBytes = trim($memResult->output());
             if ($memBytes && $memBytes !== '[not set]') {
                 $status['memory'] = $this->formatBytes((int) $memBytes);
@@ -138,10 +171,10 @@ class SystemdManager
 
             // Get CPU usage (from top for main PID)
             if ($status['pid']) {
-                $cpuResult = Process::run("ps -p {$status['pid']} -o %cpu --no-headers 2>/dev/null");
+                $cpuResult = Process::run(['ps', '-p', (string) $status['pid'], '-o', '%cpu', '--no-headers']);
                 $cpu = trim($cpuResult->output());
                 if ($cpu !== '') {
-                    $status['cpu'] = $cpu . '%';
+                    $status['cpu'] = $cpu.'%';
                 }
             }
         }
@@ -154,9 +187,12 @@ class SystemdManager
      */
     public function getLogs(string $service, int $lines = 100): array
     {
-        $result = Process::run("sudo /usr/bin/journalctl -u {$service} -n {$lines} --no-pager 2>/dev/null");
+        $this->assertValidServiceName($service);
+        $lines = max(1, min($lines, 10000));
 
-        if (!$result->successful()) {
+        $result = Process::run(['sudo', '/usr/bin/journalctl', '-u', $service, '-n', (string) $lines, '--no-pager']);
+
+        if (! $result->successful()) {
             return [];
         }
 
@@ -182,7 +218,7 @@ class SystemdManager
      */
     public function daemonReload(): void
     {
-        Process::run('sudo /usr/bin/systemctl daemon-reload');
+        Process::run(['sudo', '/usr/bin/systemctl', 'daemon-reload']);
     }
 
     protected function formatUptime(int $seconds): string
@@ -210,6 +246,6 @@ class SystemdManager
             $i++;
         }
 
-        return round($bytes, 1) . ' ' . $units[$i];
+        return round($bytes, 1).' '.$units[$i];
     }
 }

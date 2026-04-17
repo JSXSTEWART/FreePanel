@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Process;
 class UserManager
 {
     protected string $skelDir;
+
     protected int $minUid;
+
     protected int $maxUid;
 
     public function __construct()
@@ -35,21 +37,27 @@ class UserManager
         $uid = $this->getNextUid();
 
         // Create group
-        $result = Process::run("groupadd -g {$uid} {$username}");
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to create group: " . $result->errorOutput());
+        $result = Process::run(['groupadd', '-g', (string) $uid, $username]);
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to create group: '.$result->errorOutput());
         }
 
         // Create user
         $homeDir = "/home/{$username}";
-        $result = Process::run(
-            "useradd -u {$uid} -g {$uid} -d {$homeDir} -m -s /bin/bash {$username}"
-        );
+        $result = Process::run([
+            'useradd',
+            '-u', (string) $uid,
+            '-g', (string) $uid,
+            '-d', $homeDir,
+            '-m',
+            '-s', '/bin/bash',
+            $username,
+        ]);
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             // Cleanup group if user creation fails
-            Process::run("groupdel {$username}");
-            throw new \RuntimeException("Failed to create user: " . $result->errorOutput());
+            Process::run(['groupdel', $username]);
+            throw new \RuntimeException('Failed to create user: '.$result->errorOutput());
         }
 
         // Set password
@@ -85,7 +93,7 @@ class UserManager
         ];
 
         foreach ($directories as $dir) {
-            if (!File::isDirectory($dir)) {
+            if (! File::isDirectory($dir)) {
                 File::makeDirectory($dir, 0755, true);
             }
             chown($dir, $uid);
@@ -98,7 +106,7 @@ class UserManager
 
         // Create default index page
         $indexPath = "{$home}/public_html/index.html";
-        if (!File::exists($indexPath)) {
+        if (! File::exists($indexPath)) {
             $defaultContent = $this->getDefaultIndexPage($account->domain);
             File::put($indexPath, $defaultContent);
             chown($indexPath, $uid);
@@ -118,24 +126,24 @@ class UserManager
     {
         $this->validateUsername($username);
 
-        if (!$this->userExists($username)) {
+        if (! $this->userExists($username)) {
             return; // User doesn't exist, nothing to do
         }
 
         // Kill all user processes
-        Process::run("pkill -u {$username}");
+        Process::run(['pkill', '-u', $username]);
 
         // Wait a moment for processes to terminate
         usleep(500000);
 
         // Delete user and home directory
-        $result = Process::run("userdel -r {$username}");
+        $result = Process::run(['userdel', '-r', $username]);
 
         // Delete group if it still exists
-        Process::run("groupdel {$username} 2>/dev/null");
+        Process::run(['groupdel', $username]);
 
-        if (!$result->successful() && !str_contains($result->errorOutput(), 'does not exist')) {
-            throw new \RuntimeException("Failed to delete user: " . $result->errorOutput());
+        if (! $result->successful() && ! str_contains($result->errorOutput(), 'does not exist')) {
+            throw new \RuntimeException('Failed to delete user: '.$result->errorOutput());
         }
     }
 
@@ -155,10 +163,10 @@ class UserManager
     {
         $this->validateUsername($username);
 
-        $result = Process::run("usermod -L -s /sbin/nologin {$username}");
+        $result = Process::run(['usermod', '-L', '-s', '/sbin/nologin', $username]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to suspend user: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to suspend user: '.$result->errorOutput());
         }
     }
 
@@ -169,10 +177,10 @@ class UserManager
     {
         $this->validateUsername($username);
 
-        $result = Process::run("usermod -U -s /bin/bash {$username}");
+        $result = Process::run(['usermod', '-U', '-s', '/bin/bash', $username]);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to unsuspend user: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to unsuspend user: '.$result->errorOutput());
         }
     }
 
@@ -181,15 +189,20 @@ class UserManager
      */
     public function getDiskUsage(string $username): int
     {
+        $this->validateUsername($username);
+
         $home = "/home/{$username}";
 
-        if (!File::isDirectory($home)) {
+        if (! File::isDirectory($home)) {
             return 0;
         }
 
-        $result = Process::run("du -sb {$home} 2>/dev/null | cut -f1");
+        $result = Process::run(['du', '-sb', $home]);
+        $line = trim($result->output());
+        // Output format: "<bytes>\t<path>"
+        $first = strtok($line, "\t") ?: '0';
 
-        return (int) trim($result->output());
+        return (int) $first;
     }
 
     /**
@@ -197,7 +210,9 @@ class UserManager
      */
     public function userExists(string $username): bool
     {
-        $result = Process::run("id {$username} 2>/dev/null");
+        $this->validateUsername($username);
+        $result = Process::run(['id', $username]);
+
         return $result->successful();
     }
 
@@ -206,12 +221,12 @@ class UserManager
      */
     public function getUserInfo(string $username): ?array
     {
-        if (!$this->userExists($username)) {
+        if (! $this->userExists($username)) {
             return null;
         }
 
-        $result = Process::run("getent passwd {$username}");
-        if (!$result->successful()) {
+        $result = Process::run(['getent', 'passwd', $username]);
+        if (! $result->successful()) {
             return null;
         }
 
@@ -228,31 +243,57 @@ class UserManager
 
     protected function setPassword(string $username, string $password): void
     {
-        // Use chpasswd for setting password
-        $escapedPassword = str_replace(['\\', "'"], ['\\\\', "\\'"], $password);
+        // chpasswd reads `user:password` entries separated by newlines from
+        // stdin. A password containing a newline would terminate its own
+        // record and inject a second one, so reject any control character.
+        if (preg_match('/[\x00-\x1F\x7F]/', $password)) {
+            throw new \InvalidArgumentException('Password contains disallowed control characters');
+        }
 
-        $result = Process::run("echo '{$username}:{$escapedPassword}' | chpasswd");
+        // Passing the password through stdin (not argv or a shell pipeline)
+        // keeps it out of the process list and avoids any need to escape
+        // shell metacharacters.
+        $result = Process::input("{$username}:{$password}\n")->run(['chpasswd']);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to set password: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to set password: '.$result->errorOutput());
         }
     }
 
     protected function getNextUid(): int
     {
-        // Find highest UID in use
-        $result = Process::run("getent passwd | awk -F: '\$3 >= {$this->minUid} && \$3 <= {$this->maxUid} {print \$3}' | sort -n | tail -1");
+        // Cast to int at the boundary so config values can never be
+        // interpreted by awk even if they later become admin-writable.
+        $minUid = (int) $this->minUid;
+        $maxUid = (int) $this->maxUid;
 
-        $lastUid = (int) trim($result->output());
-
-        if ($lastUid < $this->minUid) {
-            return $this->minUid;
+        // Fetch the passwd database once and filter in PHP instead of
+        // building a shell pipeline.
+        $result = Process::run(['getent', 'passwd']);
+        if (! $result->successful()) {
+            return $minUid;
         }
 
-        $nextUid = $lastUid + 1;
+        $highest = 0;
+        foreach (explode("\n", $result->output()) as $line) {
+            $parts = explode(':', $line);
+            if (count($parts) < 3) {
+                continue;
+            }
+            $uid = (int) $parts[2];
+            if ($uid >= $minUid && $uid <= $maxUid && $uid > $highest) {
+                $highest = $uid;
+            }
+        }
 
-        if ($nextUid > $this->maxUid) {
-            throw new \RuntimeException("No available UIDs in range");
+        if ($highest < $minUid) {
+            return $minUid;
+        }
+
+        $nextUid = $highest + 1;
+
+        if ($nextUid > $maxUid) {
+            throw new \RuntimeException('No available UIDs in range');
         }
 
         return $nextUid;
@@ -260,7 +301,7 @@ class UserManager
 
     protected function validateUsername(string $username): void
     {
-        if (!preg_match('/^[a-z][a-z0-9]{2,15}$/', $username)) {
+        if (! preg_match('/^[a-z][a-z0-9]{2,15}$/', $username)) {
             throw new \InvalidArgumentException("Invalid username format: {$username}");
         }
 
@@ -281,7 +322,7 @@ class UserManager
 
             // Create directory if needed
             $destDir = dirname($destPath);
-            if (!File::isDirectory($destDir)) {
+            if (! File::isDirectory($destDir)) {
                 File::makeDirectory($destDir, 0755, true);
                 chown($destDir, $uid);
                 chgrp($destDir, $gid);
