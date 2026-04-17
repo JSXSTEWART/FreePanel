@@ -11,6 +11,112 @@ use Illuminate\Support\Facades\Validator;
 class GitController extends Controller
 {
     /**
+     * Regex guards applied before interpolating any value into a shell
+     * command or filesystem path. The repository, account, and branch
+     * strings come from validated request data or DB rows originally
+     * seeded from validated input, but we re-check at every shell
+     * boundary as defense-in-depth.
+     */
+    protected function assertValidUsername(string $username): void
+    {
+        if (! preg_match('/^[a-z][a-z0-9_-]{0,31}$/', $username)) {
+            abort(422, 'Invalid system username');
+        }
+    }
+
+    protected function assertValidRepoName(string $name): void
+    {
+        if (! preg_match('/^[a-zA-Z0-9_-]{1,100}$/', $name)) {
+            abort(422, 'Invalid repository name');
+        }
+    }
+
+    protected function assertValidBranch(string $branch): void
+    {
+        // Git ref names allow a lot of characters; stay conservative.
+        if (! preg_match('/^[A-Za-z0-9._\/-]{1,100}$/', $branch) || str_contains($branch, '..')) {
+            abort(422, 'Invalid branch name');
+        }
+    }
+
+    protected function assertValidRef(string $ref): void
+    {
+        if (! preg_match('/^[A-Za-z0-9._\/-]{1,100}$/', $ref) || str_contains($ref, '..')) {
+            abort(422, 'Invalid git ref');
+        }
+    }
+
+    protected function assertValidRelativePath(string $path): void
+    {
+        // Must not start with `/` or `-` (avoid arg injection) and must
+        // not contain `..` segments. Empty path (repo root) is fine.
+        if ($path === '') {
+            return;
+        }
+        if (str_starts_with($path, '/') || str_starts_with($path, '-')) {
+            abort(422, 'Invalid path');
+        }
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '..' || ! preg_match('/^[A-Za-z0-9._-]*$/', $segment)) {
+                abort(422, 'Invalid path');
+            }
+        }
+    }
+
+    /**
+     * Restrict clone URLs to public https:// / http:// / ssh:// / git@ forms.
+     * `file://` reads from the local filesystem; ssh to localhost or
+     * cloud-metadata addresses would let a user exfiltrate host data.
+     */
+    protected function assertSafeCloneUrl(string $url): void
+    {
+        if (preg_match('/^(git|ssh):\/\//i', $url) || preg_match('/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+:/', $url)) {
+            // ssh-style URLs — ok.
+        } elseif (preg_match('/^https?:\/\//i', $url)) {
+            // plain HTTP(S) — ok after host check.
+        } else {
+            abort(422, 'Only http(s), ssh, or git@ clone URLs are allowed');
+        }
+
+        // Block shell metacharacters entirely.
+        if (preg_match('/[\s;&|`$(){}\\\\<>\'"]/', $url) || str_contains($url, "\n") || str_contains($url, "\r")) {
+            abort(422, 'Clone URL contains disallowed characters');
+        }
+
+        // Block hostnames that resolve to private/link-local/metadata
+        // addresses. Only meaningful for http(s) URLs.
+        if (preg_match('#^https?://([^/:]+)#i', $url, $m)) {
+            $host = strtolower($m[1]);
+            $blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254', 'metadata.google.internal'];
+            if (in_array($host, $blockedHosts, true)) {
+                abort(422, 'Clone URL host is not permitted');
+            }
+            foreach (gethostbynamel($host) ?: [$host] as $ip) {
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+                    abort(422, 'Clone URL resolves to a private/reserved address');
+                }
+            }
+        }
+    }
+
+    /**
+     * Absolute path to the account's repositories directory.
+     */
+    protected function repositoriesDir(string $username): string
+    {
+        return "/home/{$username}/repositories";
+    }
+
+    /**
+     * Absolute path for a given repo name. Rebuilt here (not taken from
+     * the model) so a mutated `GitRepository::$path` can't escape.
+     */
+    protected function repoPath(string $username, string $name): string
+    {
+        return $this->repositoriesDir($username).'/'.$name.'.git';
+    }
+
+    /**
      * List Git repositories for the authenticated user
      */
     public function index(Request $request)
@@ -30,10 +136,11 @@ class GitController extends Controller
     public function store(Request $request)
     {
         $account = $request->user()->account;
+        $this->assertValidUsername($account->username);
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100|regex:/^[a-zA-Z0-9_-]+$/',
-            'branch' => 'string|max:50',
+            'branch' => 'string|max:100|regex:/^[A-Za-z0-9._\/-]+$/',
             'deploy_path' => 'nullable|string|max:255',
             'auto_deploy' => 'boolean',
             'deploy_script' => 'nullable|string',
@@ -49,23 +156,20 @@ class GitController extends Controller
             return $this->error('Repository with this name already exists', 422);
         }
 
-        // Create repository directory
-        $repoPath = "{$request->name}.git";
-        $fullPath = "/home/{$account->username}/repositories/{$repoPath}";
-
-        // Initialize bare git repository
-        Process::run("sudo mkdir -p /home/{$account->username}/repositories");
-        Process::run("sudo git init --bare {$fullPath}");
-        Process::run("sudo chown -R {$account->username}:{$account->username} {$fullPath}");
-
-        // Set default branch
         $branch = $request->input('branch', 'main');
-        Process::run("sudo git -C {$fullPath} symbolic-ref HEAD refs/heads/{$branch}");
+        $this->assertValidBranch($branch);
+
+        $fullPath = $this->repoPath($account->username, $request->name);
+
+        Process::run(['sudo', 'mkdir', '-p', $this->repositoriesDir($account->username)]);
+        Process::run(['sudo', 'git', 'init', '--bare', $fullPath]);
+        Process::run(['sudo', 'chown', '-R', "{$account->username}:{$account->username}", $fullPath]);
+        Process::run(['sudo', 'git', '-C', $fullPath, 'symbolic-ref', 'HEAD', "refs/heads/{$branch}"]);
 
         $repository = GitRepository::create([
             'account_id' => $account->id,
             'name' => $request->name,
-            'path' => $repoPath,
+            'path' => "{$request->name}.git",
             'branch' => $branch,
             'deploy_path' => $request->deploy_path,
             'auto_deploy' => $request->boolean('auto_deploy'),
@@ -73,12 +177,10 @@ class GitController extends Controller
             'is_private' => $request->boolean('is_private', true),
         ]);
 
-        // Set up post-receive hook if auto-deploy is enabled
         if ($repository->auto_deploy) {
             $this->setupDeployHook($repository);
         }
 
-        // Generate clone URLs
         $repository->clone_url = $repository->ssh_url;
         $repository->save();
 
@@ -100,9 +202,11 @@ class GitController extends Controller
             return $this->error('Repository not found', 404);
         }
 
-        // Get recent commits
-        $fullPath = $gitRepository->full_path;
-        $result = Process::run("git -C {$fullPath} log --oneline -10 2>/dev/null");
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($gitRepository->name);
+        $fullPath = $this->repoPath($account->username, $gitRepository->name);
+
+        $result = Process::run(['git', '-C', $fullPath, 'log', '--oneline', '-10']);
         $commits = [];
 
         foreach (explode("\n", trim($result->output())) as $line) {
@@ -116,12 +220,10 @@ class GitController extends Controller
             ];
         }
 
-        // Get branches
-        $result = Process::run("git -C {$fullPath} branch 2>/dev/null");
+        $result = Process::run(['git', '-C', $fullPath, 'branch']);
         $branches = array_filter(array_map('trim', explode("\n", $result->output())));
 
-        // Get repository size
-        $result = Process::run("du -sh {$fullPath}");
+        $result = Process::run(['du', '-sh', $fullPath]);
         preg_match('/^([\d.]+[KMGT]?)/', $result->output(), $matches);
         $size = $matches[1] ?? '0K';
 
@@ -147,7 +249,7 @@ class GitController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'branch' => 'string|max:50',
+            'branch' => 'string|max:100|regex:/^[A-Za-z0-9._\/-]+$/',
             'deploy_path' => 'nullable|string|max:255',
             'auto_deploy' => 'boolean',
             'deploy_script' => 'nullable|string',
@@ -166,7 +268,6 @@ class GitController extends Controller
             'is_private',
         ]));
 
-        // Update deploy hook
         if ($gitRepository->auto_deploy) {
             $this->setupDeployHook($gitRepository);
         } else {
@@ -187,9 +288,11 @@ class GitController extends Controller
             return $this->error('Repository not found', 404);
         }
 
-        // Delete repository directory
-        $fullPath = $gitRepository->full_path;
-        Process::run("sudo rm -rf {$fullPath}");
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($gitRepository->name);
+        $fullPath = $this->repoPath($account->username, $gitRepository->name);
+
+        Process::run(['sudo', 'rm', '-rf', '--', $fullPath]);
 
         $gitRepository->delete();
 
@@ -202,42 +305,45 @@ class GitController extends Controller
     public function cloneRepo(Request $request)
     {
         $account = $request->user()->account;
+        $this->assertValidUsername($account->username);
 
         $validator = Validator::make($request->all(), [
-            'url' => 'required|url',
+            'url' => 'required|url|max:500',
             'name' => 'required|string|max:100|regex:/^[a-zA-Z0-9_-]+$/',
-            'branch' => 'string|max:50',
+            'branch' => 'string|max:100|regex:/^[A-Za-z0-9._\/-]+$/',
         ]);
 
         if ($validator->fails()) {
             return $this->error($validator->errors()->first(), 422);
         }
 
-        // Check if repository already exists
+        $url = (string) $request->input('url');
+        $this->assertSafeCloneUrl($url);
+
         if (GitRepository::where('account_id', $account->id)->where('name', $request->name)->exists()) {
             return $this->error('Repository with this name already exists', 422);
         }
 
-        $repoPath = "{$request->name}.git";
-        $fullPath = "/home/{$account->username}/repositories/{$repoPath}";
         $branch = $request->input('branch', 'main');
+        $this->assertValidBranch($branch);
 
-        // Clone as bare repository
-        Process::run("sudo mkdir -p /home/{$account->username}/repositories");
-        $result = Process::run("sudo git clone --bare {$request->url} {$fullPath}");
+        $fullPath = $this->repoPath($account->username, $request->name);
+
+        Process::run(['sudo', 'mkdir', '-p', $this->repositoriesDir($account->username)]);
+        $result = Process::run(['sudo', 'git', 'clone', '--bare', '--', $url, $fullPath]);
 
         if (! $result->successful()) {
             return $this->error('Failed to clone repository: '.$result->errorOutput(), 500);
         }
 
-        Process::run("sudo chown -R {$account->username}:{$account->username} {$fullPath}");
+        Process::run(['sudo', 'chown', '-R', "{$account->username}:{$account->username}", $fullPath]);
 
         $repository = GitRepository::create([
             'account_id' => $account->id,
             'name' => $request->name,
-            'path' => $repoPath,
+            'path' => "{$request->name}.git",
             'branch' => $branch,
-            'clone_url' => $request->url,
+            'clone_url' => $url,
             'is_private' => true,
         ]);
 
@@ -263,8 +369,11 @@ class GitController extends Controller
             return $this->error('Repository has no remote URL', 400);
         }
 
-        $fullPath = $gitRepository->full_path;
-        $result = Process::run("sudo -u {$account->username} git -C {$fullPath} fetch origin");
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($gitRepository->name);
+        $fullPath = $this->repoPath($account->username, $gitRepository->name);
+
+        $result = Process::run(['sudo', '-u', $account->username, 'git', '-C', $fullPath, 'fetch', 'origin']);
 
         if (! $result->successful()) {
             return $this->error('Pull failed: '.$result->errorOutput(), 500);
@@ -304,8 +413,11 @@ class GitController extends Controller
             return $this->error('Repository not found', 404);
         }
 
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($gitRepository->name);
         $logPath = "/home/{$account->username}/logs/deploy-{$gitRepository->name}.log";
-        $result = Process::run("tail -100 {$logPath} 2>/dev/null");
+
+        $result = Process::run(['tail', '-n', '100', $logPath]);
 
         return $this->success([
             'logs' => $result->output() ?: 'No deployment logs found',
@@ -323,11 +435,21 @@ class GitController extends Controller
             return $this->error('Repository not found', 404);
         }
 
-        $fullPath = $gitRepository->full_path;
-        $path = $request->input('path', '');
-        $ref = $request->input('ref', 'HEAD');
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($gitRepository->name);
+        $fullPath = $this->repoPath($account->username, $gitRepository->name);
 
-        $result = Process::run("git -C {$fullPath} ls-tree {$ref} {$path} 2>/dev/null");
+        $path = (string) $request->input('path', '');
+        $ref = (string) $request->input('ref', 'HEAD');
+
+        $this->assertValidRelativePath($path);
+        $this->assertValidRef($ref);
+
+        $args = ['git', '-C', $fullPath, 'ls-tree', $ref];
+        if ($path !== '') {
+            $args[] = $path;
+        }
+        $result = Process::run($args);
 
         $files = [];
         foreach (explode("\n", trim($result->output())) as $line) {
@@ -362,19 +484,25 @@ class GitController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'path' => 'required|string',
-            'ref' => 'string',
+            'path' => 'required|string|max:500',
+            'ref' => 'string|max:100',
         ]);
 
         if ($validator->fails()) {
             return $this->error($validator->errors()->first(), 422);
         }
 
-        $fullPath = $gitRepository->full_path;
-        $ref = $request->input('ref', 'HEAD');
-        $filePath = $request->path;
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($gitRepository->name);
+        $fullPath = $this->repoPath($account->username, $gitRepository->name);
 
-        $result = Process::run("git -C {$fullPath} show {$ref}:{$filePath} 2>/dev/null");
+        $ref = (string) $request->input('ref', 'HEAD');
+        $filePath = (string) $request->input('path');
+
+        $this->assertValidRef($ref);
+        $this->assertValidRelativePath($filePath);
+
+        $result = Process::run(['git', '-C', $fullPath, 'show', "{$ref}:{$filePath}"]);
 
         if (! $result->successful()) {
             return $this->error('File not found', 404);
@@ -392,44 +520,59 @@ class GitController extends Controller
     protected function setupDeployHook(GitRepository $repository): void
     {
         $account = $repository->account;
-        $hookPath = "{$repository->full_path}/hooks/post-receive";
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($repository->name);
+        $this->assertValidBranch((string) $repository->branch);
+
+        $fullRepoPath = $this->repoPath($account->username, $repository->name);
+        $hookPath = "{$fullRepoPath}/hooks/post-receive";
 
         $deployScript = $repository->deploy_script ?: GitRepository::getDefaultDeployScript($this->detectProjectType($repository));
-        $deployPath = $repository->deploy_path;
+        $deployPath = $this->sanitizeDeployPath($account->username, (string) $repository->deploy_path);
         $logPath = "/home/{$account->username}/logs/deploy-{$repository->name}.log";
+
+        // Use escapeshellarg in the template values we interpolate into the
+        // bash source that gets written to disk. The customer's own
+        // $deployScript is deliberately executed as shell — that's the
+        // feature — but surrounding metadata stays inert.
+        $deployPathSh = escapeshellarg($deployPath);
+        $logPathSh = escapeshellarg($logPath);
+        $branchSh = escapeshellarg((string) $repository->branch);
+        $indentedScript = $this->indentScript((string) $deployScript, 8);
 
         $hook = <<<HOOK
 #!/bin/bash
 # FreePanel auto-deploy hook
-DEPLOY_PATH="{$deployPath}"
-LOG_FILE="{$logPath}"
-BRANCH="{$repository->branch}"
+DEPLOY_PATH={$deployPathSh}
+LOG_FILE={$logPathSh}
+BRANCH={$branchSh}
 
 while read oldrev newrev refname; do
     branch=\$(git rev-parse --symbolic --abbrev-ref \$refname)
 
     if [ "\$branch" = "\$BRANCH" ]; then
-        echo "[\$(date)] Deploying \$branch to \$DEPLOY_PATH" >> \$LOG_FILE
+        echo "[\$(date)] Deploying \$branch to \$DEPLOY_PATH" >> "\$LOG_FILE"
 
         # Checkout files to deploy path
-        GIT_WORK_TREE=\$DEPLOY_PATH git checkout -f \$branch >> \$LOG_FILE 2>&1
+        GIT_WORK_TREE="\$DEPLOY_PATH" git checkout -f \$branch >> "\$LOG_FILE" 2>&1
 
-        cd \$DEPLOY_PATH
+        cd "\$DEPLOY_PATH" || exit 1
 
         # Run deploy script
-{$this->indentScript($deployScript, 8)} >> \$LOG_FILE 2>&1
+{$indentedScript} >> "\$LOG_FILE" 2>&1
 
-        echo "[\$(date)] Deployment complete" >> \$LOG_FILE
+        echo "[\$(date)] Deployment complete" >> "\$LOG_FILE"
     fi
 done
 HOOK;
 
-        $tempFile = tempnam('/tmp', 'hook_');
+        $tempFile = tempnam(sys_get_temp_dir(), 'hook_');
+        chmod($tempFile, 0600);
         file_put_contents($tempFile, $hook);
 
-        Process::run("sudo mv {$tempFile} {$hookPath}");
-        Process::run("sudo chmod +x {$hookPath}");
-        Process::run("sudo chown {$account->username}:{$account->username} {$hookPath}");
+        Process::run(['sudo', 'mv', $tempFile, $hookPath]);
+        Process::run(['sudo', 'chmod', '+x', $hookPath]);
+        Process::run(['sudo', 'chown', "{$account->username}:{$account->username}", $hookPath]);
     }
 
     /**
@@ -437,8 +580,12 @@ HOOK;
      */
     protected function removeDeployHook(GitRepository $repository): void
     {
-        $hookPath = "{$repository->full_path}/hooks/post-receive";
-        Process::run("sudo rm -f {$hookPath}");
+        $account = $repository->account;
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($repository->name);
+
+        $hookPath = $this->repoPath($account->username, $repository->name).'/hooks/post-receive';
+        Process::run(['sudo', 'rm', '-f', '--', $hookPath]);
     }
 
     /**
@@ -447,23 +594,54 @@ HOOK;
     protected function runDeploy(GitRepository $repository): string
     {
         $account = $repository->account;
-        $deployPath = $repository->deploy_path;
-        $fullRepoPath = $repository->full_path;
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($repository->name);
+        $this->assertValidBranch((string) $repository->branch);
 
-        // Checkout to deploy path
-        Process::run("sudo -u {$account->username} mkdir -p {$deployPath}");
-        Process::run("sudo -u {$account->username} git -C {$fullRepoPath} --work-tree={$deployPath} checkout -f {$repository->branch}");
+        $deployPath = $this->sanitizeDeployPath($account->username, (string) $repository->deploy_path);
+        $fullRepoPath = $this->repoPath($account->username, $repository->name);
 
-        // Run deploy script
+        Process::run(['sudo', '-u', $account->username, 'mkdir', '-p', $deployPath]);
+        Process::run([
+            'sudo', '-u', $account->username,
+            'git', '-C', $fullRepoPath,
+            "--work-tree={$deployPath}",
+            'checkout', '-f', $repository->branch,
+        ]);
+
         $script = $repository->deploy_script ?: GitRepository::getDefaultDeployScript($this->detectProjectType($repository));
-        $tempScript = tempnam('/tmp', 'deploy_');
-        file_put_contents($tempScript, "#!/bin/bash\ncd {$deployPath}\n{$script}");
-        chmod($tempScript, 0755);
+        $tempScript = tempnam(sys_get_temp_dir(), 'deploy_');
+        chmod($tempScript, 0600);
 
-        $result = Process::run("sudo -u {$account->username} {$tempScript}");
-        unlink($tempScript);
+        // The customer's deploy script is executed as shell by design;
+        // only the `cd` target is templated in, via escapeshellarg.
+        $deployPathSh = escapeshellarg($deployPath);
+        file_put_contents($tempScript, "#!/bin/bash\ncd {$deployPathSh} || exit 1\n{$script}\n");
+        chmod($tempScript, 0700);
+
+        $result = Process::run(['sudo', '-u', $account->username, $tempScript]);
+        @unlink($tempScript);
 
         return $result->output().$result->errorOutput();
+    }
+
+    /**
+     * Constrain deploy paths to the account's home directory.
+     */
+    protected function sanitizeDeployPath(string $username, string $path): string
+    {
+        $homeDir = "/home/{$username}";
+        if ($path === '' || str_contains($path, '..')) {
+            abort(422, 'Invalid deploy path');
+        }
+
+        $absolute = str_starts_with($path, '/') ? $path : $homeDir.'/'.$path;
+
+        if (! str_starts_with($absolute, $homeDir.'/') && $absolute !== $homeDir) {
+            abort(422, 'Deploy path must be inside the account home directory');
+        }
+
+        return $absolute;
     }
 
     /**
@@ -471,10 +649,12 @@ HOOK;
      */
     protected function detectProjectType(GitRepository $repository): string
     {
-        $fullPath = $repository->full_path;
+        $account = $repository->account;
+        $this->assertValidUsername($account->username);
+        $this->assertValidRepoName($repository->name);
+        $fullPath = $this->repoPath($account->username, $repository->name);
 
-        // Check for common files
-        $result = Process::run("git -C {$fullPath} ls-tree --name-only HEAD 2>/dev/null");
+        $result = Process::run(['git', '-C', $fullPath, 'ls-tree', '--name-only', 'HEAD']);
         $files = explode("\n", $result->output());
 
         if (in_array('package.json', $files)) {

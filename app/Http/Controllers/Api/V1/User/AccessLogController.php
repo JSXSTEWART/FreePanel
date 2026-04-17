@@ -9,55 +9,74 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AccessLogController extends Controller
 {
+    protected string $logDir = '/var/log/apache2/domlogs';
+
+    /**
+     * Domains on an account can be lightly validated: the domain is
+     * stored in the DB at account-creation time, but we still guard
+     * against surprise values before we stitch it into a path and
+     * shell-adjacent code.
+     */
+    protected function assertValidDomain(string $domain): void
+    {
+        if (! preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,253})[A-Za-z0-9]$/', $domain)) {
+            abort(404, 'Log file not found');
+        }
+    }
+
+    /**
+     * Canonicalize a log file path and confirm it lives under our
+     * managed log directory. Returns null for missing/invalid files.
+     */
+    protected function resolveLogFile(string $candidate): ?string
+    {
+        $real = realpath($candidate);
+        if ($real === false) {
+            return null;
+        }
+        if (! str_starts_with($real, $this->logDir.DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return $real;
+    }
+
     /**
      * Get access log overview
      */
     public function index(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
-
-        $accessLog = "{$logDir}/{$domain}-access.log";
-        $errorLog = "{$logDir}/{$domain}-error.log";
-        $sslAccessLog = "{$logDir}/{$domain}-ssl_access.log";
+        $this->assertValidDomain($domain);
 
         $logs = [];
 
-        // Get log file info
-        foreach ([$accessLog, $errorLog, $sslAccessLog] as $log) {
+        // Live logs
+        foreach (['access', 'error', 'ssl_access'] as $kind) {
+            $log = "{$this->logDir}/{$domain}-{$kind}.log";
             if (file_exists($log)) {
-                $result = Process::run("ls -la {$log}");
-                preg_match('/(\d+)\s+(\w+\s+\d+\s+[\d:]+)/', $result->output(), $matches);
-
                 $logs[] = [
                     'name' => basename($log),
                     'path' => $log,
-                    'size' => (int) ($matches[1] ?? 0),
-                    'size_human' => $this->formatBytes((int) ($matches[1] ?? 0)),
-                    'modified' => $matches[2] ?? null,
-                    'type' => str_contains($log, 'error') ? 'error' : 'access',
+                    'size' => filesize($log) ?: 0,
+                    'size_human' => $this->formatBytes(filesize($log) ?: 0),
+                    'modified' => date('M j H:i', filemtime($log) ?: 0),
+                    'type' => $kind === 'error' ? 'error' : 'access',
                 ];
             }
         }
 
-        // Get archived logs
-        $result = Process::run("ls -la {$logDir}/{$domain}*.gz 2>/dev/null");
-        foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) {
-                continue;
-            }
-            preg_match('/(\d+)\s+(\w+\s+\d+\s+[\d:]+)\s+(.+\.gz)$/', $line, $matches);
-            if ($matches) {
-                $logs[] = [
-                    'name' => basename($matches[3]),
-                    'path' => $matches[3],
-                    'size' => (int) $matches[1],
-                    'size_human' => $this->formatBytes((int) $matches[1]),
-                    'modified' => $matches[2],
-                    'type' => 'archived',
-                ];
-            }
+        // Archived logs — enumerate via glob, not a shell `ls`.
+        foreach (glob("{$this->logDir}/{$domain}*.gz") ?: [] as $archive) {
+            $logs[] = [
+                'name' => basename($archive),
+                'path' => $archive,
+                'size' => filesize($archive) ?: 0,
+                'size_human' => $this->formatBytes(filesize($archive) ?: 0),
+                'modified' => date('M j H:i', filemtime($archive) ?: 0),
+                'type' => 'archived',
+            ];
         }
 
         return $this->success([
@@ -72,23 +91,20 @@ class AccessLogController extends Controller
     public function view(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
+        $this->assertValidDomain($domain);
 
-        $type = $request->input('type', 'access'); // access, error, ssl_access
-        $lines = min($request->input('lines', 100), 1000);
+        $type = in_array($request->input('type'), ['access', 'error', 'ssl_access'], true)
+            ? $request->input('type')
+            : 'access';
+        $lines = max(1, min((int) $request->input('lines', 100), 1000));
 
-        $logFile = match ($type) {
-            'error' => "{$logDir}/{$domain}-error.log",
-            'ssl_access' => "{$logDir}/{$domain}-ssl_access.log",
-            default => "{$logDir}/{$domain}-access.log",
-        };
-
-        if (! file_exists($logFile)) {
+        $logFile = $this->resolveLogFile("{$this->logDir}/{$domain}-{$type}.log");
+        if ($logFile === null) {
             return $this->error('Log file not found', 404);
         }
 
-        $result = Process::run("sudo tail -{$lines} {$logFile}");
+        $result = Process::run(['sudo', 'tail', '-n', (string) $lines, $logFile]);
 
         $entries = [];
         foreach (explode("\n", $result->output()) as $line) {
@@ -96,11 +112,9 @@ class AccessLogController extends Controller
                 continue;
             }
 
-            if ($type === 'error') {
-                $entries[] = $this->parseErrorLogLine($line);
-            } else {
-                $entries[] = $this->parseAccessLogLine($line);
-            }
+            $entries[] = $type === 'error'
+                ? $this->parseErrorLogLine($line)
+                : $this->parseAccessLogLine($line);
         }
 
         return $this->success([
@@ -116,35 +130,35 @@ class AccessLogController extends Controller
     public function download(Request $request): StreamedResponse
     {
         $account = $request->user()->account;
-        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
+        $this->assertValidDomain($domain);
 
-        $type = $request->input('type', 'access');
-        $date = $request->input('date'); // For archived logs
+        $type = in_array($request->input('type'), ['access', 'error', 'ssl_access'], true)
+            ? $request->input('type')
+            : 'access';
+        $date = $request->input('date'); // For archived logs — must match a safe pattern.
 
-        if ($date) {
-            $logFile = "{$logDir}/{$domain}-{$type}.log.{$date}.gz";
-        } else {
-            $logFile = match ($type) {
-                'error' => "{$logDir}/{$domain}-error.log",
-                'ssl_access' => "{$logDir}/{$domain}-ssl_access.log",
-                default => "{$logDir}/{$domain}-access.log",
-            };
+        if ($date !== null && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            abort(422, 'Invalid date');
         }
 
-        // Verify path is within allowed directory
-        $realPath = realpath($logFile);
-        if (! $realPath || ! str_starts_with($realPath, $logDir)) {
+        $candidate = $date
+            ? "{$this->logDir}/{$domain}-{$type}.log.{$date}.gz"
+            : "{$this->logDir}/{$domain}-{$type}.log";
+
+        $logFile = $this->resolveLogFile($candidate);
+        if ($logFile === null) {
             abort(404, 'Log file not found');
         }
 
         $filename = basename($logFile);
+        $contentType = str_ends_with($logFile, '.gz') ? 'application/gzip' : 'text/plain';
 
         return response()->streamDownload(function () use ($logFile) {
-            $result = Process::run("sudo cat {$logFile}");
+            $result = Process::run(['sudo', 'cat', $logFile]);
             echo $result->output();
         }, $filename, [
-            'Content-Type' => str_ends_with($logFile, '.gz') ? 'application/gzip' : 'text/plain',
+            'Content-Type' => $contentType,
         ]);
     }
 
@@ -154,40 +168,42 @@ class AccessLogController extends Controller
     public function search(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
+        $this->assertValidDomain($domain);
 
-        $query = $request->input('query');
-        $type = $request->input('type', 'access');
-        $lines = min($request->input('lines', 500), 2000);
+        $query = (string) $request->input('query', '');
+        $type = $request->input('type') === 'error' ? 'error' : 'access';
+        $lines = max(1, min((int) $request->input('lines', 500), 2000));
 
-        if (! $query || strlen($query) < 3) {
-            return $this->error('Query must be at least 3 characters', 422);
+        if (strlen($query) < 3 || strlen($query) > 255) {
+            return $this->error('Query must be between 3 and 255 characters', 422);
         }
 
-        $logFile = match ($type) {
-            'error' => "{$logDir}/{$domain}-error.log",
-            default => "{$logDir}/{$domain}-access.log",
-        };
-
-        if (! file_exists($logFile)) {
+        $logFile = $this->resolveLogFile("{$this->logDir}/{$domain}-{$type}.log");
+        if ($logFile === null) {
             return $this->error('Log file not found', 404);
         }
 
-        $escapedQuery = escapeshellarg($query);
-        $result = Process::run("sudo grep -i {$escapedQuery} {$logFile} | tail -{$lines}");
+        // grep with array args + --fixed-strings so the query is always
+        // treated as a literal substring (never a regex that could ReDoS
+        // the log reader).
+        $grep = Process::run(['sudo', 'grep', '-iF', '--', $query, $logFile]);
+        $matches = explode("\n", $grep->output());
+
+        // Keep the last $lines matches — cheaper than piping through tail.
+        if (count($matches) > $lines) {
+            $matches = array_slice($matches, -$lines);
+        }
 
         $entries = [];
-        foreach (explode("\n", $result->output()) as $line) {
+        foreach ($matches as $line) {
             if (empty(trim($line))) {
                 continue;
             }
 
-            if ($type === 'error') {
-                $entries[] = $this->parseErrorLogLine($line);
-            } else {
-                $entries[] = $this->parseAccessLogLine($line);
-            }
+            $entries[] = $type === 'error'
+                ? $this->parseErrorLogLine($line)
+                : $this->parseAccessLogLine($line);
         }
 
         return $this->success([
@@ -203,13 +219,11 @@ class AccessLogController extends Controller
     public function stats(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
+        $this->assertValidDomain($domain);
 
-        $logFile = "{$logDir}/{$domain}-access.log";
-        $hours = $request->input('hours', 24);
-
-        if (! file_exists($logFile)) {
+        $logFile = $this->resolveLogFile("{$this->logDir}/{$domain}-access.log");
+        if ($logFile === null) {
             return $this->success([
                 'total_requests' => 0,
                 'unique_ips' => 0,
@@ -219,8 +233,8 @@ class AccessLogController extends Controller
             ]);
         }
 
-        // Get recent entries
-        $result = Process::run("sudo tail -10000 {$logFile}");
+        // Get recent entries (capped)
+        $result = Process::run(['sudo', 'tail', '-n', '10000', $logFile]);
         $lines = explode("\n", $result->output());
 
         $urls = [];
@@ -236,19 +250,15 @@ class AccessLogController extends Controller
 
             $totalRequests++;
 
-            // Count URLs
             $url = $parsed['url'] ?? '/';
             $urls[$url] = ($urls[$url] ?? 0) + 1;
 
-            // Count IPs
             $ips[$parsed['ip']] = ($ips[$parsed['ip']] ?? 0) + 1;
 
-            // Count status codes
             $status = $parsed['status'] ?? '0';
             $statusCodes[$status] = ($statusCodes[$status] ?? 0) + 1;
         }
 
-        // Sort and limit
         arsort($urls);
         arsort($ips);
         arsort($statusCodes);

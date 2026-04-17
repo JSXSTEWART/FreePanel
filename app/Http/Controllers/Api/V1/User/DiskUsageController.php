@@ -4,42 +4,68 @@ namespace App\Http\Controllers\Api\V1\User;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 
 class DiskUsageController extends Controller
 {
+    protected function assertValidUsername(string $username): void
+    {
+        if (! preg_match('/^[a-z][a-z0-9_-]{0,31}$/', $username)) {
+            abort(404);
+        }
+    }
+
+    protected function assertValidDomain(string $domain): void
+    {
+        if (! preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,253})[A-Za-z0-9]$/', $domain)) {
+            abort(404);
+        }
+    }
+
+    /**
+     * MySQL schema names in FreePanel are validated at creation time via
+     * MysqlService::validateName. Re-enforce here so any drift in that
+     * upstream validation can't yield SQL or shell injection when we
+     * lookup disk usage.
+     */
+    protected function assertValidDatabaseName(string $name): void
+    {
+        if (! preg_match('/^[A-Za-z][A-Za-z0-9_]{0,63}$/', $name)) {
+            abort(422, 'Invalid database name');
+        }
+    }
+
     /**
      * Get disk usage summary
      */
     public function index(Request $request)
     {
         $account = $request->user()->account;
+        $this->assertValidUsername($account->username);
         $homeDir = "/home/{$account->username}";
 
-        // Get total usage
-        $result = Process::run("du -sb {$homeDir} 2>/dev/null | cut -f1");
-        $totalBytes = (int) trim($result->output());
+        // Total usage
+        $result = Process::run(['du', '-sb', $homeDir]);
+        $totalBytes = (int) strtok(trim($result->output()), "\t");
 
-        // Get quota info
+        // Quota info
         $quota = $account->package->disk_quota ?? null;
-        $quotaBytes = $quota ? $quota * 1024 * 1024 : null; // Convert MB to bytes
+        $quotaBytes = $quota ? $quota * 1024 * 1024 : null;
 
-        // Get breakdown by top-level directories
-        $result = Process::run("du -sb {$homeDir}/* 2>/dev/null | sort -rn");
+        // Per-top-level-dir breakdown via glob + filesize walk in PHP so
+        // nothing is passed to a shell.
         $breakdown = [];
-
-        foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) {
-                continue;
-            }
-            [$size, $path] = preg_split('/\s+/', $line, 2);
+        foreach (glob($homeDir.'/*') ?: [] as $entry) {
+            $size = is_dir($entry) ? $this->directorySize($entry) : (filesize($entry) ?: 0);
             $breakdown[] = [
-                'path' => basename($path),
-                'size' => (int) $size,
-                'size_human' => $this->formatBytes((int) $size),
-                'percentage' => $totalBytes > 0 ? round(((int) $size / $totalBytes) * 100, 2) : 0,
+                'path' => basename($entry),
+                'size' => $size,
+                'size_human' => $this->formatBytes($size),
+                'percentage' => $totalBytes > 0 ? round(($size / $totalBytes) * 100, 2) : 0,
             ];
         }
+        usort($breakdown, fn ($a, $b) => $b['size'] <=> $a['size']);
 
         return $this->success([
             'total_usage' => $totalBytes,
@@ -57,24 +83,29 @@ class DiskUsageController extends Controller
     public function directory(Request $request)
     {
         $account = $request->user()->account;
+        $this->assertValidUsername($account->username);
         $homeDir = "/home/{$account->username}";
-        $path = $request->input('path', '');
+        $path = (string) $request->input('path', '');
 
-        // Security check
-        $fullPath = realpath("{$homeDir}/{$path}");
-        if (! $fullPath || ! str_starts_with($fullPath, $homeDir)) {
+        if (str_contains($path, '..') || str_starts_with($path, '/')) {
             return $this->error('Invalid path', 400);
         }
 
-        // Get directory contents with sizes
-        $result = Process::run("du -sb {$fullPath}/* 2>/dev/null | sort -rn");
-        $items = [];
+        $fullPath = realpath($path === '' ? $homeDir : "{$homeDir}/{$path}");
+        if (! $fullPath || ! (str_starts_with($fullPath, $homeDir.'/') || $fullPath === $homeDir)) {
+            return $this->error('Invalid path', 400);
+        }
 
+        $result = Process::run(['du', '-sb', '--max-depth=1', $fullPath]);
+        $items = [];
         foreach (explode("\n", $result->output()) as $line) {
             if (empty(trim($line))) {
                 continue;
             }
-            [$size, $itemPath] = preg_split('/\s+/', $line, 2);
+            [$size, $itemPath] = preg_split('/\t/', $line, 2) + [null, null];
+            if ($itemPath === null || $itemPath === $fullPath) {
+                continue;
+            }
             $items[] = [
                 'name' => basename($itemPath),
                 'path' => str_replace($homeDir.'/', '', $itemPath),
@@ -84,9 +115,8 @@ class DiskUsageController extends Controller
             ];
         }
 
-        // Get total for this directory
-        $result = Process::run("du -sb {$fullPath} 2>/dev/null | cut -f1");
-        $totalBytes = (int) trim($result->output());
+        $result = Process::run(['du', '-sb', $fullPath]);
+        $totalBytes = (int) strtok(trim($result->output()), "\t");
 
         return $this->success([
             'path' => str_replace($homeDir.'/', '', $fullPath),
@@ -106,19 +136,27 @@ class DiskUsageController extends Controller
         $usage = [];
 
         foreach ($databases as $database) {
-            $result = Process::run(
-                "sudo /usr/bin/mysql -N -e \"SELECT SUM(data_length + index_length) FROM information_schema.tables WHERE table_schema = '{$database->name}'\""
-            );
-            $size = (int) trim($result->output());
+            $name = (string) $database->name;
+            $this->assertValidDatabaseName($name);
+
+            // Parameterized query against information_schema — never
+            // interpolate the db name into a MySQL CLI command.
+            $row = DB::connection('mysql_admin')
+                ->selectOne(
+                    'SELECT COALESCE(SUM(data_length + index_length), 0) AS size
+                     FROM information_schema.tables
+                     WHERE table_schema = ?',
+                    [$name]
+                );
+            $size = (int) ($row->size ?? 0);
 
             $usage[] = [
-                'name' => $database->name,
+                'name' => $name,
                 'size' => $size,
                 'size_human' => $this->formatBytes($size),
             ];
         }
 
-        // Sort by size descending
         usort($usage, fn ($a, $b) => $b['size'] - $a['size']);
 
         $totalSize = array_sum(array_column($usage, 'size'));
@@ -136,21 +174,17 @@ class DiskUsageController extends Controller
     public function emails(Request $request)
     {
         $account = $request->user()->account;
+        $this->assertValidDomain($account->domain);
         $mailDir = "/var/mail/vhosts/{$account->domain}";
         $usage = [];
 
         if (is_dir($mailDir)) {
-            $result = Process::run("du -sb {$mailDir}/* 2>/dev/null | sort -rn");
-
-            foreach (explode("\n", $result->output()) as $line) {
-                if (empty(trim($line))) {
-                    continue;
-                }
-                [$size, $path] = preg_split('/\s+/', $line, 2);
+            foreach (glob($mailDir.'/*') ?: [] as $entry) {
+                $size = is_dir($entry) ? $this->directorySize($entry) : (filesize($entry) ?: 0);
                 $usage[] = [
-                    'account' => basename($path).'@'.$account->domain,
-                    'size' => (int) $size,
-                    'size_human' => $this->formatBytes((int) $size),
+                    'account' => basename($entry).'@'.$account->domain,
+                    'size' => $size,
+                    'size_human' => $this->formatBytes($size),
                 ];
             }
         }
@@ -170,12 +204,13 @@ class DiskUsageController extends Controller
     public function largestFiles(Request $request)
     {
         $account = $request->user()->account;
+        $this->assertValidUsername($account->username);
         $homeDir = "/home/{$account->username}";
-        $limit = $request->input('limit', 50);
+        $limit = max(1, min((int) $request->input('limit', 50), 500));
 
-        $result = Process::run(
-            "find {$homeDir} -type f -printf '%s %p\n' 2>/dev/null | sort -rn | head -{$limit}"
-        );
+        // `find` drives discovery; we cap with `head` via an
+        // intermediate array rather than a shell pipeline.
+        $result = Process::run(['find', $homeDir, '-type', 'f', '-printf', '%s %p\n']);
 
         $files = [];
         foreach (explode("\n", $result->output()) as $line) {
@@ -184,16 +219,23 @@ class DiskUsageController extends Controller
             }
             [$size, $path] = preg_split('/\s+/', $line, 2);
             $files[] = [
-                'path' => str_replace($homeDir.'/', '', $path),
                 'size' => (int) $size,
-                'size_human' => $this->formatBytes((int) $size),
-                'extension' => pathinfo($path, PATHINFO_EXTENSION),
+                'path' => str_replace($homeDir.'/', '', $path),
+                'raw_path' => $path,
             ];
         }
 
-        return $this->success([
-            'files' => $files,
-        ]);
+        usort($files, fn ($a, $b) => $b['size'] <=> $a['size']);
+        $files = array_slice($files, 0, $limit);
+
+        $files = array_map(fn ($f) => [
+            'path' => $f['path'],
+            'size' => $f['size'],
+            'size_human' => $this->formatBytes($f['size']),
+            'extension' => pathinfo($f['raw_path'], PATHINFO_EXTENSION),
+        ], $files);
+
+        return $this->success(['files' => $files]);
     }
 
     /**
@@ -202,12 +244,10 @@ class DiskUsageController extends Controller
     public function byType(Request $request)
     {
         $account = $request->user()->account;
+        $this->assertValidUsername($account->username);
         $homeDir = "/home/{$account->username}";
 
-        // Get usage by extension
-        $result = Process::run(
-            "find {$homeDir} -type f -printf '%s %f\n' 2>/dev/null"
-        );
+        $result = Process::run(['find', $homeDir, '-type', 'f', '-printf', '%s %f\n']);
 
         $byExtension = [];
         foreach (explode("\n", $result->output()) as $line) {
@@ -224,7 +264,6 @@ class DiskUsageController extends Controller
             $byExtension[$ext]['size'] += (int) $size;
         }
 
-        // Convert to array and sort
         $types = [];
         foreach ($byExtension as $ext => $data) {
             $types[] = [
@@ -240,6 +279,17 @@ class DiskUsageController extends Controller
         return $this->success([
             'by_type' => array_slice($types, 0, 30),
         ]);
+    }
+
+    /**
+     * Sum total bytes of a directory tree via `du -sb`. Used where a
+     * precise breakdown isn't needed — just a single size.
+     */
+    protected function directorySize(string $path): int
+    {
+        $result = Process::run(['du', '-sb', $path]);
+
+        return (int) strtok(trim($result->output()), "\t");
     }
 
     /**
