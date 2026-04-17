@@ -127,6 +127,7 @@ class Reseller extends Model
         if ($this->disk_limit <= 0) {
             return 0;
         }
+
         return round(($this->total_disk_used / $this->disk_limit) * 100, 2);
     }
 
@@ -138,6 +139,7 @@ class Reseller extends Model
         if ($this->bandwidth_limit <= 0) {
             return 0;
         }
+
         return round(($this->total_bandwidth_used / $this->bandwidth_limit) * 100, 2);
     }
 }

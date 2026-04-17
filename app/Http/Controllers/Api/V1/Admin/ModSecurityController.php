@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\Validator;
 class ModSecurityController extends Controller
 {
     protected string $configPath = '/etc/modsecurity/modsecurity.conf';
+
     protected string $rulesPath = '/etc/modsecurity/rules';
+
     protected string $auditLogPath = '/var/log/modsec_audit.log';
 
     /**
@@ -121,10 +123,10 @@ class ModSecurityController extends Controller
         $cmd = "sudo tail -{$lines} {$this->auditLogPath}";
 
         if ($filter) {
-            $cmd .= " | grep -i " . escapeshellarg($filter);
+            $cmd .= ' | grep -i '.escapeshellarg($filter);
         }
 
-        $result = Process::run($cmd . " 2>/dev/null");
+        $result = Process::run($cmd.' 2>/dev/null');
 
         $entries = $this->parseAuditLog($result->output());
 
@@ -147,7 +149,9 @@ class ModSecurityController extends Controller
 
         $blocked = [];
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
 
             $entry = $this->parseAuditEntry($line);
             if ($entry) {
@@ -159,7 +163,7 @@ class ModSecurityController extends Controller
         $byIp = [];
         foreach ($blocked as $entry) {
             $ip = $entry['client_ip'] ?? 'unknown';
-            if (!isset($byIp[$ip])) {
+            if (! isset($byIp[$ip])) {
                 $byIp[$ip] = [
                     'ip' => $ip,
                     'count' => 0,
@@ -173,7 +177,7 @@ class ModSecurityController extends Controller
         }
 
         // Sort by count
-        usort($byIp, fn($a, $b) => $b['count'] - $a['count']);
+        usort($byIp, fn ($a, $b) => $b['count'] - $a['count']);
 
         return $this->success([
             'total_blocked' => count($blocked),
@@ -292,7 +296,7 @@ class ModSecurityController extends Controller
             $content = $result->output();
 
             // Remove the rule line (and preceding comment if any)
-            $pattern = '/(?:#[^\n]*\n)?' . preg_quote($request->rule, '/') . '\n?/';
+            $pattern = '/(?:#[^\n]*\n)?'.preg_quote($request->rule, '/').'\n?/';
             $content = preg_replace($pattern, '', $content);
 
             $tempFile = tempnam('/tmp', 'modsec_');
@@ -315,20 +319,20 @@ class ModSecurityController extends Controller
         $crsDir = '/etc/modsecurity/crs';
 
         $result = Process::timeout(120)->run(
-            "sudo wget -q {$crsUrl} -O /tmp/crs.tar.gz && " .
-            "sudo mkdir -p {$crsDir} && " .
-            "sudo tar -xzf /tmp/crs.tar.gz -C {$crsDir} --strip-components=1 && " .
-            "sudo cp {$crsDir}/crs-setup.conf.example {$crsDir}/crs-setup.conf && " .
-            "sudo rm /tmp/crs.tar.gz"
+            "sudo wget -q {$crsUrl} -O /tmp/crs.tar.gz && ".
+            "sudo mkdir -p {$crsDir} && ".
+            "sudo tar -xzf /tmp/crs.tar.gz -C {$crsDir} --strip-components=1 && ".
+            "sudo cp {$crsDir}/crs-setup.conf.example {$crsDir}/crs-setup.conf && ".
+            'sudo rm /tmp/crs.tar.gz'
         );
 
-        if (!$result->successful()) {
-            return $this->error('Failed to install OWASP CRS: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to install OWASP CRS: '.$result->errorOutput(), 500);
         }
 
         // Include CRS in ModSecurity config
         $includeContent = "\nInclude {$crsDir}/crs-setup.conf\nInclude {$crsDir}/rules/*.conf\n";
-        Process::run("echo " . escapeshellarg($includeContent) . " | sudo tee -a {$this->configPath}");
+        Process::run('echo '.escapeshellarg($includeContent)." | sudo tee -a {$this->configPath}");
 
         $this->reloadApache();
 
@@ -341,7 +345,7 @@ class ModSecurityController extends Controller
     protected function getModSecurityStatus(): array
     {
         // Check if mod_security is loaded
-        $result = Process::run("apachectl -M 2>/dev/null | grep security");
+        $result = Process::run('apachectl -M 2>/dev/null | grep security');
         $moduleLoaded = str_contains($result->output(), 'security');
 
         // Get engine status from config
@@ -374,7 +378,7 @@ class ModSecurityController extends Controller
             'SecPcreMatchLimitRecursion' => 1000,
         ];
 
-        if (!file_exists($this->configPath)) {
+        if (! file_exists($this->configPath)) {
             return $config;
         }
 
@@ -382,7 +386,9 @@ class ModSecurityController extends Controller
 
         foreach (explode("\n", $result->output()) as $line) {
             $line = trim($line);
-            if (empty($line) || str_starts_with($line, '#')) continue;
+            if (empty($line) || str_starts_with($line, '#')) {
+                continue;
+            }
 
             foreach (array_keys($config) as $key) {
                 if (preg_match("/^{$key}\s+(.+)$/", $line, $matches)) {
@@ -432,7 +438,7 @@ class ModSecurityController extends Controller
      */
     protected function updateConfig(string $key, string $value): void
     {
-        if (!file_exists($this->configPath)) {
+        if (! file_exists($this->configPath)) {
             return;
         }
 
@@ -458,7 +464,7 @@ class ModSecurityController extends Controller
      */
     protected function reloadApache(): void
     {
-        Process::run("sudo /usr/bin/systemctl reload apache2");
+        Process::run('sudo /usr/bin/systemctl reload apache2');
     }
 
     /**
@@ -468,6 +474,7 @@ class ModSecurityController extends Controller
     {
         $parts = ['A', 'B', 'C', 'E', 'F', 'H', 'I', 'J', 'K', 'Z'];
         $selected = array_slice($parts, 0, min($level + 1, count($parts)));
+
         return implode('', $selected);
     }
 
@@ -481,16 +488,16 @@ class ModSecurityController extends Controller
 
         foreach (explode("\n", $content) as $line) {
             if (preg_match('/^--[a-f0-9]+-[A-Z]--/', $line)) {
-                if (!empty($current)) {
+                if (! empty($current)) {
                     $entries[] = $current;
                 }
                 $current = ['raw' => $line];
-            } elseif (!empty($current)) {
-                $current['raw'] .= "\n" . $line;
+            } elseif (! empty($current)) {
+                $current['raw'] .= "\n".$line;
             }
         }
 
-        if (!empty($current)) {
+        if (! empty($current)) {
             $entries[] = $current;
         }
 

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Account;
 use App\Models\Domain;
 use App\Models\EmailAccount;
 use App\Models\EmailForwarder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class EmailManagementTest extends TestCase
 {

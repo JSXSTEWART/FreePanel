@@ -14,7 +14,7 @@ class PackageController extends Controller
         $query = Package::withCount('accounts');
 
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
 
         $packages = $query->orderBy('name')->get();
@@ -76,7 +76,7 @@ class PackageController extends Controller
         $package = Package::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'name' => 'nullable|string|max:64|unique:packages,name,' . $id,
+            'name' => 'nullable|string|max:64|unique:packages,name,'.$id,
             'disk_quota' => 'nullable|integer|min:-1',
             'bandwidth' => 'nullable|integer|min:-1',
             'max_addon_domains' => 'nullable|integer|min:-1',
@@ -94,7 +94,7 @@ class PackageController extends Controller
         }
 
         // If setting as default, unset other defaults
-        if ($request->is_default && !$package->is_default) {
+        if ($request->is_default && ! $package->is_default) {
             Package::where('is_default', true)->update(['is_default' => false]);
         }
 
@@ -137,7 +137,7 @@ class PackageController extends Controller
         $package = Package::findOrFail($id);
 
         $newPackage = $package->replicate();
-        $newPackage->name = $package->name . ' (Copy)';
+        $newPackage->name = $package->name.' (Copy)';
         $newPackage->is_default = false;
         $newPackage->save();
 

@@ -28,6 +28,6 @@ class EmailForwarder extends Model
 
     public function getFullSourceAttribute(): string
     {
-        return $this->source . '@' . $this->domain->name;
+        return $this->source.'@'.$this->domain->name;
     }
 }

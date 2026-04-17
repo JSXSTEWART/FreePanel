@@ -3,16 +3,19 @@
 namespace App\Services\Email;
 
 use App\Models\EmailAccount;
-use App\Models\EmailForwarder;
 use App\Models\EmailAutoresponder;
+use App\Models\EmailForwarder;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 
 class DovecotService implements EmailInterface
 {
     protected string $mailDir;
+
     protected string $configDir;
+
     protected string $passwdFile;
+
     protected string $aliasesFile;
 
     public function __construct()
@@ -77,12 +80,13 @@ class DovecotService implements EmailInterface
     {
         $mailbox = "{$this->mailDir}/{$account->domain->name}/{$account->username}";
 
-        if (!File::isDirectory($mailbox)) {
+        if (! File::isDirectory($mailbox)) {
             return 0;
         }
 
         // Calculate directory size
         $result = Process::run("du -sb {$mailbox} 2>/dev/null | cut -f1");
+
         return (int) trim($result->output());
     }
 
@@ -97,7 +101,7 @@ class DovecotService implements EmailInterface
         File::append($virtualAliases, $entry);
 
         // Rebuild aliases database
-        Process::run('postmap ' . $virtualAliases);
+        Process::run('postmap '.$virtualAliases);
     }
 
     public function deleteForwarder(EmailForwarder $forwarder): void
@@ -110,11 +114,11 @@ class DovecotService implements EmailInterface
             $lines = explode("\n", $content);
 
             $newLines = array_filter($lines, function ($line) use ($source) {
-                return !str_starts_with(trim($line), $source);
+                return ! str_starts_with(trim($line), $source);
             });
 
             File::put($virtualAliases, implode("\n", $newLines));
-            Process::run('postmap ' . $virtualAliases);
+            Process::run('postmap '.$virtualAliases);
         }
     }
 
@@ -125,7 +129,7 @@ class DovecotService implements EmailInterface
 
         // Create sieve script for autoresponder
         $sieveDir = "{$this->mailDir}/{$email->domain->name}/{$email->username}/sieve";
-        if (!File::isDirectory($sieveDir)) {
+        if (! File::isDirectory($sieveDir)) {
             File::makeDirectory($sieveDir, 0755, true);
         }
 
@@ -163,11 +167,12 @@ class DovecotService implements EmailInterface
 
     public function mailboxExists(string $email): bool
     {
-        if (!File::exists($this->passwdFile)) {
+        if (! File::exists($this->passwdFile)) {
             return false;
         }
 
         $content = File::get($this->passwdFile);
+
         return str_contains($content, "{$email}:");
     }
 
@@ -193,7 +198,7 @@ class DovecotService implements EmailInterface
         ];
 
         foreach ($dirs as $dir) {
-            if (!File::isDirectory($dir)) {
+            if (! File::isDirectory($dir)) {
                 File::makeDirectory($dir, 0700, true);
             }
         }
@@ -201,7 +206,8 @@ class DovecotService implements EmailInterface
 
     protected function hashPassword(string $password): string
     {
-        $result = Process::run("doveadm pw -s SHA512-CRYPT -p " . escapeshellarg($password));
+        $result = Process::run('doveadm pw -s SHA512-CRYPT -p '.escapeshellarg($password));
+
         return trim($result->output());
     }
 
@@ -218,7 +224,7 @@ class DovecotService implements EmailInterface
 
     protected function removeFromPasswdFile(string $email): void
     {
-        if (!File::exists($this->passwdFile)) {
+        if (! File::exists($this->passwdFile)) {
             return;
         }
 
@@ -226,7 +232,7 @@ class DovecotService implements EmailInterface
         $lines = explode("\n", $content);
 
         $newLines = array_filter($lines, function ($line) use ($email) {
-            return !str_starts_with($line, "{$email}:");
+            return ! str_starts_with($line, "{$email}:");
         });
 
         File::put($this->passwdFile, implode("\n", $newLines));
@@ -234,7 +240,7 @@ class DovecotService implements EmailInterface
 
     protected function updatePasswdEntry(string $email, string $field, string $value): void
     {
-        if (!File::exists($this->passwdFile)) {
+        if (! File::exists($this->passwdFile)) {
             return;
         }
 
@@ -267,15 +273,15 @@ class DovecotService implements EmailInterface
         $conditions = [];
 
         if ($autoresponder->start_time) {
-            $conditions[] = 'currentdate :value "ge" "date" "' . $autoresponder->start_time->format('Y-m-d') . '"';
+            $conditions[] = 'currentdate :value "ge" "date" "'.$autoresponder->start_time->format('Y-m-d').'"';
         }
 
         if ($autoresponder->end_time) {
-            $conditions[] = 'currentdate :value "le" "date" "' . $autoresponder->end_time->format('Y-m-d') . '"';
+            $conditions[] = 'currentdate :value "le" "date" "'.$autoresponder->end_time->format('Y-m-d').'"';
         }
 
-        $conditionStr = !empty($conditions) ? 'if allof(' . implode(', ', $conditions) . ') {' : '';
-        $endIf = !empty($conditions) ? '}' : '';
+        $conditionStr = ! empty($conditions) ? 'if allof('.implode(', ', $conditions).') {' : '';
+        $endIf = ! empty($conditions) ? '}' : '';
 
         $subject = addslashes($autoresponder->subject);
         $body = addslashes($autoresponder->body);
@@ -292,6 +298,6 @@ SIEVE;
     protected function setMailOwnership(string $path): void
     {
         // vmail user/group typically 5000:5000
-        Process::run("chown -R 5000:5000 " . escapeshellarg($path));
+        Process::run('chown -R 5000:5000 '.escapeshellarg($path));
     }
 }

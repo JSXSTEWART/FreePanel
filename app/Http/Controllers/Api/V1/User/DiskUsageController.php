@@ -29,7 +29,9 @@ class DiskUsageController extends Controller
         $breakdown = [];
 
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
             [$size, $path] = preg_split('/\s+/', $line, 2);
             $breakdown[] = [
                 'path' => basename($path),
@@ -60,7 +62,7 @@ class DiskUsageController extends Controller
 
         // Security check
         $fullPath = realpath("{$homeDir}/{$path}");
-        if (!$fullPath || !str_starts_with($fullPath, $homeDir)) {
+        if (! $fullPath || ! str_starts_with($fullPath, $homeDir)) {
             return $this->error('Invalid path', 400);
         }
 
@@ -69,11 +71,13 @@ class DiskUsageController extends Controller
         $items = [];
 
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
             [$size, $itemPath] = preg_split('/\s+/', $line, 2);
             $items[] = [
                 'name' => basename($itemPath),
-                'path' => str_replace($homeDir . '/', '', $itemPath),
+                'path' => str_replace($homeDir.'/', '', $itemPath),
                 'size' => (int) $size,
                 'size_human' => $this->formatBytes((int) $size),
                 'is_directory' => is_dir($itemPath),
@@ -85,7 +89,7 @@ class DiskUsageController extends Controller
         $totalBytes = (int) trim($result->output());
 
         return $this->success([
-            'path' => str_replace($homeDir . '/', '', $fullPath),
+            'path' => str_replace($homeDir.'/', '', $fullPath),
             'total_size' => $totalBytes,
             'total_size_human' => $this->formatBytes($totalBytes),
             'items' => $items,
@@ -115,7 +119,7 @@ class DiskUsageController extends Controller
         }
 
         // Sort by size descending
-        usort($usage, fn($a, $b) => $b['size'] - $a['size']);
+        usort($usage, fn ($a, $b) => $b['size'] - $a['size']);
 
         $totalSize = array_sum(array_column($usage, 'size'));
 
@@ -139,10 +143,12 @@ class DiskUsageController extends Controller
             $result = Process::run("du -sb {$mailDir}/* 2>/dev/null | sort -rn");
 
             foreach (explode("\n", $result->output()) as $line) {
-                if (empty(trim($line))) continue;
+                if (empty(trim($line))) {
+                    continue;
+                }
                 [$size, $path] = preg_split('/\s+/', $line, 2);
                 $usage[] = [
-                    'account' => basename($path) . '@' . $account->domain,
+                    'account' => basename($path).'@'.$account->domain,
                     'size' => (int) $size,
                     'size_human' => $this->formatBytes((int) $size),
                 ];
@@ -173,10 +179,12 @@ class DiskUsageController extends Controller
 
         $files = [];
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
             [$size, $path] = preg_split('/\s+/', $line, 2);
             $files[] = [
-                'path' => str_replace($homeDir . '/', '', $path),
+                'path' => str_replace($homeDir.'/', '', $path),
                 'size' => (int) $size,
                 'size_human' => $this->formatBytes((int) $size),
                 'extension' => pathinfo($path, PATHINFO_EXTENSION),
@@ -203,11 +211,13 @@ class DiskUsageController extends Controller
 
         $byExtension = [];
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
             [$size, $filename] = preg_split('/\s+/', $line, 2);
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION)) ?: 'no extension';
 
-            if (!isset($byExtension[$ext])) {
+            if (! isset($byExtension[$ext])) {
                 $byExtension[$ext] = ['count' => 0, 'size' => 0];
             }
             $byExtension[$ext]['count']++;
@@ -225,7 +235,7 @@ class DiskUsageController extends Controller
             ];
         }
 
-        usort($types, fn($a, $b) => $b['size'] - $a['size']);
+        usort($types, fn ($a, $b) => $b['size'] - $a['size']);
 
         return $this->success([
             'by_type' => array_slice($types, 0, 30),
@@ -245,6 +255,6 @@ class DiskUsageController extends Controller
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 }

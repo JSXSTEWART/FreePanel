@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\User;
 use App\Http\Controllers\Controller;
 use App\Models\BlockedIp;
 use App\Models\HotlinkProtection;
-use App\Models\ProtectedDirectory;
 use App\Models\ProtectedDirectoryUser;
 use App\Services\WebServer\WebServerInterface;
 use Illuminate\Http\Request;
@@ -32,7 +31,7 @@ class SecurityController extends Controller
         $blockedIps = $account->blockedIps()
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn($ip) => [
+            ->map(fn ($ip) => [
                 'id' => $ip->id,
                 'ip_address' => $ip->ip_address,
                 'reason' => $ip->reason,
@@ -61,7 +60,7 @@ class SecurityController extends Controller
             return $this->error($validator->errors()->first(), 422);
         }
 
-        if (!BlockedIp::isValidIp($request->ip_address)) {
+        if (! BlockedIp::isValidIp($request->ip_address)) {
             return $this->error('Invalid IP address format', 422);
         }
 
@@ -97,7 +96,7 @@ class SecurityController extends Controller
         $account = $request->user()->account;
         $blockedIp = $account->blockedIps()->find($id);
 
-        if (!$blockedIp) {
+        if (! $blockedIp) {
             return $this->error('Blocked IP not found', 404);
         }
 
@@ -185,11 +184,11 @@ class SecurityController extends Controller
         $directories = $account->protectedDirectories()
             ->with('users:id,protected_directory_id,username')
             ->get()
-            ->map(fn($dir) => [
+            ->map(fn ($dir) => [
                 'id' => $dir->id,
                 'path' => $dir->path,
                 'name' => $dir->name,
-                'users' => $dir->users->map(fn($u) => [
+                'users' => $dir->users->map(fn ($u) => [
                     'id' => $u->id,
                     'username' => $u->username,
                 ]),
@@ -219,13 +218,13 @@ class SecurityController extends Controller
 
         // Validate path is within user's home directory
         $homeDir = "/home/{$account->system_username}";
-        $fullPath = realpath($homeDir . '/' . ltrim($request->path, '/'));
+        $fullPath = realpath($homeDir.'/'.ltrim($request->path, '/'));
 
-        if (!$fullPath || !str_starts_with($fullPath, $homeDir)) {
+        if (! $fullPath || ! str_starts_with($fullPath, $homeDir)) {
             return $this->error('Invalid directory path', 422);
         }
 
-        if (!is_dir($fullPath)) {
+        if (! is_dir($fullPath)) {
             return $this->error('Directory does not exist', 422);
         }
 
@@ -260,7 +259,7 @@ class SecurityController extends Controller
         $account = $request->user()->account;
         $directory = $account->protectedDirectories()->find($directoryId);
 
-        if (!$directory) {
+        if (! $directory) {
             return $this->error('Protected directory not found', 404);
         }
 
@@ -298,12 +297,12 @@ class SecurityController extends Controller
         $account = $request->user()->account;
         $directory = $account->protectedDirectories()->find($directoryId);
 
-        if (!$directory) {
+        if (! $directory) {
             return $this->error('Protected directory not found', 404);
         }
 
         $user = $directory->users()->find($userId);
-        if (!$user) {
+        if (! $user) {
             return $this->error('User not found', 404);
         }
 
@@ -323,7 +322,7 @@ class SecurityController extends Controller
         $account = $request->user()->account;
         $directory = $account->protectedDirectories()->find($id);
 
-        if (!$directory) {
+        if (! $directory) {
             return $this->error('Protected directory not found', 404);
         }
 
@@ -370,8 +369,9 @@ class SecurityController extends Controller
 
         $protection = $account->hotlinkProtection;
 
-        if (!$protection || !$protection->is_enabled) {
+        if (! $protection || ! $protection->is_enabled) {
             $this->updateHtaccessSection($htaccessPath, 'FreePanel Hotlink Protection', '');
+
             return;
         }
 
@@ -394,13 +394,13 @@ class SecurityController extends Controller
             $rules .= "RewriteCond %{HTTP_REFERER} !^$\n";
         }
 
-        $rules .= "RewriteCond %{HTTP_REFERER} !^https?://(www\\.)?" . preg_quote($_SERVER['HTTP_HOST'] ?? '', '/') . " [NC]\n";
+        $rules .= 'RewriteCond %{HTTP_REFERER} !^https?://(www\\.)?'.preg_quote($_SERVER['HTTP_HOST'] ?? '', '/')." [NC]\n";
         $rules .= "RewriteRule \\.({$extensions})$ ";
 
         if ($protection->redirect_url) {
             $rules .= $protection->redirect_url;
         } else {
-            $rules .= "- [F,NC]";
+            $rules .= '- [F,NC]';
         }
 
         $rules .= "\n# END FreePanel Hotlink Protection\n";
@@ -411,7 +411,7 @@ class SecurityController extends Controller
     protected function syncDirectoryProtection($account, $directory): void
     {
         $homeDir = "/home/{$account->system_username}";
-        $fullPath = "{$homeDir}/" . ltrim($directory->path, '/');
+        $fullPath = "{$homeDir}/".ltrim($directory->path, '/');
         $htaccessPath = "{$fullPath}/.htaccess";
         $htpasswdPath = "{$fullPath}/.htpasswd";
 
@@ -435,7 +435,7 @@ class SecurityController extends Controller
     protected function removeDirectoryProtection($account, $directory): void
     {
         $homeDir = "/home/{$account->system_username}";
-        $fullPath = "{$homeDir}/" . ltrim($directory->path, '/');
+        $fullPath = "{$homeDir}/".ltrim($directory->path, '/');
 
         @unlink("{$fullPath}/.htaccess");
         @unlink("{$fullPath}/.htpasswd");
@@ -454,9 +454,9 @@ class SecurityController extends Controller
 
         // Add new content if not empty
         if ($content) {
-            $existing = trim($existing) . "\n\n" . $content;
+            $existing = trim($existing)."\n\n".$content;
         }
 
-        file_put_contents($path, trim($existing) . "\n");
+        file_put_contents($path, trim($existing)."\n");
     }
 }

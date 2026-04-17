@@ -22,7 +22,7 @@ class CreateAdminCommand extends Command
 
         // Check if admin already exists
         if (User::where('role', 'admin')->exists()) {
-            if (!$this->confirm('An admin user already exists. Create another?')) {
+            if (! $this->confirm('An admin user already exists. Create another?')) {
                 return 0;
             }
         }
@@ -32,19 +32,21 @@ class CreateAdminCommand extends Command
         $username = $this->option('username') ?? $this->ask('Enter admin username', 'admin');
         $password = $this->option('password') ?? $this->secret('Enter admin password');
 
-        if (!$password) {
+        if (! $password) {
             $password = Str::random(16);
             $this->warn("Generated password: {$password}");
         }
 
         // Validate
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $this->error('Invalid email address');
+
             return 1;
         }
 
         if (strlen($password) < 8) {
             $this->error('Password must be at least 8 characters');
+
             return 1;
         }
 

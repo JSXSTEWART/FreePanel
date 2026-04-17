@@ -2,8 +2,8 @@
 
 namespace App\Services\Dns;
 
-use App\Models\Domain;
 use App\Models\DnsZone;
+use App\Models\Domain;
 
 interface DnsInterface
 {

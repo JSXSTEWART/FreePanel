@@ -60,7 +60,7 @@ class SpamSettings extends Model
     public function addToWhitelist(string $email): void
     {
         $whitelist = $this->whitelist ?? [];
-        if (!in_array($email, $whitelist)) {
+        if (! in_array($email, $whitelist)) {
             $whitelist[] = $email;
             $this->update(['whitelist' => $whitelist]);
         }
@@ -72,7 +72,7 @@ class SpamSettings extends Model
     public function removeFromWhitelist(string $email): void
     {
         $whitelist = $this->whitelist ?? [];
-        $whitelist = array_filter($whitelist, fn($e) => $e !== $email);
+        $whitelist = array_filter($whitelist, fn ($e) => $e !== $email);
         $this->update(['whitelist' => array_values($whitelist)]);
     }
 
@@ -82,7 +82,7 @@ class SpamSettings extends Model
     public function addToBlacklist(string $email): void
     {
         $blacklist = $this->blacklist ?? [];
-        if (!in_array($email, $blacklist)) {
+        if (! in_array($email, $blacklist)) {
             $blacklist[] = $email;
             $this->update(['blacklist' => $blacklist]);
         }
@@ -94,7 +94,7 @@ class SpamSettings extends Model
     public function removeFromBlacklist(string $email): void
     {
         $blacklist = $this->blacklist ?? [];
-        $blacklist = array_filter($blacklist, fn($e) => $e !== $email);
+        $blacklist = array_filter($blacklist, fn ($e) => $e !== $email);
         $this->update(['blacklist' => array_values($blacklist)]);
     }
 

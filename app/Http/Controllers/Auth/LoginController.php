@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
@@ -28,7 +27,7 @@ class LoginController extends Controller
             ->orWhere('email', $request->username)
             ->first();
 
-        if (!$user) {
+        if (! $user) {
             throw ValidationException::withMessages([
                 'username' => ['The provided credentials are incorrect.'],
             ]);
@@ -37,17 +36,17 @@ class LoginController extends Controller
         // Check if user is OAuth-only (no password set)
         if (empty($user->password) && $user->oauth_provider) {
             throw ValidationException::withMessages([
-                'username' => ['This account uses ' . ucfirst($user->oauth_provider) . ' authentication. Please sign in with ' . ucfirst($user->oauth_provider) . '.'],
+                'username' => ['This account uses '.ucfirst($user->oauth_provider).' authentication. Please sign in with '.ucfirst($user->oauth_provider).'.'],
             ]);
         }
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'username' => ['The provided credentials are incorrect.'],
             ]);
         }
 
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             throw ValidationException::withMessages([
                 'username' => ['This account has been disabled.'],
             ]);

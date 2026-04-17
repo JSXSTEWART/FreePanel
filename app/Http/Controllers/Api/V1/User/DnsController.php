@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Api\V1\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\Domain;
-use App\Models\DnsZone;
 use App\Models\DnsRecord;
+use App\Models\DnsZone;
 use App\Services\Dns\DnsInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +23,7 @@ class DnsController extends Controller
     {
         $account = $request->user()->account;
 
-        $zones = DnsZone::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $zones = DnsZone::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->with('domain')
             ->get();
 
@@ -35,7 +34,7 @@ class DnsController extends Controller
     {
         $account = $request->user()->account;
 
-        $zone = DnsZone::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $zone = DnsZone::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($zoneId);
 
         return $this->success($zone->records);
@@ -45,7 +44,7 @@ class DnsController extends Controller
     {
         $account = $request->user()->account;
 
-        $zone = DnsZone::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $zone = DnsZone::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($zoneId);
 
         $validator = Validator::make($request->all(), [
@@ -81,10 +80,12 @@ class DnsController extends Controller
             $this->dns->addRecord($zone, $record->toArray());
 
             DB::commit();
+
             return $this->success($record, 'DNS record created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create DNS record: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create DNS record: '.$e->getMessage(), 500);
         }
     }
 
@@ -92,7 +93,7 @@ class DnsController extends Controller
     {
         $account = $request->user()->account;
 
-        $zone = DnsZone::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $zone = DnsZone::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($zoneId);
 
         $record = DnsRecord::where('dns_zone_id', $zone->id)->findOrFail($recordId);
@@ -126,10 +127,12 @@ class DnsController extends Controller
             $this->dns->updateRecord($zone, $oldRecord, $record->toArray());
 
             DB::commit();
+
             return $this->success($record, 'DNS record updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update DNS record: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update DNS record: '.$e->getMessage(), 500);
         }
     }
 
@@ -137,7 +140,7 @@ class DnsController extends Controller
     {
         $account = $request->user()->account;
 
-        $zone = DnsZone::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $zone = DnsZone::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($zoneId);
 
         $record = DnsRecord::where('dns_zone_id', $zone->id)->findOrFail($recordId);
@@ -153,10 +156,12 @@ class DnsController extends Controller
             $record->delete();
 
             DB::commit();
+
             return $this->success(null, 'DNS record deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete DNS record: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete DNS record: '.$e->getMessage(), 500);
         }
     }
 
@@ -164,7 +169,7 @@ class DnsController extends Controller
     {
         $account = $request->user()->account;
 
-        $zone = DnsZone::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $zone = DnsZone::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($zoneId);
 
         DB::beginTransaction();
@@ -172,17 +177,19 @@ class DnsController extends Controller
             // Delete all non-essential records
             DnsRecord::where('dns_zone_id', $zone->id)
                 ->where('type', '!=', 'SOA')
-                ->whereNot(fn($q) => $q->where('type', 'NS')->where('name', '@'))
+                ->whereNot(fn ($q) => $q->where('type', 'NS')->where('name', '@'))
                 ->delete();
 
             // Recreate default records
             $this->dns->resetZone($zone);
 
             DB::commit();
+
             return $this->success($zone->fresh()->load('records'), 'DNS zone reset successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to reset DNS zone: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to reset DNS zone: '.$e->getMessage(), 500);
         }
     }
 
@@ -190,23 +197,24 @@ class DnsController extends Controller
     {
         switch ($type) {
             case 'A':
-                if (!filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                if (! filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
                     return 'Invalid IPv4 address';
                 }
                 break;
             case 'AAAA':
-                if (!filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                if (! filter_var($content, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                     return 'Invalid IPv6 address';
                 }
                 break;
             case 'CNAME':
             case 'NS':
             case 'MX':
-                if (!preg_match('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.?$/i', $content)) {
+                if (! preg_match('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.?$/i', $content)) {
                     return 'Invalid hostname';
                 }
                 break;
         }
+
         return null;
     }
 }

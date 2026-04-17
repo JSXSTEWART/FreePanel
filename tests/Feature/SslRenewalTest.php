@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Account;
 use App\Models\Domain;
 use App\Models\SslCertificate;
@@ -10,6 +9,7 @@ use App\Services\Ssl\LetsEncryptService;
 use App\Services\Ssl\SslInstaller;
 use App\Services\WebServer\WebServerInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class SslRenewalTest extends TestCase
 {
@@ -44,11 +44,11 @@ class SslRenewalTest extends TestCase
                 ]);
         });
 
-        $this->mock(SslInstaller::class, function ($mock) use ($domain) {
+        $this->mock(SslInstaller::class, function ($mock) {
             $mock->shouldReceive('install')->once();
         });
 
-        $this->mock(WebServerInterface::class, function ($mock) use ($domain) {
+        $this->mock(WebServerInterface::class, function ($mock) {
             $mock->shouldReceive('enableSsl')->once();
         });
 

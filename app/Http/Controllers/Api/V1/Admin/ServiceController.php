@@ -40,7 +40,7 @@ class ServiceController extends Controller
         foreach ($this->managedServices as $serviceId => $config) {
             $serviceName = $this->resolveServiceName($serviceId, $config['aliases'] ?? []);
 
-            if (!$serviceName) {
+            if (! $serviceName) {
                 continue;
             }
 
@@ -67,13 +67,13 @@ class ServiceController extends Controller
     {
         $config = $this->managedServices[$service] ?? null;
 
-        if (!$config) {
+        if (! $config) {
             return $this->error('Service not found', 404);
         }
 
         $serviceName = $this->resolveServiceName($service, $config['aliases'] ?? []);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not installed', 404);
         }
 
@@ -93,7 +93,7 @@ class ServiceController extends Controller
     {
         $serviceName = $this->getServiceName($service);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not found', 404);
         }
 
@@ -103,7 +103,7 @@ class ServiceController extends Controller
 
             return $this->success(null, "Service {$service} started successfully");
         } catch (\Exception $e) {
-            return $this->error('Failed to start service: ' . $e->getMessage(), 500);
+            return $this->error('Failed to start service: '.$e->getMessage(), 500);
         }
     }
 
@@ -111,7 +111,7 @@ class ServiceController extends Controller
     {
         $serviceName = $this->getServiceName($service);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not found', 404);
         }
 
@@ -127,7 +127,7 @@ class ServiceController extends Controller
 
             return $this->success(null, "Service {$service} stopped successfully");
         } catch (\Exception $e) {
-            return $this->error('Failed to stop service: ' . $e->getMessage(), 500);
+            return $this->error('Failed to stop service: '.$e->getMessage(), 500);
         }
     }
 
@@ -135,7 +135,7 @@ class ServiceController extends Controller
     {
         $serviceName = $this->getServiceName($service);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not found', 404);
         }
 
@@ -145,7 +145,7 @@ class ServiceController extends Controller
 
             return $this->success(null, "Service {$service} restarted successfully");
         } catch (\Exception $e) {
-            return $this->error('Failed to restart service: ' . $e->getMessage(), 500);
+            return $this->error('Failed to restart service: '.$e->getMessage(), 500);
         }
     }
 
@@ -153,7 +153,7 @@ class ServiceController extends Controller
     {
         $serviceName = $this->getServiceName($service);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not found', 404);
         }
 
@@ -163,7 +163,7 @@ class ServiceController extends Controller
 
             return $this->success(null, "Service {$service} reloaded successfully");
         } catch (\Exception $e) {
-            return $this->error('Failed to reload service: ' . $e->getMessage(), 500);
+            return $this->error('Failed to reload service: '.$e->getMessage(), 500);
         }
     }
 
@@ -171,15 +171,16 @@ class ServiceController extends Controller
     {
         $serviceName = $this->getServiceName($service);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not found', 404);
         }
 
         try {
             $this->systemd->enable($serviceName);
+
             return $this->success(null, "Service {$service} enabled on boot");
         } catch (\Exception $e) {
-            return $this->error('Failed to enable service: ' . $e->getMessage(), 500);
+            return $this->error('Failed to enable service: '.$e->getMessage(), 500);
         }
     }
 
@@ -187,15 +188,16 @@ class ServiceController extends Controller
     {
         $serviceName = $this->getServiceName($service);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not found', 404);
         }
 
         try {
             $this->systemd->disable($serviceName);
+
             return $this->success(null, "Service {$service} disabled on boot");
         } catch (\Exception $e) {
-            return $this->error('Failed to disable service: ' . $e->getMessage(), 500);
+            return $this->error('Failed to disable service: '.$e->getMessage(), 500);
         }
     }
 
@@ -203,7 +205,7 @@ class ServiceController extends Controller
     {
         $serviceName = $this->getServiceName($service);
 
-        if (!$serviceName) {
+        if (! $serviceName) {
             return $this->error('Service not found', 404);
         }
 
@@ -232,7 +234,7 @@ class ServiceController extends Controller
         foreach ($request->services as $service) {
             $serviceName = $this->getServiceName($service);
 
-            if (!$serviceName) {
+            if (! $serviceName) {
                 $results[$service] = ['success' => false, 'message' => 'Service not found'];
                 continue;
             }
@@ -254,7 +256,7 @@ class ServiceController extends Controller
     {
         $config = $this->managedServices[$service] ?? null;
 
-        if (!$config) {
+        if (! $config) {
             return null;
         }
 

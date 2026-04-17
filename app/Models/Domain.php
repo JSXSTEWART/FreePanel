@@ -107,6 +107,7 @@ class Domain extends Model
     public function getUrlAttribute(): string
     {
         $protocol = $this->ssl_enabled ? 'https' : 'http';
+
         return "{$protocol}://{$this->name}";
     }
 

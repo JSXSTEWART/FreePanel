@@ -13,7 +13,7 @@ class SendAccountCreatedToZapier
 
     public function handle(AccountCreated $event): void
     {
-        if (!config('zapier.enabled')) {
+        if (! config('zapier.enabled')) {
             return;
         }
 

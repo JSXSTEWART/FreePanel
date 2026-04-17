@@ -20,11 +20,11 @@ class SendBackupFailedWebhook implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param object $event The backup failed event
+     * @param  object  $event  The backup failed event
      */
     public function handle($event): void
     {
-        if (!isset($event->backup)) {
+        if (! isset($event->backup)) {
             return;
         }
 

@@ -27,7 +27,7 @@ return [
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL') . '/auth/callback'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL').'/auth/callback'),
     ],
 
     /*
@@ -38,7 +38,7 @@ return [
     'github' => [
         'client_id' => env('GITHUB_CLIENT_ID'),
         'client_secret' => env('GITHUB_CLIENT_SECRET'),
-        'redirect' => env('GITHUB_REDIRECT_URI', env('APP_URL') . '/auth/callback'),
+        'redirect' => env('GITHUB_REDIRECT_URI', env('APP_URL').'/auth/callback'),
     ],
 
     /*
@@ -49,7 +49,7 @@ return [
     'microsoft' => [
         'client_id' => env('MICROSOFT_CLIENT_ID'),
         'client_secret' => env('MICROSOFT_CLIENT_SECRET'),
-        'redirect' => env('MICROSOFT_REDIRECT_URI', env('APP_URL') . '/auth/callback'),
+        'redirect' => env('MICROSOFT_REDIRECT_URI', env('APP_URL').'/auth/callback'),
     ],
 
     /*
@@ -60,7 +60,7 @@ return [
     'oidc' => [
         'client_id' => env('OIDC_CLIENT_ID'),
         'client_secret' => env('OIDC_CLIENT_SECRET'),
-        'redirect' => env('OIDC_REDIRECT_URI', env('APP_URL') . '/auth/callback'),
+        'redirect' => env('OIDC_REDIRECT_URI', env('APP_URL').'/auth/callback'),
         'authorize_url' => env('OIDC_AUTHORIZE_URL'),
         'token_url' => env('OIDC_TOKEN_URL'),
         'userinfo_url' => env('OIDC_USERINFO_URL'),

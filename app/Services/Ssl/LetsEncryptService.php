@@ -2,13 +2,15 @@
 
 namespace App\Services\Ssl;
 
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Process;
 
 class LetsEncryptService
 {
     protected string $certbotPath;
+
     protected string $webroot;
+
     protected string $email;
 
     public function __construct()
@@ -25,7 +27,7 @@ class LetsEncryptService
         $primaryDomain = $domains[0];
 
         // Build domain arguments
-        $domainArgs = implode(' ', array_map(fn($d) => "-d {$d}", $domains));
+        $domainArgs = implode(' ', array_map(fn ($d) => "-d {$d}", $domains));
 
         // Run certbot
         $command = sprintf(
@@ -38,14 +40,14 @@ class LetsEncryptService
 
         $result = Process::timeout(300)->run($command);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to obtain SSL certificate: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to obtain SSL certificate: '.$result->errorOutput());
         }
 
         // Read certificate files
         $certDir = "/etc/letsencrypt/live/{$primaryDomain}";
 
-        if (!File::isDirectory($certDir)) {
+        if (! File::isDirectory($certDir)) {
             throw new \RuntimeException("Certificate directory not found: {$certDir}");
         }
 
@@ -72,8 +74,8 @@ class LetsEncryptService
 
         $result = Process::timeout(300)->run($command);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("Failed to renew SSL certificate: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('Failed to renew SSL certificate: '.$result->errorOutput());
         }
 
         $certDir = "/etc/letsencrypt/live/{$domain}";
@@ -94,7 +96,7 @@ class LetsEncryptService
     {
         $certPath = "/etc/letsencrypt/live/{$domain}/cert.pem";
 
-        if (!File::exists($certPath)) {
+        if (! File::exists($certPath)) {
             return;
         }
 
@@ -129,7 +131,7 @@ class LetsEncryptService
             $domain = basename($certDir);
             $certPath = "{$certDir}/cert.pem";
 
-            if (!File::exists($certPath)) {
+            if (! File::exists($certPath)) {
                 continue;
             }
 
@@ -156,8 +158,8 @@ class LetsEncryptService
         $cert = File::get($certPath);
         $certInfo = openssl_x509_parse($cert);
 
-        if (!$certInfo || !isset($certInfo['validTo_time_t'])) {
-            throw new \RuntimeException("Failed to parse certificate");
+        if (! $certInfo || ! isset($certInfo['validTo_time_t'])) {
+            throw new \RuntimeException('Failed to parse certificate');
         }
 
         return \Carbon\Carbon::createFromTimestamp($certInfo['validTo_time_t']);

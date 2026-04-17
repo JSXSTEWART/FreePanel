@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Account;
-use App\Models\Domain;
-use App\Models\DnsZone;
 use App\Models\DnsRecord;
+use App\Models\DnsZone;
+use App\Models\Domain;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class DnsManagementTest extends TestCase
 {

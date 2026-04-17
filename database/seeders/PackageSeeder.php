@@ -123,6 +123,6 @@ class PackageSeeder extends Seeder
             );
         }
 
-        $this->command->info('Created ' . count($packages) . ' hosting packages.');
+        $this->command->info('Created '.count($packages).' hosting packages.');
     }
 }

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Process;
 class BackupService
 {
     protected MysqlService $mysql;
+
     protected string $backupDir;
 
     public function __construct(MysqlService $mysql)
@@ -32,7 +33,7 @@ class BackupService
 
         // Ensure backup directory exists
         $accountBackupDir = dirname($finalPath);
-        if (!File::isDirectory($accountBackupDir)) {
+        if (! File::isDirectory($accountBackupDir)) {
             File::makeDirectory($accountBackupDir, 0700, true);
         }
 
@@ -71,11 +72,11 @@ class BackupService
 
             // Create tar.gz archive
             $result = Process::run(
-                "tar -czf " . escapeshellarg($finalPath) . " -C " . escapeshellarg(dirname($tempDir)) . " " . escapeshellarg(basename($tempDir))
+                'tar -czf '.escapeshellarg($finalPath).' -C '.escapeshellarg(dirname($tempDir)).' '.escapeshellarg(basename($tempDir))
             );
 
-            if (!$result->successful()) {
-                throw new \RuntimeException("Failed to create backup archive: " . $result->errorOutput());
+            if (! $result->successful()) {
+                throw new \RuntimeException('Failed to create backup archive: '.$result->errorOutput());
             }
 
             $size = filesize($finalPath);
@@ -99,24 +100,24 @@ class BackupService
     public function restore(Account $account, Backup $backup, array $options = []): void
     {
         $components = $options['components'] ?? ['files', 'databases', 'emails'];
-        $tempDir = "/tmp/restore_{$account->username}_" . time();
+        $tempDir = "/tmp/restore_{$account->username}_".time();
 
         // Extract backup
         File::makeDirectory($tempDir, 0700, true);
 
         try {
             $result = Process::run(
-                "tar -xzf " . escapeshellarg($backup->path) . " -C " . escapeshellarg($tempDir) . " --strip-components=1"
+                'tar -xzf '.escapeshellarg($backup->path).' -C '.escapeshellarg($tempDir).' --strip-components=1'
             );
 
-            if (!$result->successful()) {
-                throw new \RuntimeException("Failed to extract backup: " . $result->errorOutput());
+            if (! $result->successful()) {
+                throw new \RuntimeException('Failed to extract backup: '.$result->errorOutput());
             }
 
             // Read manifest
             $manifestPath = "{$tempDir}/manifest.json";
-            if (!File::exists($manifestPath)) {
-                throw new \RuntimeException("Backup manifest not found");
+            if (! File::exists($manifestPath)) {
+                throw new \RuntimeException('Backup manifest not found');
             }
 
             $manifest = json_decode(File::get($manifestPath), true);
@@ -148,7 +149,7 @@ class BackupService
      */
     public function getContents(string $backupPath): array
     {
-        $result = Process::run("tar -tzf " . escapeshellarg($backupPath) . " 2>/dev/null | head -100");
+        $result = Process::run('tar -tzf '.escapeshellarg($backupPath).' 2>/dev/null | head -100');
 
         return array_filter(explode("\n", $result->output()));
     }
@@ -160,7 +161,7 @@ class BackupService
     {
         $backupDir = "{$this->backupDir}/{$account->username}";
 
-        if (!File::isDirectory($backupDir)) {
+        if (! File::isDirectory($backupDir)) {
             return 0;
         }
 
@@ -187,7 +188,7 @@ class BackupService
         $homeDir = "/home/{$account->username}";
         $destDir = "{$tempDir}/files";
 
-        if (!File::isDirectory($homeDir)) {
+        if (! File::isDirectory($homeDir)) {
             return;
         }
 
@@ -240,7 +241,7 @@ class BackupService
         $sourceDir = "{$tempDir}/files";
         $homeDir = "/home/{$account->username}";
 
-        if (!File::isDirectory($sourceDir)) {
+        if (! File::isDirectory($sourceDir)) {
             return;
         }
 
@@ -265,7 +266,7 @@ class BackupService
     {
         $sourceDir = "{$tempDir}/databases";
 
-        if (!File::isDirectory($sourceDir)) {
+        if (! File::isDirectory($sourceDir)) {
             return;
         }
 
@@ -291,7 +292,7 @@ class BackupService
         $sourceDir = "{$tempDir}/emails";
         $mailDir = config('freepanel.mail_dir', '/var/mail/vhosts');
 
-        if (!File::isDirectory($sourceDir)) {
+        if (! File::isDirectory($sourceDir)) {
             return;
         }
 
@@ -317,6 +318,6 @@ class BackupService
 
     protected function chownRecursive(string $path, int $uid, int $gid): void
     {
-        Process::run("chown -R {$uid}:{$gid} " . escapeshellarg($path));
+        Process::run("chown -R {$uid}:{$gid} ".escapeshellarg($path));
     }
 }

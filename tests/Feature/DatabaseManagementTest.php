@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Account;
 use App\Models\Database;
 use App\Models\DatabaseUser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class DatabaseManagementTest extends TestCase
 {

@@ -48,7 +48,10 @@ class EmailAccount extends Model
 
     public function getQuotaUsagePercentAttribute(): float
     {
-        if ($this->quota <= 0) return 0;
+        if ($this->quota <= 0) {
+            return 0;
+        }
+
         return round(($this->quota_used / $this->quota) * 100, 2);
     }
 }

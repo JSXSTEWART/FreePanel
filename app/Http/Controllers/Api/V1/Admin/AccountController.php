@@ -7,19 +7,20 @@ use App\Models\Account;
 use App\Models\Domain;
 use App\Models\Package;
 use App\Models\User;
+use App\Services\Dns\DnsInterface;
 use App\Services\System\UserManager;
 use App\Services\WebServer\WebServerInterface;
-use App\Services\Dns\DnsInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class AccountController extends Controller
 {
     protected UserManager $userManager;
+
     protected WebServerInterface $webServer;
+
     protected DnsInterface $dns;
 
     public function __construct(
@@ -54,7 +55,7 @@ class AccountController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('username', 'like', "%{$search}%")
                     ->orWhere('domain', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn($q) => $q->where('email', 'like', "%{$search}%"));
+                    ->orWhereHas('user', fn ($q) => $q->where('email', 'like', "%{$search}%"));
             });
         }
 
@@ -140,7 +141,7 @@ class AccountController extends Controller
                 $this->userManager->deleteUser($request->username);
             }
 
-            return $this->error('Failed to create account: ' . $e->getMessage(), 500);
+            return $this->error('Failed to create account: '.$e->getMessage(), 500);
         }
     }
 
@@ -166,7 +167,7 @@ class AccountController extends Controller
         $account = Account::findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'email' => 'nullable|email|unique:users,email,' . $account->user_id,
+            'email' => 'nullable|email|unique:users,email,'.$account->user_id,
             'package_id' => 'nullable|exists:packages,id',
             'reseller_id' => 'nullable|exists:accounts,id',
         ]);
@@ -184,10 +185,12 @@ class AccountController extends Controller
             $account->update($request->only(['package_id', 'reseller_id']));
 
             DB::commit();
+
             return $this->success($account->fresh()->load(['user', 'package']), 'Account updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update account: '.$e->getMessage(), 500);
         }
     }
 
@@ -212,10 +215,12 @@ class AccountController extends Controller
             $this->userManager->changePassword($account->username, $request->password);
 
             DB::commit();
+
             return $this->success(null, 'Password changed successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to change password: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to change password: '.$e->getMessage(), 500);
         }
     }
 
@@ -254,10 +259,12 @@ class AccountController extends Controller
             $account->user->update(['is_active' => false]);
 
             DB::commit();
+
             return $this->success($account, 'Account suspended successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to suspend account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to suspend account: '.$e->getMessage(), 500);
         }
     }
 
@@ -288,10 +295,12 @@ class AccountController extends Controller
             $account->user->update(['is_active' => true]);
 
             DB::commit();
+
             return $this->success($account, 'Account unsuspended successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to unsuspend account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to unsuspend account: '.$e->getMessage(), 500);
         }
     }
 
@@ -315,10 +324,12 @@ class AccountController extends Controller
             $account->delete();
 
             DB::commit();
+
             return $this->success(null, 'Account terminated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to terminate account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to terminate account: '.$e->getMessage(), 500);
         }
     }
 
@@ -432,12 +443,12 @@ class AccountController extends Controller
             }
         }
 
-        if (!$logPath || !file_exists($logPath)) {
+        if (! $logPath || ! file_exists($logPath)) {
             return 0;
         }
 
         $handle = @fopen($logPath, 'r');
-        if (!$handle) {
+        if (! $handle) {
             return 0;
         }
 

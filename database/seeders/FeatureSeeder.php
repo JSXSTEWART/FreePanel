@@ -97,6 +97,6 @@ class FeatureSeeder extends Seeder
             );
         }
 
-        $this->command->info('Created ' . count($features) . ' features.');
+        $this->command->info('Created '.count($features).' features.');
     }
 }

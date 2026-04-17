@@ -44,8 +44,9 @@ class AppInstallerController extends Controller
             ->with('domain:id,name')
             ->get()
             ->map(function ($app) {
-                $app->url = 'https://' . $app->domain->name . $app->path;
+                $app->url = 'https://'.$app->domain->name.$app->path;
                 $app->has_update = $this->checkForUpdate($app);
+
                 return $app;
             });
 
@@ -76,12 +77,12 @@ class AppInstallerController extends Controller
 
         // Verify app exists
         $appConfig = config("freepanel.applications.{$request->app}");
-        if (!$appConfig) {
+        if (! $appConfig) {
             return $this->error('Application not found', 404);
         }
 
-        $path = $request->path ? '/' . ltrim($request->path, '/') : '';
-        $installPath = "/home/{$account->username}/public_html/{$domain->name}" . $path;
+        $path = $request->path ? '/'.ltrim($request->path, '/') : '';
+        $installPath = "/home/{$account->username}/public_html/{$domain->name}".$path;
 
         // Check if path is already used
         if (InstalledApp::where('domain_id', $domain->id)->where('path', $path ?: '/')->exists()) {
@@ -91,7 +92,7 @@ class AppInstallerController extends Controller
         DB::beginTransaction();
         try {
             // Create database for app if needed
-            $dbName = $request->database_name ?? $account->username . '_' . $request->app . '_' . substr(md5(uniqid()), 0, 6);
+            $dbName = $request->database_name ?? $account->username.'_'.$request->app.'_'.substr(md5(uniqid()), 0, 6);
             $dbUser = $dbName;
             $dbPass = bin2hex(random_bytes(16));
 
@@ -101,7 +102,7 @@ class AppInstallerController extends Controller
             // Install the application
             $result = $installer->install([
                 'path' => $installPath,
-                'url' => 'https://' . $domain->name . $path,
+                'url' => 'https://'.$domain->name.$path,
                 'database' => [
                     'name' => $dbName,
                     'user' => $dbUser,
@@ -148,7 +149,8 @@ class AppInstallerController extends Controller
             ], 'Application installed successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to install application: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to install application: '.$e->getMessage(), 500);
         }
     }
 
@@ -160,12 +162,12 @@ class AppInstallerController extends Controller
             ->with('domain:id,name')
             ->findOrFail($id);
 
-        $app->url = 'https://' . $app->domain->name . $app->path;
+        $app->url = 'https://'.$app->domain->name.$app->path;
         $app->has_update = $this->checkForUpdate($app);
 
         // Get current version from installation
         $installer = $this->installerFactory->create($app->app_type);
-        $installPath = "/home/{$account->username}/public_html/{$app->domain->name}" . ($app->path !== '/' ? $app->path : '');
+        $installPath = "/home/{$account->username}/public_html/{$app->domain->name}".($app->path !== '/' ? $app->path : '');
         $app->current_version = $installer->getInstalledVersion($installPath) ?? $app->version;
 
         return $this->success($app);
@@ -178,18 +180,18 @@ class AppInstallerController extends Controller
         $app = InstalledApp::where('account_id', $account->id)->findOrFail($id);
         $appConfig = config("freepanel.applications.{$app->app_type}");
 
-        if (!$appConfig) {
+        if (! $appConfig) {
             return $this->error('Application configuration not found', 500);
         }
 
-        $installPath = "/home/{$account->username}/public_html/{$app->domain->name}" . ($app->path !== '/' ? $app->path : '');
+        $installPath = "/home/{$account->username}/public_html/{$app->domain->name}".($app->path !== '/' ? $app->path : '');
 
         DB::beginTransaction();
         try {
             $installer = $this->installerFactory->create($app->app_type);
 
             // Create backup before update
-            $backupPath = "/home/{$account->username}/backups/app_{$app->id}_" . date('Y-m-d_His');
+            $backupPath = "/home/{$account->username}/backups/app_{$app->id}_".date('Y-m-d_His');
             $installer->backup($installPath, $backupPath);
 
             // Perform update
@@ -204,10 +206,12 @@ class AppInstallerController extends Controller
             ]);
 
             DB::commit();
+
             return $this->success($app, 'Application updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update application: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update application: '.$e->getMessage(), 500);
         }
     }
 
@@ -225,7 +229,7 @@ class AppInstallerController extends Controller
         }
 
         $app = InstalledApp::where('account_id', $account->id)->findOrFail($id);
-        $installPath = "/home/{$account->username}/public_html/{$app->domain->name}" . ($app->path !== '/' ? $app->path : '');
+        $installPath = "/home/{$account->username}/public_html/{$app->domain->name}".($app->path !== '/' ? $app->path : '');
 
         DB::beginTransaction();
         try {
@@ -241,10 +245,12 @@ class AppInstallerController extends Controller
             $app->delete();
 
             DB::commit();
+
             return $this->success(null, 'Application uninstalled successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to uninstall application: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to uninstall application: '.$e->getMessage(), 500);
         }
     }
 
@@ -261,8 +267,8 @@ class AppInstallerController extends Controller
             return $this->error($validator->errors()->first(), 422);
         }
 
-        $productionPath = "/home/{$account->username}/public_html/{$app->domain->name}" . ($app->path !== '/' ? $app->path : '');
-        $stagingDomain = $request->subdomain . '.' . $app->domain->name;
+        $productionPath = "/home/{$account->username}/public_html/{$app->domain->name}".($app->path !== '/' ? $app->path : '');
+        $stagingDomain = $request->subdomain.'.'.$app->domain->name;
         $stagingPath = "/home/{$account->username}/public_html/{$stagingDomain}";
 
         DB::beginTransaction();
@@ -271,8 +277,8 @@ class AppInstallerController extends Controller
 
             // Clone to staging
             $result = $installer->cloneToStaging($productionPath, $stagingPath, [
-                'production_url' => 'https://' . $app->domain->name . $app->path,
-                'staging_url' => 'https://' . $stagingDomain,
+                'production_url' => 'https://'.$app->domain->name.$app->path,
+                'staging_url' => 'https://'.$stagingDomain,
                 'database_prefix' => 'stg_',
             ]);
 
@@ -280,20 +286,22 @@ class AppInstallerController extends Controller
             // ...
 
             DB::commit();
+
             return $this->success([
-                'staging_url' => 'https://' . $stagingDomain,
+                'staging_url' => 'https://'.$stagingDomain,
                 'staging_path' => $stagingPath,
             ], 'Staging environment created successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create staging: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create staging: '.$e->getMessage(), 500);
         }
     }
 
     protected function checkForUpdate(InstalledApp $app): bool
     {
         $appConfig = config("freepanel.applications.{$app->app_type}");
-        if (!$appConfig) {
+        if (! $appConfig) {
             return false;
         }
 

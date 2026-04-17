@@ -53,6 +53,7 @@ class SshKey extends Model
 
         // Generate MD5 fingerprint (traditional format)
         $hash = md5($keyData);
+
         return implode(':', str_split($hash, 2));
     }
 
@@ -114,7 +115,7 @@ class SshKey extends Model
             return false;
         }
 
-        if (!in_array($parts[0], $validTypes)) {
+        if (! in_array($parts[0], $validTypes)) {
             return false;
         }
 
@@ -136,8 +137,8 @@ class SshKey extends Model
         $key = $parts[1] ?? '';
         $comment = $parts[2] ?? '';
 
-        $truncated = substr($key, 0, 20) . '...' . substr($key, -20);
+        $truncated = substr($key, 0, 20).'...'.substr($key, -20);
 
-        return "{$type} {$truncated}" . ($comment ? " {$comment}" : '');
+        return "{$type} {$truncated}".($comment ? " {$comment}" : '');
     }
 }

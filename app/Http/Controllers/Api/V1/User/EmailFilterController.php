@@ -37,11 +37,11 @@ class EmailFilterController extends Controller
             'email_account' => 'nullable|email',
             'priority' => 'integer|min:0',
             'conditions' => 'required|array|min:1',
-            'conditions.*.field' => 'required|in:' . implode(',', array_keys(EmailFilter::conditionFields())),
-            'conditions.*.match' => 'required|in:' . implode(',', array_keys(EmailFilter::matchTypes())),
+            'conditions.*.field' => 'required|in:'.implode(',', array_keys(EmailFilter::conditionFields())),
+            'conditions.*.match' => 'required|in:'.implode(',', array_keys(EmailFilter::matchTypes())),
             'conditions.*.value' => 'required|string',
             'actions' => 'required|array|min:1',
-            'actions.*.action' => 'required|in:' . implode(',', array_keys(EmailFilter::availableActions())),
+            'actions.*.action' => 'required|in:'.implode(',', array_keys(EmailFilter::availableActions())),
             'actions.*.destination' => 'nullable|string',
             'stop_processing' => 'boolean',
         ]);
@@ -95,11 +95,11 @@ class EmailFilterController extends Controller
             'email_account' => 'nullable|email',
             'priority' => 'integer|min:0',
             'conditions' => 'array|min:1',
-            'conditions.*.field' => 'in:' . implode(',', array_keys(EmailFilter::conditionFields())),
-            'conditions.*.match' => 'in:' . implode(',', array_keys(EmailFilter::matchTypes())),
+            'conditions.*.field' => 'in:'.implode(',', array_keys(EmailFilter::conditionFields())),
+            'conditions.*.match' => 'in:'.implode(',', array_keys(EmailFilter::matchTypes())),
             'conditions.*.value' => 'string',
             'actions' => 'array|min:1',
-            'actions.*.action' => 'in:' . implode(',', array_keys(EmailFilter::availableActions())),
+            'actions.*.action' => 'in:'.implode(',', array_keys(EmailFilter::availableActions())),
             'actions.*.destination' => 'nullable|string',
             'stop_processing' => 'boolean',
             'is_active' => 'boolean',
@@ -152,10 +152,11 @@ class EmailFilterController extends Controller
             return $this->error('Filter not found', 404);
         }
 
-        $emailFilter->update(['is_active' => !$emailFilter->is_active]);
+        $emailFilter->update(['is_active' => ! $emailFilter->is_active]);
         $this->syncSieveFilters($account);
 
         $status = $emailFilter->is_active ? 'enabled' : 'disabled';
+
         return $this->success($emailFilter, "Filter {$status}");
     }
 
@@ -377,7 +378,7 @@ class EmailFilterController extends Controller
         $sieveScript = "require [\"fileinto\", \"reject\", \"vacation\", \"copy\", \"imap4flags\"];\n\n";
 
         foreach ($filters as $filter) {
-            $sieveScript .= $filter->toSieve() . "\n";
+            $sieveScript .= $filter->toSieve()."\n";
         }
 
         // Write sieve script
@@ -404,7 +405,7 @@ class EmailFilterController extends Controller
         $tempFile = tempnam('/tmp', 'sa_');
         file_put_contents($tempFile, $config);
 
-        Process::run("sudo mkdir -p /etc/spamassassin/users");
+        Process::run('sudo mkdir -p /etc/spamassassin/users');
         Process::run("sudo mv {$tempFile} {$configPath}");
         Process::run("sudo chmod 644 {$configPath}");
     }

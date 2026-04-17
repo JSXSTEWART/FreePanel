@@ -31,7 +31,7 @@ class DomainPolicy
         }
 
         $account = $user->account;
-        if (!$account) {
+        if (! $account) {
             return false;
         }
 

@@ -19,7 +19,7 @@ class ErrorPageController extends Controller
         $errorPages = $account->errorPages()
             ->with('domain:id,domain')
             ->get()
-            ->map(fn($page) => [
+            ->map(fn ($page) => [
                 'id' => $page->id,
                 'error_code' => $page->error_code,
                 'error_name' => ErrorPage::getSupportedCodes()[$page->error_code] ?? 'Unknown',
@@ -43,7 +43,7 @@ class ErrorPageController extends Controller
         $account = $request->user()->account;
         $errorPage = $account->errorPages()->find($id);
 
-        if (!$errorPage) {
+        if (! $errorPage) {
             return $this->error('Error page not found', 404);
         }
 
@@ -64,7 +64,7 @@ class ErrorPageController extends Controller
         $account = $request->user()->account;
 
         $validator = Validator::make($request->all(), [
-            'error_code' => 'required|integer|in:' . implode(',', array_keys(ErrorPage::getSupportedCodes())),
+            'error_code' => 'required|integer|in:'.implode(',', array_keys(ErrorPage::getSupportedCodes())),
             'content' => 'required|string|max:50000',
             'domain_id' => 'nullable|integer|exists:domains,id',
         ]);
@@ -76,7 +76,7 @@ class ErrorPageController extends Controller
         // Validate domain belongs to account
         if ($request->domain_id) {
             $domain = $account->domains()->find($request->domain_id);
-            if (!$domain) {
+            if (! $domain) {
                 return $this->error('Domain not found', 404);
             }
         }
@@ -108,11 +108,11 @@ class ErrorPageController extends Controller
         $account = $request->user()->account;
         $errorPage = $account->errorPages()->find($id);
 
-        if (!$errorPage) {
+        if (! $errorPage) {
             return $this->error('Error page not found', 404);
         }
 
-        $errorPage->update(['is_active' => !$errorPage->is_active]);
+        $errorPage->update(['is_active' => ! $errorPage->is_active]);
 
         // Re-deploy or remove
         if ($errorPage->is_active) {
@@ -134,7 +134,7 @@ class ErrorPageController extends Controller
         $account = $request->user()->account;
         $errorPage = $account->errorPages()->find($id);
 
-        if (!$errorPage) {
+        if (! $errorPage) {
             return $this->error('Error page not found', 404);
         }
 
@@ -149,7 +149,7 @@ class ErrorPageController extends Controller
      */
     public function getDefault(Request $request, int $code)
     {
-        if (!array_key_exists($code, ErrorPage::getSupportedCodes())) {
+        if (! array_key_exists($code, ErrorPage::getSupportedCodes())) {
             return $this->error('Invalid error code', 422);
         }
 
@@ -173,7 +173,7 @@ class ErrorPageController extends Controller
         }
 
         $errorDir = "{$docRoot}/error_documents";
-        if (!is_dir($errorDir)) {
+        if (! is_dir($errorDir)) {
             mkdir($errorDir, 0755, true);
         }
 
@@ -217,8 +217,8 @@ class ErrorPageController extends Controller
         $existing = file_exists($htaccessPath) ? file_get_contents($htaccessPath) : '';
 
         // Remove existing error document section
-        $startMarker = "# BEGIN FreePanel Error Documents";
-        $endMarker = "# END FreePanel Error Documents";
+        $startMarker = '# BEGIN FreePanel Error Documents';
+        $endMarker = '# END FreePanel Error Documents';
         $pattern = "/\n?{$startMarker}.*?{$endMarker}\n?/s";
         $existing = preg_replace($pattern, '', $existing);
 
@@ -236,6 +236,6 @@ class ErrorPageController extends Controller
 
         $directives .= "# END FreePanel Error Documents\n";
 
-        file_put_contents($htaccessPath, trim($existing) . "\n\n" . $directives);
+        file_put_contents($htaccessPath, trim($existing)."\n\n".$directives);
     }
 }

@@ -25,7 +25,7 @@ class PackageFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->words(2, true) . ' Package',
+            'name' => fake()->unique()->words(2, true).' Package',
             'description' => fake()->sentence(),
             'disk_quota' => fake()->randomElement([1024, 5120, 10240, 0]) * 1024 * 1024, // MB to bytes
             'bandwidth_quota' => fake()->randomElement([10, 50, 100, 0]) * 1024 * 1024 * 1024, // GB to bytes
@@ -49,7 +49,7 @@ class PackageFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'is_reseller_package' => true,
-            'name' => 'Reseller ' . fake()->words(2, true),
+            'name' => 'Reseller '.fake()->words(2, true),
         ]);
     }
 

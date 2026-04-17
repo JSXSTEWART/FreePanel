@@ -23,13 +23,12 @@ class CheckQuota
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @param  string  $resource
      */
     public function handle(Request $request, Closure $next, string $resource): Response
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated',
@@ -43,7 +42,7 @@ class CheckQuota
 
         $account = $user->account;
 
-        if (!$account) {
+        if (! $account) {
             return response()->json([
                 'success' => false,
                 'message' => 'No hosting account associated with this user',
@@ -51,11 +50,11 @@ class CheckQuota
         }
 
         // Only check quota for POST requests (creating new resources)
-        if (!$request->isMethod('POST')) {
+        if (! $request->isMethod('POST')) {
             return $next($request);
         }
 
-        if (!isset($this->quotaMap[$resource])) {
+        if (! isset($this->quotaMap[$resource])) {
             return $next($request);
         }
 

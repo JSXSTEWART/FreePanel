@@ -4,16 +4,16 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use PragmaRX\Google2FA\Google2FA;
-use BaconQrCode\Renderer\ImageRenderer;
-use BaconQrCode\Renderer\Image\SvgImageBackEnd;
-use BaconQrCode\Renderer\RendererStyle\RendererStyle;
-use BaconQrCode\Writer;
 
 class TwoFactorController extends Controller
 {
@@ -21,7 +21,7 @@ class TwoFactorController extends Controller
 
     public function __construct()
     {
-        $this->google2fa = new Google2FA();
+        $this->google2fa = new Google2FA;
     }
 
     /**
@@ -50,7 +50,7 @@ class TwoFactorController extends Controller
 
         $user = User::find($data['user_id']);
 
-        if (!$user) {
+        if (! $user) {
             throw ValidationException::withMessages([
                 'temp_token' => ['User not found.'],
             ]);
@@ -59,7 +59,7 @@ class TwoFactorController extends Controller
         // Verify 2FA code
         $valid = $this->google2fa->verifyKey($user->two_factor_secret, $request->code);
 
-        if (!$valid) {
+        if (! $valid) {
             // Check recovery codes
             $recoveryCodes = $user->two_factor_recovery_codes ?? [];
             $codeIndex = array_search($request->code, $recoveryCodes);
@@ -110,7 +110,7 @@ class TwoFactorController extends Controller
 
         $user = $request->user();
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'password' => ['The password is incorrect.'],
             ]);
@@ -129,14 +129,14 @@ class TwoFactorController extends Controller
         // Verify the code
         $valid = $this->google2fa->verifyKey($secret, $request->code);
 
-        if (!$valid) {
+        if (! $valid) {
             throw ValidationException::withMessages([
                 'code' => ['Invalid verification code.'],
             ]);
         }
 
         // Generate recovery codes
-        $recoveryCodes = collect(range(1, 8))->map(fn() => Str::random(10))->toArray();
+        $recoveryCodes = collect(range(1, 8))->map(fn () => Str::random(10))->toArray();
 
         // Enable 2FA
         $user->update([
@@ -167,13 +167,13 @@ class TwoFactorController extends Controller
 
         $user = $request->user();
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'password' => ['The password is incorrect.'],
             ]);
         }
 
-        if (!$user->two_factor_enabled) {
+        if (! $user->two_factor_enabled) {
             return response()->json([
                 'success' => false,
                 'message' => 'Two-factor authentication is not enabled.',
@@ -183,7 +183,7 @@ class TwoFactorController extends Controller
         // Verify the code
         $valid = $this->google2fa->verifyKey($user->two_factor_secret, $request->code);
 
-        if (!$valid) {
+        if (! $valid) {
             throw ValidationException::withMessages([
                 'code' => ['Invalid verification code.'],
             ]);
@@ -232,7 +232,7 @@ class TwoFactorController extends Controller
         // Generate SVG QR code
         $renderer = new ImageRenderer(
             new RendererStyle(200),
-            new SvgImageBackEnd()
+            new SvgImageBackEnd
         );
         $writer = new Writer($renderer);
         $qrCodeSvg = $writer->writeString($qrCodeUrl);

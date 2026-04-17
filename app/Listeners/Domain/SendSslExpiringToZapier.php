@@ -16,13 +16,13 @@ class SendSslExpiringToZapier
      */
     public function handleExpiring($domain): void
     {
-        if (!config('zapier.enabled')) {
+        if (! config('zapier.enabled')) {
             return;
         }
 
         $sslCert = $domain->sslCertificate;
 
-        if (!$sslCert) {
+        if (! $sslCert) {
             return;
         }
 

@@ -17,7 +17,7 @@ class AppInstallerFactory
     {
         $appType = strtolower($appType);
 
-        if (!isset($this->installers[$appType])) {
+        if (! isset($this->installers[$appType])) {
             throw new \InvalidArgumentException("Unknown application type: {$appType}");
         }
 

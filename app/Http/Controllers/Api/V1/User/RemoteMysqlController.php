@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1\User;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,7 +15,7 @@ class RemoteMysqlController extends Controller
     public function index(Request $request)
     {
         $account = $request->user()->account;
-        $prefix = $account->username . '_';
+        $prefix = $account->username.'_';
 
         // Get all databases for this account
         $databases = $account->databases;
@@ -25,8 +24,8 @@ class RemoteMysqlController extends Controller
         foreach ($databases as $database) {
             $hosts = $this->getRemoteHosts($database->name, $prefix);
             foreach ($hosts as $host) {
-                $key = $database->name . '_' . $host['host'];
-                if (!isset($remoteHosts[$key])) {
+                $key = $database->name.'_'.$host['host'];
+                if (! isset($remoteHosts[$key])) {
                     $remoteHosts[$key] = [
                         'database' => $database->name,
                         'host' => $host['host'],
@@ -61,20 +60,20 @@ class RemoteMysqlController extends Controller
 
         // Validate host format (IP, CIDR, domain, or %)
         $host = $request->host;
-        if (!$this->validateHost($host)) {
+        if (! $this->validateHost($host)) {
             return $this->error('Invalid host format. Use IP address, CIDR notation, domain, or % for wildcard', 422);
         }
 
-        $prefix = $account->username . '_';
+        $prefix = $account->username.'_';
 
         // If specific database provided, grant on that database
         if ($request->database) {
             $database = $account->databases()->where('name', $request->database)->first();
-            if (!$database) {
+            if (! $database) {
                 return $this->error('Database not found', 404);
             }
 
-            $user = $request->user ?: $prefix . 'user';
+            $user = $request->user ?: $prefix.'user';
             $this->grantRemoteAccess($database->name, $user, $host);
         } else {
             // Grant on all user's databases
@@ -108,15 +107,15 @@ class RemoteMysqlController extends Controller
         }
 
         $host = $request->host;
-        $prefix = $account->username . '_';
+        $prefix = $account->username.'_';
 
         if ($request->database) {
             $database = $account->databases()->where('name', $request->database)->first();
-            if (!$database) {
+            if (! $database) {
                 return $this->error('Database not found', 404);
             }
 
-            $user = $request->user ?: $prefix . 'user';
+            $user = $request->user ?: $prefix.'user';
             $this->revokeRemoteAccess($database->name, $user, $host);
         } else {
             // Revoke from all user's databases

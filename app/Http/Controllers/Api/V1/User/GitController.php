@@ -7,7 +7,6 @@ use App\Models\GitRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class GitController extends Controller
 {
@@ -107,7 +106,9 @@ class GitController extends Controller
         $commits = [];
 
         foreach (explode("\n", trim($result->output())) as $line) {
-            if (empty($line)) continue;
+            if (empty($line)) {
+                continue;
+            }
             $parts = explode(' ', $line, 2);
             $commits[] = [
                 'hash' => $parts[0],
@@ -225,8 +226,8 @@ class GitController extends Controller
         Process::run("sudo mkdir -p /home/{$account->username}/repositories");
         $result = Process::run("sudo git clone --bare {$request->url} {$fullPath}");
 
-        if (!$result->successful()) {
-            return $this->error('Failed to clone repository: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to clone repository: '.$result->errorOutput(), 500);
         }
 
         Process::run("sudo chown -R {$account->username}:{$account->username} {$fullPath}");
@@ -258,15 +259,15 @@ class GitController extends Controller
             return $this->error('Repository not found', 404);
         }
 
-        if (!$gitRepository->clone_url) {
+        if (! $gitRepository->clone_url) {
             return $this->error('Repository has no remote URL', 400);
         }
 
         $fullPath = $gitRepository->full_path;
         $result = Process::run("sudo -u {$account->username} git -C {$fullPath} fetch origin");
 
-        if (!$result->successful()) {
-            return $this->error('Pull failed: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Pull failed: '.$result->errorOutput(), 500);
         }
 
         return $this->success(null, 'Repository updated from remote');
@@ -283,7 +284,7 @@ class GitController extends Controller
             return $this->error('Repository not found', 404);
         }
 
-        if (!$gitRepository->deploy_path) {
+        if (! $gitRepository->deploy_path) {
             return $this->error('No deploy path configured', 400);
         }
 
@@ -330,7 +331,9 @@ class GitController extends Controller
 
         $files = [];
         foreach (explode("\n", trim($result->output())) as $line) {
-            if (empty($line)) continue;
+            if (empty($line)) {
+                continue;
+            }
 
             preg_match('/^(\d+)\s+(\w+)\s+(\w+)\s+(.+)$/', $line, $matches);
 
@@ -373,7 +376,7 @@ class GitController extends Controller
 
         $result = Process::run("git -C {$fullPath} show {$ref}:{$filePath} 2>/dev/null");
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             return $this->error('File not found', 404);
         }
 
@@ -460,7 +463,7 @@ HOOK;
         $result = Process::run("sudo -u {$account->username} {$tempScript}");
         unlink($tempScript);
 
-        return $result->output() . $result->errorOutput();
+        return $result->output().$result->errorOutput();
     }
 
     /**
@@ -493,6 +496,7 @@ HOOK;
     protected function indentScript(string $script, int $spaces): string
     {
         $indent = str_repeat(' ', $spaces);
-        return $indent . str_replace("\n", "\n{$indent}", trim($script));
+
+        return $indent.str_replace("\n", "\n{$indent}", trim($script));
     }
 }

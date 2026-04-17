@@ -48,6 +48,7 @@ class ResellerController extends Controller
             $reseller->account_count = $reseller->account_count;
             $reseller->total_disk_used = $reseller->total_disk_used;
             $reseller->total_bandwidth_used = $reseller->total_bandwidth_used;
+
             return $reseller;
         });
 
@@ -107,7 +108,8 @@ class ResellerController extends Controller
             );
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create reseller: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create reseller: '.$e->getMessage(), 500);
         }
     }
 
@@ -138,7 +140,7 @@ class ResellerController extends Controller
         $reseller = Reseller::with('user')->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'email' => 'nullable|email|unique:users,email,' . $reseller->user_id,
+            'email' => 'nullable|email|unique:users,email,'.$reseller->user_id,
             'max_accounts' => 'nullable|integer|min:0',
             'disk_limit' => 'nullable|integer|min:0',
             'bandwidth_limit' => 'nullable|integer|min:0',
@@ -182,7 +184,8 @@ class ResellerController extends Controller
             );
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update reseller: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update reseller: '.$e->getMessage(), 500);
         }
     }
 
@@ -194,8 +197,8 @@ class ResellerController extends Controller
         $customerCount = User::where('parent_id', $reseller->user_id)->count();
         if ($customerCount > 0) {
             return $this->error(
-                "Cannot delete reseller with {$customerCount} customer account(s). " .
-                "Migrate or terminate customer accounts first.",
+                "Cannot delete reseller with {$customerCount} customer account(s). ".
+                'Migrate or terminate customer accounts first.',
                 422
             );
         }
@@ -213,7 +216,8 @@ class ResellerController extends Controller
             return $this->success(null, 'Reseller deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete reseller: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete reseller: '.$e->getMessage(), 500);
         }
     }
 
@@ -275,7 +279,7 @@ class ResellerController extends Controller
     {
         $reseller = Reseller::with('user')->findOrFail($id);
 
-        if (!$reseller->user->is_active) {
+        if (! $reseller->user->is_active) {
             return $this->error('Reseller is already suspended', 422);
         }
 
@@ -304,7 +308,8 @@ class ResellerController extends Controller
             return $this->success(null, 'Reseller suspended successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to suspend reseller: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to suspend reseller: '.$e->getMessage(), 500);
         }
     }
 
@@ -325,8 +330,8 @@ class ResellerController extends Controller
     {
         $stats = [
             'total' => Reseller::count(),
-            'active' => Reseller::whereHas('user', fn($q) => $q->where('is_active', true))->count(),
-            'suspended' => Reseller::whereHas('user', fn($q) => $q->where('is_active', false))->count(),
+            'active' => Reseller::whereHas('user', fn ($q) => $q->where('is_active', true))->count(),
+            'suspended' => Reseller::whereHas('user', fn ($q) => $q->where('is_active', false))->count(),
             'total_disk_allocated' => Reseller::sum('disk_limit'),
             'total_bandwidth_allocated' => Reseller::sum('bandwidth_limit'),
             'total_account_slots' => Reseller::sum('max_accounts'),

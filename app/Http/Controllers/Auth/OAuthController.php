@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -17,7 +16,7 @@ class OAuthController extends Controller
      */
     public function redirect(string $provider): JsonResponse
     {
-        if (!$this->isProviderSupported($provider)) {
+        if (! $this->isProviderSupported($provider)) {
             return response()->json([
                 'success' => false,
                 'message' => 'OAuth provider not supported.',
@@ -60,7 +59,7 @@ class OAuthController extends Controller
             }
         }
 
-        if (!$this->isProviderSupported($provider)) {
+        if (! $this->isProviderSupported($provider)) {
             return response()->json([
                 'success' => false,
                 'message' => 'OAuth provider not supported.',
@@ -74,7 +73,7 @@ class OAuthController extends Controller
             // Find or create user
             $user = $this->findOrCreateUser($oauthUser, $provider);
 
-            if (!$user->is_active) {
+            if (! $user->is_active) {
                 return response()->json([
                     'success' => false,
                     'message' => 'This account has been disabled.',
@@ -98,7 +97,7 @@ class OAuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'OAuth authentication failed: ' . $e->getMessage(),
+                'message' => 'OAuth authentication failed: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -159,16 +158,16 @@ class OAuthController extends Controller
     protected function generateUsername($oauthUser): string
     {
         $email = $oauthUser->getEmail();
-        
+
         // Get base username from nickname, name, or email
-        $baseUsername = $oauthUser->getNickname() 
-            ?? $oauthUser->getName() 
+        $baseUsername = $oauthUser->getNickname()
+            ?? $oauthUser->getName()
             ?? ($email ? explode('@', $email)[0] : 'user');
 
         // Clean username (alphanumeric and underscore only)
         $baseUsername = preg_replace('/[^a-z0-9_]/', '', strtolower($baseUsername));
         $baseUsername = substr($baseUsername, 0, 32);
-        
+
         // Ensure we have at least some characters
         if (empty($baseUsername)) {
             $baseUsername = 'user';
@@ -180,7 +179,7 @@ class OAuthController extends Controller
 
         while (User::where('username', $username)->exists()) {
             $suffix = $counter++;
-            $username = substr($baseUsername, 0, 32 - strlen((string)$suffix)) . $suffix;
+            $username = substr($baseUsername, 0, 32 - strlen((string) $suffix)).$suffix;
         }
 
         return $username;
@@ -192,6 +191,7 @@ class OAuthController extends Controller
     protected function isProviderSupported(string $provider): bool
     {
         $supportedProviders = config('services.oauth_providers', []);
+
         return in_array($provider, $supportedProviders);
     }
 

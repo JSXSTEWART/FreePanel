@@ -23,7 +23,7 @@ class SslInstaller
         $certDir = "{$this->sslBaseDir}/{$domain->name}";
 
         // Create directory if it doesn't exist
-        if (!File::isDirectory($certDir)) {
+        if (! File::isDirectory($certDir)) {
             File::makeDirectory($certDir, 0700, true);
         }
 
@@ -45,7 +45,7 @@ class SslInstaller
 
             // Create fullchain (cert + chain)
             $fullchainPath = "{$certDir}/fullchain.pem";
-            File::put($fullchainPath, $certificate->certificate . "\n" . $certificate->ca_bundle);
+            File::put($fullchainPath, $certificate->certificate."\n".$certificate->ca_bundle);
             chmod($fullchainPath, 0644);
         }
     }
@@ -85,7 +85,7 @@ class SslInstaller
         $certResource = openssl_x509_read($certificate);
         $keyResource = openssl_pkey_get_private($privateKey);
 
-        if (!$certResource || !$keyResource) {
+        if (! $certResource || ! $keyResource) {
             return false;
         }
 
@@ -99,8 +99,8 @@ class SslInstaller
     {
         $certInfo = openssl_x509_parse($certificate);
 
-        if (!$certInfo) {
-            throw new \RuntimeException("Failed to parse certificate");
+        if (! $certInfo) {
+            throw new \RuntimeException('Failed to parse certificate');
         }
 
         return [

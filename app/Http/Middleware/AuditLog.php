@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AuditLog as AuditLogModel;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Models\AuditLog as AuditLogModel;
 
 class AuditLog
 {
@@ -32,7 +32,7 @@ class AuditLog
         $response = $next($request);
 
         // Only log non-GET requests
-        if (!in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'])) {
+        if (! in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'])) {
             $this->logAction($request, $response);
         }
 
@@ -50,7 +50,7 @@ class AuditLog
             AuditLogModel::create([
                 'user_id' => $user?->id,
                 'account_id' => $user?->account?->id,
-                'action' => $request->method() . ' ' . $request->path(),
+                'action' => $request->method().' '.$request->path(),
                 'resource_type' => $this->extractResourceType($request),
                 'resource_id' => $request->route('id') ?? $request->route('account') ?? null,
                 'new_values' => $this->filterSensitiveData($request->all()),
@@ -72,7 +72,7 @@ class AuditLog
         $segments = $request->segments();
 
         // Remove 'api' and 'v1' prefixes
-        $segments = array_values(array_filter($segments, fn($s) => !in_array($s, ['api', 'v1', 'admin', 'user'])));
+        $segments = array_values(array_filter($segments, fn ($s) => ! in_array($s, ['api', 'v1', 'admin', 'user'])));
 
         return $segments[0] ?? 'unknown';
     }

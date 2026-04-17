@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\Account;
 use App\Models\FtpAccount;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class FtpManagementTest extends TestCase
 {
@@ -17,7 +17,7 @@ class FtpManagementTest extends TestCase
         $package = \App\Models\Package::create(['name' => 'default', 'is_active' => true]);
         $account = Account::create(['user_id' => $user->id, 'package_id' => $package->id, 'username' => 'jdoe', 'domain' => 'example.com', 'status' => 'active']);
 
-        $ftp = new FtpAccount();
+        $ftp = new FtpAccount;
         $ftp->account_id = $account->id;
         $ftp->username = 'ftp_jdoe';
         $ftp->password_hash = bcrypt('secret');

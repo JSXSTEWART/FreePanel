@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Mockery;
+use Tests\TestCase;
 
 class OAuthAuthenticationTest extends TestCase
 {
@@ -36,14 +36,16 @@ class OAuthAuthenticationTest extends TestCase
         try {
             $this->artisan('migrate:status');
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Database not configured for tests: ' . $e->getMessage());
+            $this->markTestSkipped('Database not configured for tests: '.$e->getMessage());
+
             return;
         }
 
         $response = $this->getJson('/api/v1/auth/oauth/google/redirect');
 
         if ($response->getStatusCode() === 500) {
-            $this->markTestSkipped('OAuth provider not fully configured: ' . json_encode($response->json()));
+            $this->markTestSkipped('OAuth provider not fully configured: '.json_encode($response->json()));
+
             return;
         }
 
@@ -63,7 +65,8 @@ class OAuthAuthenticationTest extends TestCase
         try {
             $this->artisan('migrate:status');
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Database not configured for tests: ' . $e->getMessage());
+            $this->markTestSkipped('Database not configured for tests: '.$e->getMessage());
+
             return;
         }
 
@@ -85,7 +88,8 @@ class OAuthAuthenticationTest extends TestCase
         try {
             $this->artisan('migrate:fresh');
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Database not configured for tests: ' . $e->getMessage());
+            $this->markTestSkipped('Database not configured for tests: '.$e->getMessage());
+
             return;
         }
 
@@ -109,7 +113,8 @@ class OAuthAuthenticationTest extends TestCase
         $response = $this->getJson('/api/v1/auth/oauth/google/callback?code=test-code&state=test-state');
 
         if ($response->getStatusCode() === 500) {
-            $this->markTestSkipped('OAuth callback test failed: ' . json_encode($response->json()));
+            $this->markTestSkipped('OAuth callback test failed: '.json_encode($response->json()));
+
             return;
         }
 
@@ -144,7 +149,8 @@ class OAuthAuthenticationTest extends TestCase
         try {
             $this->artisan('migrate:fresh');
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Database not configured for tests: ' . $e->getMessage());
+            $this->markTestSkipped('Database not configured for tests: '.$e->getMessage());
+
             return;
         }
 
@@ -177,7 +183,8 @@ class OAuthAuthenticationTest extends TestCase
         $response = $this->getJson('/api/v1/auth/oauth/google/callback?code=test-code&state=test-state');
 
         if ($response->getStatusCode() === 500) {
-            $this->markTestSkipped('OAuth callback test failed: ' . json_encode($response->json()));
+            $this->markTestSkipped('OAuth callback test failed: '.json_encode($response->json()));
+
             return;
         }
 

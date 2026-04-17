@@ -32,7 +32,7 @@ class ZapierConnectionController extends Controller
         }
 
         // Test the connection before storing
-        if (!$this->mcpClient->testConnection($request->mcp_server_url)) {
+        if (! $this->mcpClient->testConnection($request->mcp_server_url)) {
             return response()->json([
                 'message' => 'Failed to connect to Zapier MCP server',
             ], 400);
@@ -60,7 +60,7 @@ class ZapierConnectionController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$connection) {
+        if (! $connection) {
             return response()->json([
                 'message' => 'No active Zapier connection found',
             ], 404);
@@ -80,7 +80,7 @@ class ZapierConnectionController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$connection) {
+        if (! $connection) {
             return response()->json([
                 'message' => 'No active Zapier connection found',
             ], 404);
@@ -114,7 +114,7 @@ class ZapierConnectionController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$connection) {
+        if (! $connection) {
             return response()->json([
                 'message' => 'No active Zapier connection found',
             ], 404);
@@ -126,7 +126,7 @@ class ZapierConnectionController extends Controller
             $request->params
         );
 
-        if (!$result) {
+        if (! $result) {
             return response()->json([
                 'message' => 'Failed to execute Zapier tool',
             ], 500);
@@ -146,7 +146,7 @@ class ZapierConnectionController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$connection) {
+        if (! $connection) {
             return response()->json([
                 'message' => 'No active Zapier connection found',
             ], 404);

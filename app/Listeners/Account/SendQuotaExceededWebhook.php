@@ -20,11 +20,11 @@ class SendQuotaExceededWebhook implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param object $event The quota exceeded event
+     * @param  object  $event  The quota exceeded event
      */
     public function handle($event): void
     {
-        if (!isset($event->account) || !isset($event->resourceType)) {
+        if (! isset($event->account) || ! isset($event->resourceType)) {
             return;
         }
 

@@ -3,8 +3,8 @@
 namespace App\Services\Email;
 
 use App\Models\EmailAccount;
-use App\Models\EmailForwarder;
 use App\Models\EmailAutoresponder;
+use App\Models\EmailForwarder;
 
 interface EmailInterface
 {

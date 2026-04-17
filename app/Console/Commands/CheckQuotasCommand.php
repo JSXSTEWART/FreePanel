@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\Account;
 use App\Services\System\UserManager;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
 
 class CheckQuotasCommand extends Command
 {
@@ -58,10 +57,10 @@ class CheckQuotasCommand extends Command
             }
         }
 
-        if (!empty($warnings)) {
+        if (! empty($warnings)) {
             $this->table(
                 ['Account', 'Used', 'Quota', 'Percent'],
-                collect($warnings)->map(fn($w) => [$w['account'], $w['used'], $w['quota'], $w['percent'] . '%'])
+                collect($warnings)->map(fn ($w) => [$w['account'], $w['used'], $w['quota'], $w['percent'].'%'])
             );
 
             if ($notify) {
@@ -86,6 +85,7 @@ class CheckQuotasCommand extends Command
             $bytes /= 1024;
             $i++;
         }
-        return round($bytes, 2) . ' ' . $units[$i];
+
+        return round($bytes, 2).' '.$units[$i];
     }
 }

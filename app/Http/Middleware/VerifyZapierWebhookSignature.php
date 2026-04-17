@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\Zapier\WebhookSignatureService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use App\Services\Zapier\WebhookSignatureService;
 use Symfony\Component\HttpFoundation\Response;
 
 class VerifyZapierWebhookSignature
@@ -22,10 +22,10 @@ class VerifyZapierWebhookSignature
         $timestamp = $request->header(WebhookSignatureService::timestampHeader());
 
         // Verify headers are present
-        if (!$signature || !$timestamp) {
+        if (! $signature || ! $timestamp) {
             Log::warning('Webhook signature verification failed: missing headers', [
-                'has_signature' => !empty($signature),
-                'has_timestamp' => !empty($timestamp),
+                'has_signature' => ! empty($signature),
+                'has_timestamp' => ! empty($timestamp),
                 'path' => $request->path(),
             ]);
 
@@ -41,7 +41,7 @@ class VerifyZapierWebhookSignature
         // Get webhook secret from config
         $secret = config('zapier.webhook_secret');
 
-        if (!$secret) {
+        if (! $secret) {
             Log::error('Webhook secret not configured', [
                 'path' => $request->path(),
             ]);
@@ -55,7 +55,7 @@ class VerifyZapierWebhookSignature
         $signatureService = app(WebhookSignatureService::class);
         $payload = $request->getContent();
 
-        if (!$signatureService->verify($payload, $signature, $timestamp, $secret)) {
+        if (! $signatureService->verify($payload, $signature, $timestamp, $secret)) {
             Log::warning('Webhook signature verification failed: invalid signature', [
                 'path' => $request->path(),
                 'ip' => $request->ip(),

@@ -2,9 +2,9 @@
 
 namespace App\Services\Dns;
 
-use App\Models\Domain;
-use App\Models\DnsZone;
 use App\Models\DnsRecord;
+use App\Models\DnsZone;
+use App\Models\Domain;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\View;
@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\View;
 class BindService implements DnsInterface
 {
     protected string $namedConfDir;
+
     protected string $zonesDir;
+
     protected string $serviceName;
 
     public function __construct()
@@ -112,7 +114,7 @@ class BindService implements DnsInterface
         // Delete all non-essential records
         DnsRecord::where('dns_zone_id', $zone->id)
             ->where('type', '!=', 'SOA')
-            ->whereNot(fn($q) => $q->where('type', 'NS')->where('name', '@'))
+            ->whereNot(fn ($q) => $q->where('type', 'NS')->where('name', '@'))
             ->delete();
 
         // Recreate default records
@@ -169,6 +171,7 @@ class BindService implements DnsInterface
     public function checkZone(string $zoneName, string $zoneFile): bool
     {
         $result = Process::run("named-checkzone {$zoneName} {$zoneFile}");
+
         return $result->successful();
     }
 
@@ -187,7 +190,7 @@ class BindService implements DnsInterface
         chmod($zoneFile, 0644);
 
         // Validate zone file
-        if (!$this->checkZone($domain->name, $zoneFile)) {
+        if (! $this->checkZone($domain->name, $zoneFile)) {
             throw new \RuntimeException("Invalid zone file for {$domain->name}");
         }
     }
@@ -217,14 +220,14 @@ EOT;
     {
         $configFile = "{$this->namedConfDir}/named.conf.local";
 
-        if (!File::exists($configFile)) {
+        if (! File::exists($configFile)) {
             return;
         }
 
         $content = File::get($configFile);
 
         // Remove zone block
-        $pattern = '/\n?zone\s+"' . preg_quote($zoneName, '/') . '"\s*\{[^}]+\};\n?/s';
+        $pattern = '/\n?zone\s+"'.preg_quote($zoneName, '/').'"\s*\{[^}]+\};\n?/s';
         $content = preg_replace($pattern, '', $content);
 
         File::put($configFile, $content);
@@ -240,9 +243,9 @@ EOT;
         $serialNum = (int) substr($currentSerial, 8, 2);
 
         if ($serialDate === $currentDate) {
-            $newSerial = $currentDate . str_pad($serialNum + 1, 2, '0', STR_PAD_LEFT);
+            $newSerial = $currentDate.str_pad($serialNum + 1, 2, '0', STR_PAD_LEFT);
         } else {
-            $newSerial = $currentDate . '01';
+            $newSerial = $currentDate.'01';
         }
 
         $zone->update(['serial' => $newSerial]);
@@ -257,6 +260,6 @@ EOT;
 
     protected function generateSerial(): string
     {
-        return date('Ymd') . '01';
+        return date('Ymd').'01';
     }
 }

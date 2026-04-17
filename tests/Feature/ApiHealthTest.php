@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
 
 class ApiHealthTest extends TestCase
 {
@@ -17,7 +17,7 @@ class ApiHealthTest extends TestCase
 
         $this->assertTrue(
             $response->isSuccessful() || $response->isRedirection(),
-            'Application returned a server error: ' . $response->getStatusCode()
+            'Application returned a server error: '.$response->getStatusCode()
         );
     }
 
@@ -34,7 +34,7 @@ class ApiHealthTest extends TestCase
 
         $this->assertTrue(
             $response->isSuccessful() || $response->isRedirection(),
-            'API health endpoint returned a server error: ' . $response->getStatusCode()
+            'API health endpoint returned a server error: '.$response->getStatusCode()
         );
     }
 
@@ -46,7 +46,8 @@ class ApiHealthTest extends TestCase
         try {
             $pdo = DB::connection()->getPdo();
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Database not configured for tests: ' . $e->getMessage());
+            $this->markTestSkipped('Database not configured for tests: '.$e->getMessage());
+
             return;
         }
 
@@ -61,7 +62,8 @@ class ApiHealthTest extends TestCase
         try {
             $hasTable = Schema::hasTable('migrations');
         } catch (\Throwable $e) {
-            $this->markTestSkipped('Unable to inspect schema: ' . $e->getMessage());
+            $this->markTestSkipped('Unable to inspect schema: '.$e->getMessage());
+
             return;
         }
 

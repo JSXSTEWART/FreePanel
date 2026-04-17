@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AccessLogController extends Controller
@@ -16,7 +15,7 @@ class AccessLogController extends Controller
     public function index(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = "/var/log/apache2/domlogs";
+        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
 
         $accessLog = "{$logDir}/{$domain}-access.log";
@@ -45,7 +44,9 @@ class AccessLogController extends Controller
         // Get archived logs
         $result = Process::run("ls -la {$logDir}/{$domain}*.gz 2>/dev/null");
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
             preg_match('/(\d+)\s+(\w+\s+\d+\s+[\d:]+)\s+(.+\.gz)$/', $line, $matches);
             if ($matches) {
                 $logs[] = [
@@ -71,7 +72,7 @@ class AccessLogController extends Controller
     public function view(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = "/var/log/apache2/domlogs";
+        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
 
         $type = $request->input('type', 'access'); // access, error, ssl_access
@@ -83,7 +84,7 @@ class AccessLogController extends Controller
             default => "{$logDir}/{$domain}-access.log",
         };
 
-        if (!file_exists($logFile)) {
+        if (! file_exists($logFile)) {
             return $this->error('Log file not found', 404);
         }
 
@@ -91,7 +92,9 @@ class AccessLogController extends Controller
 
         $entries = [];
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
 
             if ($type === 'error') {
                 $entries[] = $this->parseErrorLogLine($line);
@@ -113,7 +116,7 @@ class AccessLogController extends Controller
     public function download(Request $request): StreamedResponse
     {
         $account = $request->user()->account;
-        $logDir = "/var/log/apache2/domlogs";
+        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
 
         $type = $request->input('type', 'access');
@@ -131,7 +134,7 @@ class AccessLogController extends Controller
 
         // Verify path is within allowed directory
         $realPath = realpath($logFile);
-        if (!$realPath || !str_starts_with($realPath, $logDir)) {
+        if (! $realPath || ! str_starts_with($realPath, $logDir)) {
             abort(404, 'Log file not found');
         }
 
@@ -151,14 +154,14 @@ class AccessLogController extends Controller
     public function search(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = "/var/log/apache2/domlogs";
+        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
 
         $query = $request->input('query');
         $type = $request->input('type', 'access');
         $lines = min($request->input('lines', 500), 2000);
 
-        if (!$query || strlen($query) < 3) {
+        if (! $query || strlen($query) < 3) {
             return $this->error('Query must be at least 3 characters', 422);
         }
 
@@ -167,7 +170,7 @@ class AccessLogController extends Controller
             default => "{$logDir}/{$domain}-access.log",
         };
 
-        if (!file_exists($logFile)) {
+        if (! file_exists($logFile)) {
             return $this->error('Log file not found', 404);
         }
 
@@ -176,7 +179,9 @@ class AccessLogController extends Controller
 
         $entries = [];
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
 
             if ($type === 'error') {
                 $entries[] = $this->parseErrorLogLine($line);
@@ -198,13 +203,13 @@ class AccessLogController extends Controller
     public function stats(Request $request)
     {
         $account = $request->user()->account;
-        $logDir = "/var/log/apache2/domlogs";
+        $logDir = '/var/log/apache2/domlogs';
         $domain = $account->domain;
 
         $logFile = "{$logDir}/{$domain}-access.log";
         $hours = $request->input('hours', 24);
 
-        if (!file_exists($logFile)) {
+        if (! file_exists($logFile)) {
             return $this->success([
                 'total_requests' => 0,
                 'unique_ips' => 0,
@@ -225,7 +230,9 @@ class AccessLogController extends Controller
 
         foreach ($lines as $line) {
             $parsed = $this->parseAccessLogLine($line);
-            if (!$parsed['ip']) continue;
+            if (! $parsed['ip']) {
+                continue;
+            }
 
             $totalRequests++;
 
@@ -246,8 +253,8 @@ class AccessLogController extends Controller
         arsort($ips);
         arsort($statusCodes);
 
-        $topUrls = array_slice(array_map(fn($url, $count) => ['url' => $url, 'count' => $count], array_keys($urls), $urls), 0, 20, true);
-        $topIps = array_slice(array_map(fn($ip, $count) => ['ip' => $ip, 'count' => $count], array_keys($ips), $ips), 0, 20, true);
+        $topUrls = array_slice(array_map(fn ($url, $count) => ['url' => $url, 'count' => $count], array_keys($urls), $urls), 0, 20, true);
+        $topIps = array_slice(array_map(fn ($ip, $count) => ['ip' => $ip, 'count' => $count], array_keys($ips), $ips), 0, 20, true);
 
         return $this->success([
             'total_requests' => $totalRequests,
@@ -265,7 +272,7 @@ class AccessLogController extends Controller
     {
         $pattern = '/^(\S+) \S+ \S+ \[([^\]]+)\] "(\S+) ([^"]*) HTTP\/[^"]*" (\d+) (\d+|-) "([^"]*)" "([^"]*)"/';
 
-        if (!preg_match($pattern, $line, $matches)) {
+        if (! preg_match($pattern, $line, $matches)) {
             return [
                 'raw' => $line,
                 'ip' => null,
@@ -291,7 +298,7 @@ class AccessLogController extends Controller
     {
         $pattern = '/^\[([^\]]+)\] \[([^\]]+)\] \[pid (\d+)\](?:\[client ([^\]]+)\])? (.+)$/';
 
-        if (!preg_match($pattern, $line, $matches)) {
+        if (! preg_match($pattern, $line, $matches)) {
             return [
                 'raw' => $line,
                 'timestamp' => null,
@@ -320,6 +327,6 @@ class AccessLogController extends Controller
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 }

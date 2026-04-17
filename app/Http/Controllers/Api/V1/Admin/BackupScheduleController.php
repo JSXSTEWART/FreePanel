@@ -8,7 +8,6 @@ use App\Models\BackupSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class BackupScheduleController extends Controller
 {
@@ -56,7 +55,7 @@ class BackupScheduleController extends Controller
         }
 
         // Must have either account_id or is_system=true
-        if (!$request->account_id && !$request->boolean('is_system')) {
+        if (! $request->account_id && ! $request->boolean('is_system')) {
             return $this->error('Either account_id or is_system must be specified', 422);
         }
 
@@ -120,7 +119,7 @@ class BackupScheduleController extends Controller
      */
     public function toggle(BackupSchedule $backupSchedule)
     {
-        $backupSchedule->update(['is_enabled' => !$backupSchedule->is_enabled]);
+        $backupSchedule->update(['is_enabled' => ! $backupSchedule->is_enabled]);
 
         $status = $backupSchedule->is_enabled ? 'enabled' : 'disabled';
 
@@ -148,10 +147,10 @@ class BackupScheduleController extends Controller
         } catch (\Exception $e) {
             $backupSchedule->update([
                 'last_run' => now(),
-                'last_status' => 'failed: ' . $e->getMessage(),
+                'last_status' => 'failed: '.$e->getMessage(),
             ]);
 
-            return $this->error('Backup failed: ' . $e->getMessage(), 500);
+            return $this->error('Backup failed: '.$e->getMessage(), 500);
         }
     }
 
@@ -163,11 +162,11 @@ class BackupScheduleController extends Controller
         $backupDir = storage_path('backups');
         $backups = [];
 
-        if (!is_dir($backupDir)) {
+        if (! is_dir($backupDir)) {
             return $this->success(['backups' => []]);
         }
 
-        $files = glob($backupDir . '/*/*.tar.gz');
+        $files = glob($backupDir.'/*/*.tar.gz');
 
         foreach ($files as $file) {
             $filename = basename($file);
@@ -188,11 +187,11 @@ class BackupScheduleController extends Controller
         }
 
         // Sort by date descending
-        usort($backups, fn($a, $b) => strtotime($b['created_at']) - strtotime($a['created_at']));
+        usort($backups, fn ($a, $b) => strtotime($b['created_at']) - strtotime($a['created_at']));
 
         // Filter by account if requested
         if ($request->has('account')) {
-            $backups = array_filter($backups, fn($b) => $b['account'] === $request->account);
+            $backups = array_filter($backups, fn ($b) => $b['account'] === $request->account);
         }
 
         return $this->success(['backups' => array_values($backups)]);
@@ -217,7 +216,7 @@ class BackupScheduleController extends Controller
 
         $backupPath = $request->backup_path;
 
-        if (!file_exists($backupPath)) {
+        if (! file_exists($backupPath)) {
             return $this->error('Backup file not found', 404);
         }
 
@@ -228,7 +227,7 @@ class BackupScheduleController extends Controller
 
             return $this->success(null, 'Backup restored successfully');
         } catch (\Exception $e) {
-            return $this->error('Restore failed: ' . $e->getMessage(), 500);
+            return $this->error('Restore failed: '.$e->getMessage(), 500);
         }
     }
 
@@ -251,11 +250,11 @@ class BackupScheduleController extends Controller
         $realPath = realpath($backupPath);
         $backupDir = realpath(storage_path('backups'));
 
-        if (!$realPath || !str_starts_with($realPath, $backupDir)) {
+        if (! $realPath || ! str_starts_with($realPath, $backupDir)) {
             return $this->error('Invalid backup path', 400);
         }
 
-        if (!file_exists($backupPath)) {
+        if (! file_exists($backupPath)) {
             return $this->error('Backup file not found', 404);
         }
 
@@ -274,7 +273,7 @@ class BackupScheduleController extends Controller
         $backupCount = 0;
 
         if (is_dir($backupDir)) {
-            $files = glob($backupDir . '/*/*.tar.gz');
+            $files = glob($backupDir.'/*/*.tar.gz');
             $backupCount = count($files);
             foreach ($files as $file) {
                 $totalSize += filesize($file);
@@ -328,12 +327,12 @@ class BackupScheduleController extends Controller
             $backupDir = storage_path("backups/{$account->username}");
         }
 
-        if (!is_dir($backupDir)) {
+        if (! is_dir($backupDir)) {
             mkdir($backupDir, 0755, true);
         }
 
         $backupPath = "{$backupDir}/{$backupName}.tar.gz";
-        $tempDir = sys_get_temp_dir() . "/backup_{$backupName}";
+        $tempDir = sys_get_temp_dir()."/backup_{$backupName}";
         mkdir($tempDir, 0755, true);
 
         try {
@@ -354,10 +353,10 @@ class BackupScheduleController extends Controller
             }
 
             // Create tar.gz archive
-            $result = Process::run("tar -czf {$backupPath} -C " . dirname($tempDir) . " " . basename($tempDir));
+            $result = Process::run("tar -czf {$backupPath} -C ".dirname($tempDir).' '.basename($tempDir));
 
-            if (!$result->successful()) {
-                throw new \Exception('Failed to create backup archive: ' . $result->errorOutput());
+            if (! $result->successful()) {
+                throw new \Exception('Failed to create backup archive: '.$result->errorOutput());
             }
 
             // Cleanup temp directory
@@ -391,7 +390,7 @@ class BackupScheduleController extends Controller
             $sourceDir = '/etc';
         }
 
-        if (!is_dir($sourceDir)) {
+        if (! is_dir($sourceDir)) {
             return;
         }
 
@@ -423,7 +422,7 @@ class BackupScheduleController extends Controller
             // System backup - dump all databases
             $result = Process::run("mysql -N -e 'SHOW DATABASES'");
             $databases = array_filter(explode("\n", $result->output()), function ($db) {
-                return !in_array($db, ['information_schema', 'performance_schema', 'mysql', 'sys', '']);
+                return ! in_array($db, ['information_schema', 'performance_schema', 'mysql', 'sys', '']);
             });
 
             foreach ($databases as $database) {
@@ -438,13 +437,13 @@ class BackupScheduleController extends Controller
      */
     protected function backupEmails(?Account $account, string $destDir): void
     {
-        if (!$account) {
+        if (! $account) {
             return;
         }
 
         $mailDir = "/var/mail/vhosts/{$account->domain}";
 
-        if (!is_dir($mailDir)) {
+        if (! is_dir($mailDir)) {
             return;
         }
 
@@ -492,12 +491,12 @@ class BackupScheduleController extends Controller
             $backupDir = storage_path("backups/{$account->username}");
         }
 
-        if (!is_dir($backupDir)) {
+        if (! is_dir($backupDir)) {
             return;
         }
 
         $cutoffTime = now()->subDays($schedule->retention_days)->timestamp;
-        $files = glob($backupDir . '/*.tar.gz');
+        $files = glob($backupDir.'/*.tar.gz');
 
         foreach ($files as $file) {
             if (filemtime($file) < $cutoffTime) {
@@ -511,19 +510,19 @@ class BackupScheduleController extends Controller
      */
     protected function performRestore(string $backupPath, Account $account, Request $request): void
     {
-        $tempDir = sys_get_temp_dir() . '/restore_' . uniqid();
+        $tempDir = sys_get_temp_dir().'/restore_'.uniqid();
         mkdir($tempDir, 0755, true);
 
         try {
             // Extract backup
             $result = Process::run("tar -xzf {$backupPath} -C {$tempDir}");
 
-            if (!$result->successful()) {
-                throw new \Exception('Failed to extract backup: ' . $result->errorOutput());
+            if (! $result->successful()) {
+                throw new \Exception('Failed to extract backup: '.$result->errorOutput());
             }
 
             // Find the extracted directory
-            $dirs = glob($tempDir . '/*', GLOB_ONLYDIR);
+            $dirs = glob($tempDir.'/*', GLOB_ONLYDIR);
             $extractedDir = $dirs[0] ?? $tempDir;
 
             // Restore files
@@ -547,7 +546,7 @@ class BackupScheduleController extends Controller
             if ($request->boolean('restore_emails', true) && is_dir("{$extractedDir}/emails")) {
                 $mailDir = "/var/mail/vhosts/{$account->domain}";
                 Process::run("rm -rf {$mailDir}");
-                Process::run("cp -a {$extractedDir}/emails/* " . dirname($mailDir) . "/");
+                Process::run("cp -a {$extractedDir}/emails/* ".dirname($mailDir).'/');
             }
 
             // Cleanup
@@ -571,6 +570,6 @@ class BackupScheduleController extends Controller
             $i++;
         }
 
-        return round($bytes, 2) . ' ' . $units[$i];
+        return round($bytes, 2).' '.$units[$i];
     }
 }

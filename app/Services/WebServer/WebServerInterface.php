@@ -3,8 +3,8 @@
 namespace App\Services\WebServer;
 
 use App\Models\Domain;
-use App\Models\Subdomain;
 use App\Models\SslCertificate;
+use App\Models\Subdomain;
 
 interface WebServerInterface
 {

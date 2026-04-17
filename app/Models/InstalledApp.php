@@ -45,11 +45,12 @@ class InstalledApp extends Model
     public function getFullUrlAttribute(): string
     {
         $path = ltrim($this->install_path, '/');
-        return 'https://' . $this->domain->name . '/' . $path;
+
+        return 'https://'.$this->domain->name.'/'.$path;
     }
 
     public function getAdminFullUrlAttribute(): string
     {
-        return $this->full_url . '/' . ltrim($this->admin_url, '/');
+        return $this->full_url.'/'.ltrim($this->admin_url, '/');
     }
 }

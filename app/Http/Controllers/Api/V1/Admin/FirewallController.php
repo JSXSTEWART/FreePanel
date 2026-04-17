@@ -30,8 +30,8 @@ class FirewallController extends Controller
     {
         $result = Process::run('sudo ufw --force enable');
 
-        if (!$result->successful()) {
-            return $this->error('Failed to enable firewall: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to enable firewall: '.$result->errorOutput(), 500);
         }
 
         return $this->success(null, 'Firewall enabled');
@@ -44,8 +44,8 @@ class FirewallController extends Controller
     {
         $result = Process::run('sudo ufw --force disable');
 
-        if (!$result->successful()) {
-            return $this->error('Failed to disable firewall: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to disable firewall: '.$result->errorOutput(), 500);
         }
 
         return $this->success(null, 'Firewall disabled');
@@ -70,28 +70,28 @@ class FirewallController extends Controller
         }
 
         $cmd = 'sudo ufw ';
-        $cmd .= $request->action . ' ';
-        $cmd .= $request->direction . ' ';
+        $cmd .= $request->action.' ';
+        $cmd .= $request->direction.' ';
 
         if ($request->ip) {
-            $cmd .= 'from ' . $request->ip . ' ';
+            $cmd .= 'from '.$request->ip.' ';
         }
 
         if ($request->port) {
-            $cmd .= 'to any port ' . $request->port;
+            $cmd .= 'to any port '.$request->port;
             if ($request->protocol && $request->protocol !== 'any') {
-                $cmd .= ' proto ' . $request->protocol;
+                $cmd .= ' proto '.$request->protocol;
             }
         }
 
         if ($request->comment) {
-            $cmd .= ' comment "' . addslashes($request->comment) . '"';
+            $cmd .= ' comment "'.addslashes($request->comment).'"';
         }
 
         $result = Process::run($cmd);
 
-        if (!$result->successful()) {
-            return $this->error('Failed to add rule: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to add rule: '.$result->errorOutput(), 500);
         }
 
         return $this->success(null, 'Firewall rule added');
@@ -104,8 +104,8 @@ class FirewallController extends Controller
     {
         $result = Process::run("sudo ufw --force delete {$ruleNumber}");
 
-        if (!$result->successful()) {
-            return $this->error('Failed to delete rule: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to delete rule: '.$result->errorOutput(), 500);
         }
 
         return $this->success(null, 'Firewall rule deleted');
@@ -139,8 +139,8 @@ class FirewallController extends Controller
         $port = $services[$request->service];
         $result = Process::run("sudo ufw allow {$port}");
 
-        if (!$result->successful()) {
-            return $this->error('Failed to allow service: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to allow service: '.$result->errorOutput(), 500);
         }
 
         return $this->success(null, "Service {$request->service} allowed");
@@ -159,14 +159,14 @@ class FirewallController extends Controller
         if ($result->successful()) {
             // Get list of jails
             preg_match('/Jail list:\s*(.+)/', $result->output(), $matches);
-            if (!empty($matches[1])) {
+            if (! empty($matches[1])) {
                 $jails = array_map('trim', explode(',', $matches[1]));
 
                 foreach ($jails as $jail) {
                     $jailResult = Process::run("sudo fail2ban-client status {$jail} 2>/dev/null");
                     if ($jailResult->successful()) {
                         preg_match('/Banned IP list:\s*(.*)/', $jailResult->output(), $ipMatches);
-                        if (!empty($ipMatches[1])) {
+                        if (! empty($ipMatches[1])) {
                             $ips = array_filter(array_map('trim', explode(' ', $ipMatches[1])));
                             foreach ($ips as $ip) {
                                 $blockedIps[] = [
@@ -200,8 +200,8 @@ class FirewallController extends Controller
 
         $result = Process::run("sudo fail2ban-client set {$request->jail} unbanip {$request->ip}");
 
-        if (!$result->successful()) {
-            return $this->error('Failed to unban IP: ' . $result->errorOutput(), 500);
+        if (! $result->successful()) {
+            return $this->error('Failed to unban IP: '.$result->errorOutput(), 500);
         }
 
         return $this->success(null, "IP {$request->ip} unbanned from {$request->jail}");

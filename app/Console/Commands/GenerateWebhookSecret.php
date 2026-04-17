@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Services\Zapier\WebhookSignatureService;
+use Illuminate\Console\Command;
 
 class GenerateWebhookSecret extends Command
 {
@@ -31,14 +31,16 @@ class GenerateWebhookSecret extends Command
 
         if ($this->option('show')) {
             $this->line($secret);
+
             return 0;
         }
 
         // Attempt to update .env file
         $envPath = base_path('.env');
 
-        if (!file_exists($envPath)) {
+        if (! file_exists($envPath)) {
             $this->error('.env file not found');
+
             return 1;
         }
 
@@ -48,6 +50,7 @@ class GenerateWebhookSecret extends Command
         if (str_contains($envContent, 'ZAPIER_WEBHOOK_SECRET=')) {
             $this->warn('ZAPIER_WEBHOOK_SECRET already exists in .env file');
             $this->info('To overwrite, manually update or use --show option and update manually');
+
             return 0;
         }
 

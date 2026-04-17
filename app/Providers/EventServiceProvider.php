@@ -2,19 +2,16 @@
 
 namespace App\Providers;
 
+use App\Events\Account\AccountCreated;
+use App\Events\Account\AccountSuspended;
+use App\Listeners\Account\AccountEventSubscriber;
+use App\Listeners\Account\SendAccountCreatedToZapier;
+use App\Listeners\Account\SendAccountSuspendedToZapier;
+use App\Listeners\Domain\DomainEventSubscriber;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
-
-use App\Events\Domain\DomainCreated;
-use App\Events\Domain\DomainDeleted;
-use App\Events\Account\AccountCreated;
-use App\Events\Account\AccountSuspended;
-use App\Listeners\Domain\DomainEventSubscriber;
-use App\Listeners\Account\AccountEventSubscriber;
-use App\Listeners\Account\SendAccountCreatedToZapier;
-use App\Listeners\Account\SendAccountSuspendedToZapier;
 
 class EventServiceProvider extends ServiceProvider
 {
