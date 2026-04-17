@@ -3,7 +3,7 @@
 Scope: security, system operations, configuration, reliability, testing, and
 completeness gaps blocking a production deployment of FreePanel as a WHM/cPanel
 alternative. Findings cite specific file:line locations verified against the
-source on branch `claude/review-free-panel-production-2HNJJ`.
+current repository state at the time of writing.
 
 Assumption: the panel runs with elevated privileges (`sudo` / root) on servers
 that host real customer data.
@@ -84,16 +84,18 @@ shell boundary.
 itself embed a username that is not guaranteed to be sanitized upstream. Same
 class of bug as C5 — escape at the boundary, don't trust distant invariants.
 
-### C7. Public `/setup/initialize` with no proven rate limit
+### C7. Public `/api/v1/setup/initialize` remains high risk even with `throttle:setup`
 `routes/api.php:56-60`
 
-The setup endpoint initializes the first admin and is **public**. It relies on
-`throttle:setup`, but no custom throttle is defined in
-`app/Providers/RouteServiceProvider.php` (grep confirms no `RateLimiter::for('setup', …)`).
-If the named limiter is missing, Laravel falls through with no limit applied.
-If setup state can be triggered again (e.g., DB reset, partial migration,
-table truncation via another bug), an attacker can seize admin. Fix: define
-the limiter explicitly and gate by a one-time install token written to disk.
+The setup endpoint initializes the first admin and is **public**. It is already
+protected by `throttle:setup`, with the named limiter defined in
+`app/Providers/RouteServiceProvider.php` (5/min per IP), so this is not an
+unbounded endpoint. However, rate limiting only reduces abuse volume; it does
+not make bootstrap safe if setup can be triggered again (for example after a
+DB reset, partial migration, or table truncation via another bug). An attacker
+who can reach a re-opened initialization path could still seize admin. Fix:
+keep the existing limiter, but harden setup initialization with a one-time
+install token and/or disable the setup route after the first successful run.
 
 ---
 
@@ -155,7 +157,7 @@ points outside the jail. Fix: `realpath()` both sides, reject symlinks whose
 targets resolve outside the jail, and chroot where possible.
 
 ### H7. No static analysis or security scanning in CI
-`.github/workflows/` (Pint + PHPUnit only)
+`.github/workflows/` (no PHP static analysis / dependency vuln scanning in CI)
 
 `phpstan.neon` is committed but not executed. No dep-vuln check
 (`composer audit`, `roave/security-advisories`), no SAST (Psalm taint analysis
@@ -216,8 +218,9 @@ CRITICAL findings above.
    `Process::run([...])`. This one refactor eliminates C1, C2, C3, C5, C6
    and most of H5.
 2. Move DB credentials out of `mysqldump`/`mysql` argv (C4).
-3. Define the `setup` rate limiter and gate initialization on a disk token
-   (C7).
+3. Harden setup beyond the existing rate limiter: gate initialization on an
+   install/disk token, disable the setup endpoint after initialization, and
+   ensure the flow is idempotent (C7).
 4. Add `composer audit` + phpstan (with taint rules if available) to CI
    (H7).
 5. Force HTTPS + HSTS in production middleware; fail startup when
