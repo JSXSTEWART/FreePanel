@@ -21,28 +21,30 @@ class ZapierWebhookService
      */
     public function setFormat(string $format): self
     {
-        if (!in_array($format, [self::FORMAT_JSON, self::FORMAT_FORM_ENCODED, self::FORMAT_XML])) {
+        if (! in_array($format, [self::FORMAT_JSON, self::FORMAT_FORM_ENCODED, self::FORMAT_XML])) {
             throw new \InvalidArgumentException("Unsupported format: {$format}");
         }
         $this->format = $format;
+
         return $this;
     }
 
     /**
      * Send a webhook payload to Zapier
      *
-     * @param string $event The event type (e.g., 'account.created', 'ssl.expiring')
-     * @param array $data The payload to send
-     * @param string|null $webhookUrl Optional custom webhook URL
-     * @param array $headers Optional custom headers
+     * @param  string  $event  The event type (e.g., 'account.created', 'ssl.expiring')
+     * @param  array  $data  The payload to send
+     * @param  string|null  $webhookUrl  Optional custom webhook URL
+     * @param  array  $headers  Optional custom headers
      * @return bool Whether the webhook was sent successfully
      */
     public function send(string $event, array $data, ?string $webhookUrl = null, array $headers = []): bool
     {
-        $webhookUrl = $webhookUrl ?? config('zapier.webhooks.' . $event);
+        $webhookUrl = $webhookUrl ?? config('zapier.webhooks.'.$event);
 
-        if (!$webhookUrl) {
+        if (! $webhookUrl) {
             Log::warning("No Zapier webhook configured for event: {$event}");
+
             return false;
         }
 
@@ -69,18 +71,21 @@ class ZapierWebhookService
                     'body' => $response->body(),
                     'url' => $webhookUrl,
                 ]);
+
                 return false;
             }
 
             Log::info("Zapier webhook sent successfully for event: {$event}", [
                 'status' => $response->status(),
             ]);
+
             return true;
         } catch (\Exception $e) {
             Log::error("Error sending Zapier webhook for event {$event}", [
                 'message' => $e->getMessage(),
                 'exception' => class_basename($e),
             ]);
+
             return false;
         }
     }
@@ -88,8 +93,8 @@ class ZapierWebhookService
     /**
      * Send a batch of events to Zapier
      *
-     * @param array $events Array of ['event' => string, 'data' => array] pairs
-     * @param string|null $format Optional format override
+     * @param  array  $events  Array of ['event' => string, 'data' => array] pairs
+     * @param  string|null  $format  Optional format override
      * @return array Results keyed by event type
      */
     public function sendBatch(array $events, ?string $format = null): array
@@ -107,6 +112,7 @@ class ZapierWebhookService
                 $item['headers'] ?? []
             );
         }
+
         return $results;
     }
 
@@ -169,6 +175,7 @@ class ZapierWebhookService
     {
         $xml = new \SimpleXMLElement("<?xml version=\"1.0\"?><{$rootElement}></{$rootElement}>");
         $this->arrayToXmlRecursive($array, $xml);
+
         return $xml->asXML();
     }
 
@@ -182,9 +189,8 @@ class ZapierWebhookService
                 $child = $parent->addChild($key);
                 $this->arrayToXmlRecursive($value, $child);
             } else {
-                $parent->addChild($key, htmlspecialchars((string)$value));
+                $parent->addChild($key, htmlspecialchars((string) $value));
             }
         }
     }
 }
-

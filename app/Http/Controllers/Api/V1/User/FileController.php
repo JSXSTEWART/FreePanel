@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\User;
 use App\Http\Controllers\Controller;
 use App\Services\FileManager\FileService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -27,18 +26,19 @@ class FileController extends Controller
         $basePath = "/home/{$account->username}";
         $fullPath = $this->resolvePath($basePath, $path);
 
-        if (!str_starts_with($fullPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
         try {
             $items = $this->fileService->listDirectory($fullPath);
+
             return $this->success([
                 'path' => str_replace($basePath, '', $fullPath) ?: '/',
                 'items' => $items,
             ]);
         } catch (\Exception $e) {
-            return $this->error('Failed to list directory: ' . $e->getMessage(), 500);
+            return $this->error('Failed to list directory: '.$e->getMessage(), 500);
         }
     }
 
@@ -57,7 +57,7 @@ class FileController extends Controller
         $basePath = "/home/{$account->username}";
         $fullPath = $this->resolvePath($basePath, $request->path);
 
-        if (!str_starts_with($fullPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
@@ -71,7 +71,7 @@ class FileController extends Controller
                 'info' => $info,
             ]);
         } catch (\Exception $e) {
-            return $this->error('Failed to read file: ' . $e->getMessage(), 500);
+            return $this->error('Failed to read file: '.$e->getMessage(), 500);
         }
     }
 
@@ -91,7 +91,7 @@ class FileController extends Controller
         $basePath = "/home/{$account->username}";
         $fullPath = $this->resolvePath($basePath, $request->path);
 
-        if (!str_starts_with($fullPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
@@ -104,9 +104,10 @@ class FileController extends Controller
 
         try {
             $this->fileService->writeFile($fullPath, $request->content, $account->uid, $account->gid);
+
             return $this->success(null, 'File saved successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to write file: ' . $e->getMessage(), 500);
+            return $this->error('Failed to write file: '.$e->getMessage(), 500);
         }
     }
 
@@ -126,7 +127,7 @@ class FileController extends Controller
         $basePath = "/home/{$account->username}";
         $destPath = $this->resolvePath($basePath, $request->path);
 
-        if (!str_starts_with($destPath, $basePath)) {
+        if (! str_starts_with($destPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
@@ -139,11 +140,12 @@ class FileController extends Controller
         }
 
         try {
-            $fullPath = rtrim($destPath, '/') . '/' . $file->getClientOriginalName();
+            $fullPath = rtrim($destPath, '/').'/'.$file->getClientOriginalName();
             $this->fileService->uploadFile($file, $fullPath, $account->uid, $account->gid);
+
             return $this->success(null, 'File uploaded successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to upload file: ' . $e->getMessage(), 500);
+            return $this->error('Failed to upload file: '.$e->getMessage(), 500);
         }
     }
 
@@ -152,24 +154,24 @@ class FileController extends Controller
         $account = $request->user()->account;
 
         $path = $request->get('path');
-        if (!$path) {
+        if (! $path) {
             abort(400, 'Path is required');
         }
 
         $basePath = "/home/{$account->username}";
         $fullPath = $this->resolvePath($basePath, $path);
 
-        if (!str_starts_with($fullPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath)) {
             abort(403, 'Access denied');
         }
 
-        if (!file_exists($fullPath) || is_dir($fullPath)) {
+        if (! file_exists($fullPath) || is_dir($fullPath)) {
             abort(404, 'File not found');
         }
 
         return response()->streamDownload(function () use ($fullPath) {
             $stream = fopen($fullPath, 'rb');
-            while (!feof($stream)) {
+            while (! feof($stream)) {
                 echo fread($stream, 8192);
             }
             fclose($stream);
@@ -191,17 +193,18 @@ class FileController extends Controller
 
         $basePath = "/home/{$account->username}";
         $parentPath = $this->resolvePath($basePath, $request->path);
-        $fullPath = rtrim($parentPath, '/') . '/' . $request->name;
+        $fullPath = rtrim($parentPath, '/').'/'.$request->name;
 
-        if (!str_starts_with($fullPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
         try {
             $this->fileService->createDirectory($fullPath, $account->uid, $account->gid);
+
             return $this->success(null, 'Directory created successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to create directory: ' . $e->getMessage(), 500);
+            return $this->error('Failed to create directory: '.$e->getMessage(), 500);
         }
     }
 
@@ -220,7 +223,7 @@ class FileController extends Controller
         $basePath = "/home/{$account->username}";
         $fullPath = $this->resolvePath($basePath, $request->path);
 
-        if (!str_starts_with($fullPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
@@ -238,9 +241,10 @@ class FileController extends Controller
 
         try {
             $this->fileService->delete($fullPath);
+
             return $this->success(null, 'Item deleted successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to delete: ' . $e->getMessage(), 500);
+            return $this->error('Failed to delete: '.$e->getMessage(), 500);
         }
     }
 
@@ -261,7 +265,7 @@ class FileController extends Controller
         $sourcePath = $this->resolvePath($basePath, $request->source);
         $destPath = $this->resolvePath($basePath, $request->destination);
 
-        if (!str_starts_with($sourcePath, $basePath) || !str_starts_with($destPath, $basePath)) {
+        if (! str_starts_with($sourcePath, $basePath) || ! str_starts_with($destPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
@@ -277,9 +281,10 @@ class FileController extends Controller
 
         try {
             $this->fileService->copy($sourcePath, $destPath, $account->uid, $account->gid);
+
             return $this->success(null, 'Item copied successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to copy: ' . $e->getMessage(), 500);
+            return $this->error('Failed to copy: '.$e->getMessage(), 500);
         }
     }
 
@@ -300,15 +305,16 @@ class FileController extends Controller
         $sourcePath = $this->resolvePath($basePath, $request->source);
         $destPath = $this->resolvePath($basePath, $request->destination);
 
-        if (!str_starts_with($sourcePath, $basePath) || !str_starts_with($destPath, $basePath)) {
+        if (! str_starts_with($sourcePath, $basePath) || ! str_starts_with($destPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
         try {
             $this->fileService->move($sourcePath, $destPath);
+
             return $this->success(null, 'Item moved successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to move: ' . $e->getMessage(), 500);
+            return $this->error('Failed to move: '.$e->getMessage(), 500);
         }
     }
 
@@ -327,17 +333,18 @@ class FileController extends Controller
 
         $basePath = "/home/{$account->username}";
         $fullPath = $this->resolvePath($basePath, $request->path);
-        $newPath = dirname($fullPath) . '/' . $request->name;
+        $newPath = dirname($fullPath).'/'.$request->name;
 
-        if (!str_starts_with($fullPath, $basePath) || !str_starts_with($newPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath) || ! str_starts_with($newPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
         try {
             $this->fileService->rename($fullPath, $newPath);
+
             return $this->success(null, 'Item renamed successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to rename: ' . $e->getMessage(), 500);
+            return $this->error('Failed to rename: '.$e->getMessage(), 500);
         }
     }
 
@@ -357,15 +364,16 @@ class FileController extends Controller
         $basePath = "/home/{$account->username}";
         $fullPath = $this->resolvePath($basePath, $request->path);
 
-        if (!str_starts_with($fullPath, $basePath)) {
+        if (! str_starts_with($fullPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
         try {
             $this->fileService->chmod($fullPath, octdec($request->permissions));
+
             return $this->success(null, 'Permissions updated successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to change permissions: ' . $e->getMessage(), 500);
+            return $this->error('Failed to change permissions: '.$e->getMessage(), 500);
         }
     }
 
@@ -387,14 +395,14 @@ class FileController extends Controller
         $basePath = "/home/{$account->username}";
         $destPath = $this->resolvePath($basePath, $request->destination);
 
-        if (!str_starts_with($destPath, $basePath)) {
+        if (! str_starts_with($destPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
         $sourcePaths = [];
         foreach ($request->paths as $path) {
             $fullPath = $this->resolvePath($basePath, $path);
-            if (!str_starts_with($fullPath, $basePath)) {
+            if (! str_starts_with($fullPath, $basePath)) {
                 return $this->error('Access denied', 403);
             }
             $sourcePaths[] = $fullPath;
@@ -402,9 +410,10 @@ class FileController extends Controller
 
         try {
             $this->fileService->compress($sourcePaths, $destPath, $request->type ?? 'zip');
+
             return $this->success(null, 'Files compressed successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to compress: ' . $e->getMessage(), 500);
+            return $this->error('Failed to compress: '.$e->getMessage(), 500);
         }
     }
 
@@ -425,15 +434,16 @@ class FileController extends Controller
         $archivePath = $this->resolvePath($basePath, $request->path);
         $destPath = $this->resolvePath($basePath, $request->destination);
 
-        if (!str_starts_with($archivePath, $basePath) || !str_starts_with($destPath, $basePath)) {
+        if (! str_starts_with($archivePath, $basePath) || ! str_starts_with($destPath, $basePath)) {
             return $this->error('Access denied', 403);
         }
 
         try {
             $this->fileService->extract($archivePath, $destPath, $account->uid, $account->gid);
+
             return $this->success(null, 'Archive extracted successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to extract: ' . $e->getMessage(), 500);
+            return $this->error('Failed to extract: '.$e->getMessage(), 500);
         }
     }
 
@@ -441,9 +451,9 @@ class FileController extends Controller
     {
         // Handle absolute vs relative paths
         if (str_starts_with($path, '/')) {
-            $fullPath = $basePath . $path;
+            $fullPath = $basePath.$path;
         } else {
-            $fullPath = $basePath . '/' . $path;
+            $fullPath = $basePath.'/'.$path;
         }
 
         // Resolve . and ..
@@ -459,6 +469,6 @@ class FileController extends Controller
             }
         }
 
-        return '/' . implode('/', $parts);
+        return '/'.implode('/', $parts);
     }
 }

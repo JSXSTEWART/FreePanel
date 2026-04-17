@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api\V1\User;
 use App\Http\Controllers\Controller;
 use App\Models\Domain;
 use App\Models\Subdomain;
-use App\Services\WebServer\WebServerInterface;
 use App\Services\Dns\DnsInterface;
+use App\Services\WebServer\WebServerInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Validator;
 class DomainController extends Controller
 {
     protected WebServerInterface $webServer;
+
     protected DnsInterface $dns;
 
     public function __construct(WebServerInterface $webServer, DnsInterface $dns)
@@ -73,10 +74,12 @@ class DomainController extends Controller
             $domain->update(['status' => 'active']);
 
             DB::commit();
+
             return $this->success($domain, 'Domain created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create domain: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create domain: '.$e->getMessage(), 500);
         }
     }
 
@@ -114,10 +117,12 @@ class DomainController extends Controller
             $this->webServer->updateVirtualHost($domain);
 
             DB::commit();
+
             return $this->success($domain, 'Domain updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update domain: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update domain: '.$e->getMessage(), 500);
         }
     }
 
@@ -142,10 +147,12 @@ class DomainController extends Controller
             $domain->delete();
 
             DB::commit();
+
             return $this->success(null, 'Domain deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete domain: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete domain: '.$e->getMessage(), 500);
         }
     }
 
@@ -173,13 +180,13 @@ class DomainController extends Controller
         }
 
         // Check subdomain quota
-        $currentSubdomains = Subdomain::whereHas('domain', fn($q) => $q->where('account_id', $account->id))->count();
+        $currentSubdomains = Subdomain::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))->count();
         if ($account->package->max_subdomains != -1 && $currentSubdomains >= $account->package->max_subdomains) {
             return $this->error('Subdomain quota exceeded', 403);
         }
 
         // Check uniqueness
-        $fullName = strtolower($request->name) . '.' . $domain->name;
+        $fullName = strtolower($request->name).'.'.$domain->name;
         if (Subdomain::where('domain_id', $domain->id)->where('name', $request->name)->exists()) {
             return $this->error('Subdomain already exists', 422);
         }
@@ -204,10 +211,12 @@ class DomainController extends Controller
             ]);
 
             DB::commit();
+
             return $this->success($subdomain, 'Subdomain created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create subdomain: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create subdomain: '.$e->getMessage(), 500);
         }
     }
 
@@ -225,10 +234,12 @@ class DomainController extends Controller
             $subdomain->delete();
 
             DB::commit();
+
             return $this->success(null, 'Subdomain deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete subdomain: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete subdomain: '.$e->getMessage(), 500);
         }
     }
 }

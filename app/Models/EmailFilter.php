@@ -92,17 +92,17 @@ class EmailFilter extends Model
     public function toSieve(): string
     {
         $sieve = "# Filter: {$this->name}\n";
-        $sieve .= "if ";
+        $sieve .= 'if ';
 
         $conditionParts = [];
         foreach ($this->conditions as $condition) {
             $conditionParts[] = $this->conditionToSieve($condition);
         }
 
-        $sieve .= "allof(\n  " . implode(",\n  ", $conditionParts) . "\n) {\n";
+        $sieve .= "allof(\n  ".implode(",\n  ", $conditionParts)."\n) {\n";
 
         foreach ($this->actions as $action) {
-            $sieve .= "  " . $this->actionToSieve($action) . "\n";
+            $sieve .= '  '.$this->actionToSieve($action)."\n";
         }
 
         if ($this->stop_processing) {
@@ -164,14 +164,15 @@ class EmailFilter extends Model
                 return "redirect \"{$destination}\";";
             case 'delete':
             case 'discard':
-                return "discard;";
+                return 'discard;';
             case 'mark_read':
-                return "addflag \"\\\\Seen\";";
+                return 'addflag "\\\\Seen";';
             case 'add_header':
                 $header = $action['header'] ?? 'X-Custom';
+
                 return "addheader \"{$header}\" \"{$destination}\";";
             default:
-                return "keep;";
+                return 'keep;';
         }
     }
 }

@@ -32,7 +32,7 @@ class EmailAutoresponder extends Model
 
     public function isCurrentlyActive(): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 

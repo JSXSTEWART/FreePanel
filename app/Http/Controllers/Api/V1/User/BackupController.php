@@ -7,7 +7,6 @@ use App\Models\Backup;
 use App\Services\Backup\BackupService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -30,6 +29,7 @@ class BackupController extends Controller
             ->map(function ($backup) {
                 $backup->size_formatted = $this->formatBytes($backup->size);
                 $backup->can_restore = file_exists($backup->path);
+
                 return $backup;
             });
 
@@ -85,6 +85,7 @@ class BackupController extends Controller
             DB::commit();
 
             $backup->size_formatted = $this->formatBytes($backup->size);
+
             return $this->success($backup, 'Backup created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -94,7 +95,7 @@ class BackupController extends Controller
                 $backup->update(['status' => 'failed']);
             }
 
-            return $this->error('Failed to create backup: ' . $e->getMessage(), 500);
+            return $this->error('Failed to create backup: '.$e->getMessage(), 500);
         }
     }
 
@@ -121,13 +122,13 @@ class BackupController extends Controller
 
         $backup = Backup::where('account_id', $account->id)->findOrFail($id);
 
-        if (!file_exists($backup->path)) {
+        if (! file_exists($backup->path)) {
             abort(404, 'Backup file not found');
         }
 
         return response()->streamDownload(function () use ($backup) {
             $stream = fopen($backup->path, 'rb');
-            while (!feof($stream)) {
+            while (! feof($stream)) {
                 echo fread($stream, 8192);
             }
             fclose($stream);
@@ -146,7 +147,7 @@ class BackupController extends Controller
             return $this->error('Backup is not completed', 422);
         }
 
-        if (!file_exists($backup->path)) {
+        if (! file_exists($backup->path)) {
             return $this->error('Backup file not found', 404);
         }
 
@@ -168,10 +169,12 @@ class BackupController extends Controller
             $backup->update(['restored_at' => now()]);
 
             DB::commit();
+
             return $this->success(null, 'Backup restored successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to restore backup: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to restore backup: '.$e->getMessage(), 500);
         }
     }
 
@@ -191,7 +194,7 @@ class BackupController extends Controller
 
             return $this->success(null, 'Backup deleted successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to delete backup: ' . $e->getMessage(), 500);
+            return $this->error('Failed to delete backup: '.$e->getMessage(), 500);
         }
     }
 
@@ -230,7 +233,7 @@ class BackupController extends Controller
 
             return $this->success($schedule, 'Backup schedule updated successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to update backup schedule: ' . $e->getMessage(), 500);
+            return $this->error('Failed to update backup schedule: '.$e->getMessage(), 500);
         }
     }
 
@@ -259,6 +262,7 @@ class BackupController extends Controller
             $bytes /= 1024;
             $i++;
         }
-        return round($bytes, 2) . ' ' . $units[$i];
+
+        return round($bytes, 2).' '.$units[$i];
     }
 }

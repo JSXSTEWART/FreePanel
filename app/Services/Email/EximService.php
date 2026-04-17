@@ -3,17 +3,19 @@
 namespace App\Services\Email;
 
 use App\Models\EmailAccount;
-use App\Models\EmailForwarder;
 use App\Models\EmailAutoresponder;
-use Illuminate\Support\Facades\Process;
+use App\Models\EmailForwarder;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Process;
 
 class EximService implements EmailInterface
 {
     protected string $mailDir = '/var/mail/vhosts';
+
     protected string $virtualDomainsFile = '/etc/exim4/virtual_domains';
+
     protected string $virtualUsersFile = '/etc/exim4/virtual_users';
+
     protected string $virtualAliasesFile = '/etc/exim4/virtual_aliases';
 
     public function createMailbox(EmailAccount $account, string $password): void
@@ -23,7 +25,7 @@ class EximService implements EmailInterface
         $mailboxPath = "{$this->mailDir}/{$domain}/{$localPart}";
 
         // Create mailbox directory structure
-        if (!is_dir($mailboxPath)) {
+        if (! is_dir($mailboxPath)) {
             mkdir($mailboxPath, 0700, true);
             mkdir("{$mailboxPath}/cur", 0700);
             mkdir("{$mailboxPath}/new", 0700);
@@ -78,7 +80,7 @@ class EximService implements EmailInterface
             }
         }
 
-        file_put_contents($this->virtualUsersFile, implode("\n", $updated) . "\n");
+        file_put_contents($this->virtualUsersFile, implode("\n", $updated)."\n");
 
         Log::info("Password updated for {$account->email}");
     }
@@ -96,17 +98,18 @@ class EximService implements EmailInterface
         $localPart = explode('@', $account->email)[0];
         $mailboxPath = "{$this->mailDir}/{$domain}/{$localPart}";
 
-        if (!is_dir($mailboxPath)) {
+        if (! is_dir($mailboxPath)) {
             return 0;
         }
 
         $result = Process::run("du -sm {$mailboxPath} | cut -f1");
+
         return (int) trim($result->output());
     }
 
     public function createForwarder(EmailForwarder $forwarder): void
     {
-        $source = $forwarder->source . '@' . $forwarder->domain->name;
+        $source = $forwarder->source.'@'.$forwarder->domain->name;
         $entry = "{$source}: {$forwarder->destination}";
 
         $this->appendToFile($this->virtualAliasesFile, $entry);
@@ -117,7 +120,7 @@ class EximService implements EmailInterface
 
     public function deleteForwarder(EmailForwarder $forwarder): void
     {
-        $source = $forwarder->source . '@' . $forwarder->domain->name;
+        $source = $forwarder->source.'@'.$forwarder->domain->name;
 
         $this->removeFromFile($this->virtualAliasesFile, $source);
         $this->reload();
@@ -143,47 +146,48 @@ class EximService implements EmailInterface
 
     public function mailboxExists(string $email): bool
     {
-        if (!file_exists($this->virtualUsersFile)) {
+        if (! file_exists($this->virtualUsersFile)) {
             return false;
         }
 
         $content = file_get_contents($this->virtualUsersFile);
+
         return str_contains($content, "{$email}:");
     }
 
     protected function hashPassword(string $password): string
     {
         // Use SHA512-CRYPT for Exim
-        return '{SHA512-CRYPT}' . crypt($password, '$6$' . bin2hex(random_bytes(8)) . '$');
+        return '{SHA512-CRYPT}'.crypt($password, '$6$'.bin2hex(random_bytes(8)).'$');
     }
 
     protected function addVirtualDomain(string $domain): void
     {
-        if (!file_exists($this->virtualDomainsFile)) {
+        if (! file_exists($this->virtualDomainsFile)) {
             file_put_contents($this->virtualDomainsFile, '');
         }
 
         $content = file_get_contents($this->virtualDomainsFile);
-        if (!str_contains($content, $domain)) {
+        if (! str_contains($content, $domain)) {
             $this->appendToFile($this->virtualDomainsFile, $domain);
         }
     }
 
     protected function appendToFile(string $file, string $line): void
     {
-        file_put_contents($file, $line . "\n", FILE_APPEND | LOCK_EX);
+        file_put_contents($file, $line."\n", FILE_APPEND | LOCK_EX);
     }
 
     protected function removeFromFile(string $file, string $search): void
     {
-        if (!file_exists($file)) {
+        if (! file_exists($file)) {
             return;
         }
 
         $lines = file($file, FILE_IGNORE_NEW_LINES);
-        $filtered = array_filter($lines, fn($line) => !str_starts_with($line, "{$search}:") && $line !== $search);
+        $filtered = array_filter($lines, fn ($line) => ! str_starts_with($line, "{$search}:") && $line !== $search);
 
-        file_put_contents($file, implode("\n", $filtered) . "\n");
+        file_put_contents($file, implode("\n", $filtered)."\n");
     }
 
     protected function reload(): void

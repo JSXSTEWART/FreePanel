@@ -35,7 +35,7 @@ class AccountFactory extends Factory
             'package_id' => Package::factory(),
             'username' => $username,
             'domain' => fake()->unique()->domainName(),
-            'home_directory' => '/home/' . $username,
+            'home_directory' => '/home/'.$username,
             'shell' => '/bin/bash',
             'uid' => fake()->numberBetween(1000, 65000),
             'gid' => fake()->numberBetween(1000, 65000),

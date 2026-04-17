@@ -29,10 +29,10 @@ class WebhookSignatureService
     /**
      * Verify webhook signature and timestamp
      *
-     * @param string $payload The raw request body
-     * @param string $signature The signature from the request header
-     * @param string $timestamp The timestamp from the request header
-     * @param string $secret The webhook secret
+     * @param  string  $payload  The raw request body
+     * @param  string  $signature  The signature from the request header
+     * @param  string  $timestamp  The timestamp from the request header
+     * @param  string  $secret  The webhook secret
      * @return bool Whether the signature is valid
      */
     public function verify(
@@ -42,12 +42,13 @@ class WebhookSignatureService
         string $secret
     ): bool {
         // Verify timestamp to prevent replay attacks
-        if (!$this->verifyTimestamp($timestamp)) {
+        if (! $this->verifyTimestamp($timestamp)) {
             Log::warning('Webhook signature verification failed: timestamp too old', [
                 'timestamp' => $timestamp,
                 'current_time' => now()->timestamp,
-                'difference' => now()->timestamp - (int)$timestamp,
+                'difference' => now()->timestamp - (int) $timestamp,
             ]);
+
             return false;
         }
 
@@ -57,10 +58,10 @@ class WebhookSignatureService
         // Use timing-safe comparison to prevent timing attacks
         $isValid = hash_equals($expectedSignature, $signature);
 
-        if (!$isValid) {
+        if (! $isValid) {
             Log::warning('Webhook signature verification failed: signature mismatch', [
-                'provided' => substr($signature, 0, 16) . '...',
-                'expected' => substr($expectedSignature, 0, 16) . '...',
+                'provided' => substr($signature, 0, 16).'...',
+                'expected' => substr($expectedSignature, 0, 16).'...',
             ]);
         } else {
             Log::debug('Webhook signature verified successfully');
@@ -72,9 +73,9 @@ class WebhookSignatureService
     /**
      * Compute the HMAC signature for a webhook
      *
-     * @param string $payload The raw request body
-     * @param string $timestamp The timestamp (ISO 8601 or Unix timestamp)
-     * @param string $secret The webhook secret
+     * @param  string  $payload  The raw request body
+     * @param  string  $timestamp  The timestamp (ISO 8601 or Unix timestamp)
+     * @param  string  $secret  The webhook secret
      * @return string The computed signature
      */
     public function computeSignature(
@@ -100,7 +101,7 @@ class WebhookSignatureService
     /**
      * Verify that the timestamp is within acceptable tolerance
      *
-     * @param string $timestamp The timestamp to verify
+     * @param  string  $timestamp  The timestamp to verify
      * @return bool Whether the timestamp is acceptable
      */
     protected function verifyTimestamp(string $timestamp): bool
@@ -116,6 +117,7 @@ class WebhookSignatureService
                 'timestamp' => $timestamp,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -123,19 +125,19 @@ class WebhookSignatureService
     /**
      * Normalize timestamp to Unix timestamp (seconds since epoch)
      *
-     * @param string $timestamp Timestamp in ISO 8601 or Unix format
+     * @param  string  $timestamp  Timestamp in ISO 8601 or Unix format
      * @return int Unix timestamp
      */
     protected function normalizeTimestamp(string $timestamp): int
     {
         // Check if it's already a Unix timestamp (all digits)
         if (ctype_digit($timestamp)) {
-            return (int)$timestamp;
+            return (int) $timestamp;
         }
 
         // Try to parse as ISO 8601
         try {
-            return (int)\Carbon\Carbon::parse($timestamp)->timestamp;
+            return (int) \Carbon\Carbon::parse($timestamp)->timestamp;
         } catch (\Exception $e) {
             throw new \InvalidArgumentException("Invalid timestamp format: {$timestamp}");
         }

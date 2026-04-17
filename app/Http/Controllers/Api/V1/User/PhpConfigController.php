@@ -29,7 +29,7 @@ class PhpConfigController extends Controller
                 '0' => 'None',
             ],
             'default' => 'E_ALL & ~E_DEPRECATED & ~E_STRICT',
-            'type' => 'select'
+            'type' => 'select',
         ],
         'date.timezone' => ['type' => 'timezone', 'default' => 'UTC'],
         'session.gc_maxlifetime' => ['min' => 1440, 'max' => 86400, 'default' => 1440, 'type' => 'integer'],
@@ -101,7 +101,7 @@ class PhpConfigController extends Controller
                     $rules[$key] = 'nullable|in:On,Off';
                     break;
                 case 'select':
-                    $rules[$key] = 'nullable|in:' . implode(',', array_keys($options['values']));
+                    $rules[$key] = 'nullable|in:'.implode(',', array_keys($options['values']));
                     break;
                 case 'timezone':
                     $rules[$key] = 'nullable|timezone';
@@ -120,7 +120,7 @@ class PhpConfigController extends Controller
 
         // Build new .user.ini content
         $content = "; FreePanel PHP Configuration\n";
-        $content .= "; Generated: " . now()->toIso8601String() . "\n\n";
+        $content .= '; Generated: '.now()->toIso8601String()."\n\n";
 
         foreach ($this->editableDirectives as $directive => $options) {
             $key = str_replace('.', '_', $directive);
@@ -176,7 +176,7 @@ class PhpConfigController extends Controller
         }
 
         $availableVersions = $this->getAvailablePhpVersions();
-        if (!in_array($request->version, $availableVersions)) {
+        if (! in_array($request->version, $availableVersions)) {
             return $this->error('PHP version not available', 422);
         }
 
@@ -187,8 +187,8 @@ class PhpConfigController extends Controller
         $existing = file_exists($htaccessPath) ? file_get_contents($htaccessPath) : '';
 
         // Remove existing PHP handler section
-        $startMarker = "# BEGIN FreePanel PHP Handler";
-        $endMarker = "# END FreePanel PHP Handler";
+        $startMarker = '# BEGIN FreePanel PHP Handler';
+        $endMarker = '# END FreePanel PHP Handler';
         $pattern = "/\n?{$startMarker}.*?{$endMarker}\n?/s";
         $existing = preg_replace($pattern, '', $existing);
 
@@ -199,7 +199,7 @@ class PhpConfigController extends Controller
         $handler .= "</FilesMatch>\n";
         $handler .= "# END FreePanel PHP Handler\n";
 
-        file_put_contents($htaccessPath, trim($existing) . "\n\n" . $handler);
+        file_put_contents($htaccessPath, trim($existing)."\n\n".$handler);
 
         // Update account record
         $account->update(['php_version' => $request->version]);
@@ -216,15 +216,15 @@ class PhpConfigController extends Controller
 
         // Create temporary PHP file
         $homeDir = "/home/{$account->system_username}";
-        $tempFile = "{$homeDir}/public_html/.freepanel_phpinfo_" . uniqid() . ".php";
+        $tempFile = "{$homeDir}/public_html/.freepanel_phpinfo_".uniqid().'.php';
 
-        file_put_contents($tempFile, "<?php phpinfo(); ?>");
+        file_put_contents($tempFile, '<?php phpinfo(); ?>');
         chmod($tempFile, 0644);
 
         // We can't actually execute this server-side in a secure way,
         // so return the URL for the user to access
         $domain = $account->domains()->where('type', 'main')->first();
-        $url = "http://{$domain->domain}/" . basename($tempFile);
+        $url = "http://{$domain->domain}/".basename($tempFile);
 
         // Schedule file deletion after 60 seconds
         // In a real implementation, use a queue job
@@ -240,7 +240,7 @@ class PhpConfigController extends Controller
      */
     protected function parseUserIni(string $path): array
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return [];
         }
 

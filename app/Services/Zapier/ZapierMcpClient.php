@@ -36,6 +36,7 @@ class ZapierMcpClient
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return [];
             }
 
@@ -46,6 +47,7 @@ class ZapierMcpClient
             Log::error('Error listing Zapier MCP tools', [
                 'message' => $e->getMessage(),
             ]);
+
             return [];
         }
     }
@@ -75,6 +77,7 @@ class ZapierMcpClient
                     'status' => $response->status(),
                     'body' => $response->body(),
                 ]);
+
                 return null;
             }
 
@@ -86,6 +89,7 @@ class ZapierMcpClient
                 'tool' => $toolName,
                 'message' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -120,6 +124,7 @@ class ZapierMcpClient
             Log::error('Error testing Zapier MCP connection', [
                 'message' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

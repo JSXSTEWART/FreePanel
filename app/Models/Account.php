@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Account extends Model
@@ -61,7 +61,7 @@ class Account extends Model
                 $account->uuid = (string) Str::uuid();
             }
             if (empty($account->home_directory)) {
-                $account->home_directory = config('freepanel.paths.home_base') . '/' . $account->username;
+                $account->home_directory = config('freepanel.paths.home_base').'/'.$account->username;
             }
         });
     }
@@ -146,7 +146,7 @@ class Account extends Model
     {
         $feature = $this->features()->where('name', $featureName)->first();
 
-        if (!$feature) {
+        if (! $feature) {
             // Check if feature is enabled by default
             return Feature::where('name', $featureName)->where('is_default', true)->exists();
         }
@@ -162,7 +162,7 @@ class Account extends Model
         $feature = Feature::where('name', $featureName)->first();
         if ($feature) {
             $this->features()->syncWithoutDetaching([
-                $feature->id => ['enabled' => true]
+                $feature->id => ['enabled' => true],
             ]);
         }
     }
@@ -175,7 +175,7 @@ class Account extends Model
         $feature = Feature::where('name', $featureName)->first();
         if ($feature) {
             $this->features()->syncWithoutDetaching([
-                $feature->id => ['enabled' => false]
+                $feature->id => ['enabled' => false],
             ]);
         }
     }
@@ -190,6 +190,7 @@ class Account extends Model
 
         return $allFeatures->map(function ($feature) use ($accountFeatures) {
             $accountFeature = $accountFeatures->get($feature->id);
+
             return [
                 'id' => $feature->id,
                 'name' => $feature->name,
@@ -229,6 +230,7 @@ class Account extends Model
         if ($quota <= 0) {
             return 0;
         }
+
         return round(($this->disk_used / $quota) * 100, 2);
     }
 
@@ -241,6 +243,7 @@ class Account extends Model
         if ($quota <= 0) {
             return 0;
         }
+
         return round(($this->bandwidth_used / $quota) * 100, 2);
     }
 

@@ -145,7 +145,7 @@ class StatsController extends Controller
     {
         $logPath = "/var/log/apache2/domlogs/{$domain->name}-bytes_log";
 
-        if (!File::exists($logPath)) {
+        if (! File::exists($logPath)) {
             $logPath = "/var/log/httpd/domlogs/{$domain->name}-bytes_log";
         }
 
@@ -248,7 +248,7 @@ class StatsController extends Controller
         array &$browsers
     ): void {
         $handle = @fopen($logPath, 'r');
-        if (!$handle) {
+        if (! $handle) {
             return;
         }
 
@@ -273,7 +273,7 @@ class StatsController extends Controller
 
                 // Parse date
                 $logDate = \DateTime::createFromFormat('d/M/Y:H:i:s O', $dateStr);
-                if (!$logDate || $logDate < $startDate) {
+                if (! $logDate || $logDate < $startDate) {
                     continue;
                 }
 
@@ -288,12 +288,12 @@ class StatsController extends Controller
                 $visitors[$ip] = true;
 
                 // Track pages (exclude static assets)
-                if (!preg_match('/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i', $url)) {
+                if (! preg_match('/\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i', $url)) {
                     $pages[$url] = ($pages[$url] ?? 0) + 1;
                 }
 
                 // Track referrers (exclude self and empty)
-                if ($referrer !== '-' && !empty($referrer)) {
+                if ($referrer !== '-' && ! empty($referrer)) {
                     $referrerHost = parse_url($referrer, PHP_URL_HOST);
                     if ($referrerHost) {
                         $referrers[$referrerHost] = ($referrers[$referrerHost] ?? 0) + 1;
@@ -344,7 +344,7 @@ class StatsController extends Controller
             }
 
             // Sort by timestamp descending
-            usort($errors, fn($a, $b) => $b['timestamp'] <=> $a['timestamp']);
+            usort($errors, fn ($a, $b) => $b['timestamp'] <=> $a['timestamp']);
 
             $stats['recent'] = array_slice($errors, 0, $limit);
 
@@ -365,7 +365,7 @@ class StatsController extends Controller
         string $domainName
     ): void {
         $handle = @fopen($logPath, 'r');
-        if (!$handle) {
+        if (! $handle) {
             return;
         }
 
@@ -388,7 +388,7 @@ class StatsController extends Controller
                 $logDate = \DateTime::createFromFormat('D M d H:i:s.u Y', $dateStr) ?:
                            \DateTime::createFromFormat('D M d H:i:s Y', $dateStr);
 
-                if (!$logDate || $logDate < $startDate) {
+                if (! $logDate || $logDate < $startDate) {
                     continue;
                 }
 
@@ -448,7 +448,7 @@ class StatsController extends Controller
     {
         $size = 0;
 
-        $output = @shell_exec("du -sb " . escapeshellarg($path) . " 2>/dev/null");
+        $output = @shell_exec('du -sb '.escapeshellarg($path).' 2>/dev/null');
         if ($output && preg_match('/^(\d+)/', $output, $matches)) {
             $size = (int) $matches[1];
         }
@@ -462,13 +462,13 @@ class StatsController extends Controller
         $limit = 0;
 
         // Count files
-        $output = @shell_exec("find " . escapeshellarg($path) . " -type f 2>/dev/null | wc -l");
+        $output = @shell_exec('find '.escapeshellarg($path).' -type f 2>/dev/null | wc -l');
         if ($output) {
             $used = (int) trim($output);
         }
 
         // Get quota if set
-        $quotaOutput = @shell_exec("quota -u " . escapeshellarg(basename($path)) . " 2>/dev/null");
+        $quotaOutput = @shell_exec('quota -u '.escapeshellarg(basename($path)).' 2>/dev/null');
         if ($quotaOutput && preg_match('/\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/', $quotaOutput, $matches)) {
             $limit = (int) $matches[5]; // soft limit for inodes
         }
@@ -486,6 +486,7 @@ class StatsController extends Controller
         foreach ($account->domains as $domain) {
             $count += $domain->subdomains()->count();
         }
+
         return $count;
     }
 
@@ -527,7 +528,7 @@ class StatsController extends Controller
 
     protected function getPeriodStartDate(string $period): \DateTime
     {
-        $date = new \DateTime();
+        $date = new \DateTime;
 
         switch ($period) {
             case 'day':
@@ -565,6 +566,7 @@ class StatsController extends Controller
                 if ($name === 'Safari' && preg_match('/Chrome/', $userAgent)) {
                     continue;
                 }
+
                 return $name;
             }
         }

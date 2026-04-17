@@ -202,9 +202,10 @@ class ApplicationController extends Controller
 
         try {
             $this->startApplication($application);
+
             return $this->success($application->fresh(), 'Application started');
         } catch (\Exception $e) {
-            return $this->error('Failed to start application: ' . $e->getMessage(), 500);
+            return $this->error('Failed to start application: '.$e->getMessage(), 500);
         }
     }
 
@@ -221,9 +222,10 @@ class ApplicationController extends Controller
 
         try {
             $this->stopApplication($application);
+
             return $this->success($application->fresh(), 'Application stopped');
         } catch (\Exception $e) {
-            return $this->error('Failed to stop application: ' . $e->getMessage(), 500);
+            return $this->error('Failed to stop application: '.$e->getMessage(), 500);
         }
     }
 
@@ -240,9 +242,10 @@ class ApplicationController extends Controller
 
         try {
             $this->restartApplication($application);
+
             return $this->success($application->fresh(), 'Application restarted');
         } catch (\Exception $e) {
-            return $this->error('Failed to restart application: ' . $e->getMessage(), 500);
+            return $this->error('Failed to restart application: '.$e->getMessage(), 500);
         }
     }
 
@@ -394,8 +397,8 @@ class ApplicationController extends Controller
         $pm2Config = $application->toPm2Config();
         $configPath = "{$fullPath}/ecosystem.config.js";
 
-        $configContent = "module.exports = { apps: [" . json_encode($pm2Config) . "] };";
-        file_put_contents("/tmp/pm2_config.js", $configContent);
+        $configContent = 'module.exports = { apps: ['.json_encode($pm2Config).'] };';
+        file_put_contents('/tmp/pm2_config.js', $configContent);
         Process::run("sudo mv /tmp/pm2_config.js {$configPath}");
         Process::run("sudo chown {$account->username}:{$account->username} {$configPath}");
 
@@ -411,7 +414,7 @@ class ApplicationController extends Controller
         // Start with PM2
         $result = Process::run("cd {$fullPath} && sudo -u {$account->username} {$envStr} pm2 start ecosystem.config.js");
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             throw new \Exception($result->errorOutput());
         }
     }
@@ -435,18 +438,18 @@ class ApplicationController extends Controller
         $pidFile = "/tmp/{$application->name}.pid";
         $entryPoint = $application->entry_point;
 
-        $cmd = "cd {$fullPath} && {$envStr} gunicorn " .
-               "--bind 127.0.0.1:{$application->port} " .
-               "--workers {$application->instances} " .
-               "--pid {$pidFile} " .
-               "--daemon " .
-               "--access-logfile {$application->log_path} " .
-               "--error-logfile {$application->error_log_path} " .
+        $cmd = "cd {$fullPath} && {$envStr} gunicorn ".
+               "--bind 127.0.0.1:{$application->port} ".
+               "--workers {$application->instances} ".
+               "--pid {$pidFile} ".
+               '--daemon '.
+               "--access-logfile {$application->log_path} ".
+               "--error-logfile {$application->error_log_path} ".
                "{$entryPoint}";
 
         $result = Process::run("sudo -u {$account->username} bash -c '{$cmd}'");
 
-        if (!$result->successful()) {
+        if (! $result->successful()) {
             throw new \Exception($result->errorOutput());
         }
     }
@@ -467,10 +470,10 @@ class ApplicationController extends Controller
             }
         }
 
-        $cmd = "cd {$fullPath} && {$envStr} bundle exec puma " .
-               "-b tcp://127.0.0.1:{$application->port} " .
-               "-w {$application->instances} " .
-               "-d " .
+        $cmd = "cd {$fullPath} && {$envStr} bundle exec puma ".
+               "-b tcp://127.0.0.1:{$application->port} ".
+               "-w {$application->instances} ".
+               '-d '.
                "--pidfile /tmp/{$application->name}.pid";
 
         Process::run("sudo -u {$account->username} bash -c '{$cmd}'");
@@ -508,6 +511,7 @@ class ApplicationController extends Controller
                     $result = Process::run("ps -p {$pid} -o %cpu,%mem --no-headers 2>/dev/null");
                     if ($result->successful() && trim($result->output())) {
                         [$cpu, $mem] = preg_split('/\s+/', trim($result->output()));
+
                         return [
                             'running' => true,
                             'cpu' => (float) $cpu,
@@ -549,7 +553,7 @@ class ApplicationController extends Controller
         $usedPorts = Application::where('account_id', $accountId)->pluck('port')->toArray();
 
         for ($port = 3000; $port < 5000; $port++) {
-            if (!in_array($port, $usedPorts)) {
+            if (! in_array($port, $usedPorts)) {
                 return $port;
             }
         }

@@ -90,13 +90,13 @@ class SshController extends Controller
             $configUpdates['LoginGraceTime'] = $request->login_grace_time;
         }
 
-        if (!empty($configUpdates)) {
+        if (! empty($configUpdates)) {
             $this->updateSshdConfig($configUpdates);
 
             // Validate config before restarting
             $result = Process::run('sudo /usr/sbin/sshd -t');
-            if (!$result->successful()) {
-                return $this->error('Invalid SSH configuration: ' . $result->errorOutput(), 422);
+            if (! $result->successful()) {
+                return $this->error('Invalid SSH configuration: '.$result->errorOutput(), 422);
             }
 
             // Restart SSH service
@@ -129,7 +129,7 @@ class SshController extends Controller
         // Ensure user has shell access
         Process::run("sudo usermod -s /bin/bash {$account->username}");
 
-        return $this->success(null, 'SSH access enabled for ' . $account->username);
+        return $this->success(null, 'SSH access enabled for '.$account->username);
     }
 
     /**
@@ -143,7 +143,7 @@ class SshController extends Controller
         // Set shell to nologin
         Process::run("sudo usermod -s /usr/sbin/nologin {$account->username}");
 
-        return $this->success(null, 'SSH access disabled for ' . $account->username);
+        return $this->success(null, 'SSH access disabled for '.$account->username);
     }
 
     /**
@@ -161,14 +161,14 @@ class SshController extends Controller
         }
 
         // Validate key format
-        if (!SshKey::validatePublicKey($request->public_key)) {
+        if (! SshKey::validatePublicKey($request->public_key)) {
             return $this->error('Invalid SSH public key format', 422);
         }
 
         try {
             $fingerprint = SshKey::generateFingerprint($request->public_key);
         } catch (\Exception $e) {
-            return $this->error('Could not generate key fingerprint: ' . $e->getMessage(), 422);
+            return $this->error('Could not generate key fingerprint: '.$e->getMessage(), 422);
         }
 
         // Check for duplicate
@@ -212,12 +212,13 @@ class SshController extends Controller
      */
     public function toggleKey(SshKey $sshKey)
     {
-        $sshKey->update(['is_active' => !$sshKey->is_active]);
+        $sshKey->update(['is_active' => ! $sshKey->is_active]);
 
         // Sync authorized_keys file
         $this->syncAuthorizedKeys($sshKey->account);
 
         $status = $sshKey->is_active ? 'enabled' : 'disabled';
+
         return $this->success($sshKey, "SSH key {$status}");
     }
 
@@ -233,7 +234,9 @@ class SshController extends Controller
 
         $logs = [];
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
 
             $logs[] = [
                 'raw' => $line,
@@ -253,7 +256,9 @@ class SshController extends Controller
         $sessions = [];
 
         foreach (explode("\n", $result->output()) as $line) {
-            if (empty(trim($line))) continue;
+            if (empty(trim($line))) {
+                continue;
+            }
 
             preg_match('/^(\S+)\s+(\S+)\s+(.+?)\s+\((.+?)\)/', $line, $matches);
 
@@ -289,6 +294,7 @@ class SshController extends Controller
 
         if ($pid) {
             Process::run("sudo kill -9 {$pid}");
+
             return $this->success(null, 'Session terminated');
         }
 
@@ -305,7 +311,9 @@ class SshController extends Controller
 
         foreach (explode("\n", $result->output()) as $line) {
             $line = trim($line);
-            if (empty($line) || str_starts_with($line, '#')) continue;
+            if (empty($line) || str_starts_with($line, '#')) {
+                continue;
+            }
 
             $parts = preg_split('/\s+/', $line, 2);
             if (count($parts) === 2) {
@@ -351,7 +359,7 @@ class SshController extends Controller
         $tempFile = tempnam('/tmp', 'sshd_');
         file_put_contents($tempFile, $content);
         Process::run("sudo mv {$tempFile} /etc/ssh/sshd_config");
-        Process::run("sudo chmod 644 /etc/ssh/sshd_config");
+        Process::run('sudo chmod 644 /etc/ssh/sshd_config');
     }
 
     /**
@@ -383,7 +391,7 @@ class SshController extends Controller
 
         if (isset($config['AllowUsers'])) {
             $users = explode(' ', $config['AllowUsers']);
-            if (!in_array($username, $users)) {
+            if (! in_array($username, $users)) {
                 $users[] = $username;
                 $this->updateSshdConfig(['AllowUsers' => implode(' ', $users)]);
                 Process::run('sudo /usr/bin/systemctl reload sshd');
@@ -399,7 +407,7 @@ class SshController extends Controller
         $config = $this->readSshdConfig();
 
         if (isset($config['AllowUsers'])) {
-            $users = array_filter(explode(' ', $config['AllowUsers']), fn($u) => $u !== $username);
+            $users = array_filter(explode(' ', $config['AllowUsers']), fn ($u) => $u !== $username);
             $this->updateSshdConfig(['AllowUsers' => implode(' ', $users)]);
             Process::run('sudo /usr/bin/systemctl reload sshd');
         }

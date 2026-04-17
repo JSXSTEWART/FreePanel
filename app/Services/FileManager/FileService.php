@@ -2,8 +2,8 @@
 
 namespace App\Services\FileManager;
 
-use Illuminate\Support\Facades\File;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 
 class FileService
 {
@@ -12,7 +12,7 @@ class FileService
      */
     public function listDirectory(string $path): array
     {
-        if (!File::isDirectory($path)) {
+        if (! File::isDirectory($path)) {
             throw new \InvalidArgumentException("Directory does not exist: {$path}");
         }
 
@@ -33,6 +33,7 @@ class FileService
             if ($a['is_dir'] !== $b['is_dir']) {
                 return $b['is_dir'] - $a['is_dir'];
             }
+
             return strcasecmp($a['name'], $b['name']);
         });
 
@@ -44,7 +45,7 @@ class FileService
      */
     public function getFileInfo(string $path): array
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             throw new \InvalidArgumentException("Path does not exist: {$path}");
         }
 
@@ -55,7 +56,7 @@ class FileService
             'name' => basename($path),
             'path' => $path,
             'is_dir' => $isDir,
-            'is_file' => !$isDir,
+            'is_file' => ! $isDir,
             'size' => $isDir ? 0 : $stat['size'],
             'permissions' => $this->formatPermissions($stat['mode']),
             'permissions_octal' => substr(sprintf('%o', $stat['mode']), -4),
@@ -74,7 +75,7 @@ class FileService
      */
     public function readFile(string $path): string
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             throw new \InvalidArgumentException("File does not exist: {$path}");
         }
 
@@ -84,7 +85,7 @@ class FileService
 
         // Check file size (limit to 10MB for reading)
         if (filesize($path) > 10 * 1024 * 1024) {
-            throw new \InvalidArgumentException("File too large to read");
+            throw new \InvalidArgumentException('File too large to read');
         }
 
         return file_get_contents($path);
@@ -97,7 +98,7 @@ class FileService
     {
         $dir = dirname($path);
 
-        if (!File::isDirectory($dir)) {
+        if (! File::isDirectory($dir)) {
             File::makeDirectory($dir, 0755, true);
             chown($dir, $uid);
             chgrp($dir, $gid);
@@ -115,7 +116,7 @@ class FileService
     {
         $dir = dirname($destination);
 
-        if (!File::isDirectory($dir)) {
+        if (! File::isDirectory($dir)) {
             File::makeDirectory($dir, 0755, true);
             chown($dir, $uid);
             chgrp($dir, $gid);
@@ -146,7 +147,7 @@ class FileService
      */
     public function delete(string $path): void
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             return;
         }
 
@@ -162,7 +163,7 @@ class FileService
      */
     public function copy(string $source, string $destination, int $uid, int $gid): void
     {
-        if (!file_exists($source)) {
+        if (! file_exists($source)) {
             throw new \InvalidArgumentException("Source does not exist: {$source}");
         }
 
@@ -180,7 +181,7 @@ class FileService
      */
     public function move(string $source, string $destination): void
     {
-        if (!file_exists($source)) {
+        if (! file_exists($source)) {
             throw new \InvalidArgumentException("Source does not exist: {$source}");
         }
 
@@ -200,7 +201,7 @@ class FileService
      */
     public function chmod(string $path, int $mode): void
     {
-        if (!file_exists($path)) {
+        if (! file_exists($path)) {
             throw new \InvalidArgumentException("Path does not exist: {$path}");
         }
 
@@ -216,9 +217,9 @@ class FileService
 
         switch ($type) {
             case 'zip':
-                $zip = new \ZipArchive();
+                $zip = new \ZipArchive;
                 if ($zip->open($destination, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-                    throw new \RuntimeException("Cannot create zip file");
+                    throw new \RuntimeException('Cannot create zip file');
                 }
 
                 foreach ($paths as $path) {
@@ -234,10 +235,10 @@ class FileService
 
             case 'tar.gz':
                 $fileList = implode(' ', array_map('escapeshellarg', $paths));
-                exec("tar -czf " . escapeshellarg($destination) . " -C " . escapeshellarg($dir) . " {$fileList}", $output, $returnCode);
+                exec('tar -czf '.escapeshellarg($destination).' -C '.escapeshellarg($dir)." {$fileList}", $output, $returnCode);
 
                 if ($returnCode !== 0) {
-                    throw new \RuntimeException("Failed to create tar.gz archive");
+                    throw new \RuntimeException('Failed to create tar.gz archive');
                 }
                 break;
 
@@ -251,11 +252,11 @@ class FileService
      */
     public function extract(string $archivePath, string $destination, int $uid, int $gid): void
     {
-        if (!file_exists($archivePath)) {
+        if (! file_exists($archivePath)) {
             throw new \InvalidArgumentException("Archive does not exist: {$archivePath}");
         }
 
-        if (!File::isDirectory($destination)) {
+        if (! File::isDirectory($destination)) {
             File::makeDirectory($destination, 0755, true);
         }
 
@@ -263,9 +264,9 @@ class FileService
 
         switch ($extension) {
             case 'zip':
-                $zip = new \ZipArchive();
+                $zip = new \ZipArchive;
                 if ($zip->open($archivePath) !== true) {
-                    throw new \RuntimeException("Cannot open zip file");
+                    throw new \RuntimeException('Cannot open zip file');
                 }
                 $zip->extractTo($destination);
                 $zip->close();
@@ -273,16 +274,16 @@ class FileService
 
             case 'gz':
             case 'tgz':
-                exec("tar -xzf " . escapeshellarg($archivePath) . " -C " . escapeshellarg($destination), $output, $returnCode);
+                exec('tar -xzf '.escapeshellarg($archivePath).' -C '.escapeshellarg($destination), $output, $returnCode);
                 if ($returnCode !== 0) {
-                    throw new \RuntimeException("Failed to extract tar.gz archive");
+                    throw new \RuntimeException('Failed to extract tar.gz archive');
                 }
                 break;
 
             case 'bz2':
-                exec("tar -xjf " . escapeshellarg($archivePath) . " -C " . escapeshellarg($destination), $output, $returnCode);
+                exec('tar -xjf '.escapeshellarg($archivePath).' -C '.escapeshellarg($destination), $output, $returnCode);
                 if ($returnCode !== 0) {
-                    throw new \RuntimeException("Failed to extract tar.bz2 archive");
+                    throw new \RuntimeException('Failed to extract tar.bz2 archive');
                 }
                 break;
 
@@ -298,11 +299,12 @@ class FileService
      */
     public function getDirectorySize(string $path): int
     {
-        if (!File::isDirectory($path)) {
+        if (! File::isDirectory($path)) {
             return 0;
         }
 
-        $result = exec("du -sb " . escapeshellarg($path) . " 2>/dev/null | cut -f1");
+        $result = exec('du -sb '.escapeshellarg($path).' 2>/dev/null | cut -f1');
+
         return (int) $result;
     }
 

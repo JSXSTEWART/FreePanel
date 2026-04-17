@@ -9,7 +9,6 @@ use App\Services\Database\DatabaseInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class DatabaseController extends Controller
 {
@@ -29,6 +28,7 @@ class DatabaseController extends Controller
             ->get()
             ->map(function ($db) {
                 $db->size_formatted = $this->formatBytes($db->size);
+
                 return $db;
             });
 
@@ -54,7 +54,7 @@ class DatabaseController extends Controller
         }
 
         // Prefix with account username
-        $dbName = $account->username . '_' . $request->name;
+        $dbName = $account->username.'_'.$request->name;
 
         // Check uniqueness
         if (Database::where('name', $dbName)->exists()) {
@@ -71,10 +71,12 @@ class DatabaseController extends Controller
             $this->database->createDatabase($dbName);
 
             DB::commit();
+
             return $this->success($database, 'Database created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create database: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create database: '.$e->getMessage(), 500);
         }
     }
 
@@ -113,10 +115,12 @@ class DatabaseController extends Controller
             $database->delete();
 
             DB::commit();
+
             return $this->success(null, 'Database deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete database: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete database: '.$e->getMessage(), 500);
         }
     }
 
@@ -146,7 +150,7 @@ class DatabaseController extends Controller
         }
 
         // Prefix with account username
-        $dbUsername = $account->username . '_' . $request->username;
+        $dbUsername = $account->username.'_'.$request->username;
 
         // Check uniqueness
         if (DatabaseUser::where('username', $dbUsername)->exists()) {
@@ -163,10 +167,12 @@ class DatabaseController extends Controller
             $this->database->createUser($dbUsername, $request->password);
 
             DB::commit();
+
             return $this->success($user, 'Database user created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create database user: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create database user: '.$e->getMessage(), 500);
         }
     }
 
@@ -186,9 +192,10 @@ class DatabaseController extends Controller
 
         try {
             $this->database->changePassword($user->username, $request->password);
+
             return $this->success($user, 'Password updated successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to update password: ' . $e->getMessage(), 500);
+            return $this->error('Failed to update password: '.$e->getMessage(), 500);
         }
     }
 
@@ -211,10 +218,12 @@ class DatabaseController extends Controller
             $user->delete();
 
             DB::commit();
+
             return $this->success(null, 'Database user deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete database user: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete database user: '.$e->getMessage(), 500);
         }
     }
 
@@ -242,12 +251,12 @@ class DatabaseController extends Controller
 
             // Update pivot table
             $database->users()->syncWithoutDetaching([
-                $user->id => ['privileges' => json_encode($request->privileges)]
+                $user->id => ['privileges' => json_encode($request->privileges)],
             ]);
 
             return $this->success(null, 'Privileges granted successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to grant privileges: ' . $e->getMessage(), 500);
+            return $this->error('Failed to grant privileges: '.$e->getMessage(), 500);
         }
     }
 
@@ -273,7 +282,7 @@ class DatabaseController extends Controller
 
             return $this->success(null, 'Privileges revoked successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to revoke privileges: ' . $e->getMessage(), 500);
+            return $this->error('Failed to revoke privileges: '.$e->getMessage(), 500);
         }
     }
 
@@ -285,6 +294,7 @@ class DatabaseController extends Controller
             $bytes /= 1024;
             $i++;
         }
-        return round($bytes, 2) . ' ' . $units[$i];
+
+        return round($bytes, 2).' '.$units[$i];
     }
 }

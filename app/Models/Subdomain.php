@@ -28,6 +28,6 @@ class Subdomain extends Model
 
     public function getFullNameAttribute(): string
     {
-        return $this->name . '.' . $this->domain->name;
+        return $this->name.'.'.$this->domain->name;
     }
 }

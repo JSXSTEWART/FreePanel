@@ -34,6 +34,7 @@ class RenewSslCommand extends Command
 
         if ($certificates->isEmpty()) {
             $this->info('No certificates need renewal.');
+
             return 0;
         }
 

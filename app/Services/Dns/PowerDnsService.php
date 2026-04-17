@@ -2,8 +2,8 @@
 
 namespace App\Services\Dns;
 
-use App\Models\Domain;
 use App\Models\DnsZone;
+use App\Models\Domain;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -176,7 +176,7 @@ class PowerDnsService implements DnsInterface
 
     protected function generateSerial(): int
     {
-        return (int) date('Ymd') . '01';
+        return (int) date('Ymd').'01';
     }
 
     protected function incrementSerial(DnsZone $zone): void
@@ -185,7 +185,7 @@ class PowerDnsService implements DnsInterface
         $serialDate = (int) substr($zone->serial, 0, 8);
 
         if ($serialDate < $currentDate) {
-            $zone->serial = $currentDate . '01';
+            $zone->serial = $currentDate.'01';
         } else {
             $zone->serial = $zone->serial + 1;
         }

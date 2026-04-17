@@ -20,11 +20,11 @@ class SendSslExpiringWebhook implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param object $event The SSL expiring event
+     * @param  object  $event  The SSL expiring event
      */
     public function handle($event): void
     {
-        if (!isset($event->certificate)) {
+        if (! isset($event->certificate)) {
             return;
         }
 

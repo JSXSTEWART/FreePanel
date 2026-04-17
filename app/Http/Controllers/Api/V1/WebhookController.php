@@ -2,18 +2,15 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
 
 class WebhookController extends Controller
 {
     /**
      * Receive and process incoming webhooks from external services (e.g., Zapier)
-     *
-     * @param Request $request
-     * @return Response
      */
     public function receive(Request $request): Response
     {
@@ -28,13 +25,14 @@ class WebhookController extends Controller
         // Validate that request has payload
         if ($request->getContent() === '' || $request->getContent() === null) {
             Log::warning('Webhook received with empty payload');
+
             return response()->json(['error' => 'Empty payload'], 400);
         }
 
         // Parse the incoming webhook data
         $payload = $this->parsePayload($request);
 
-        if (!$payload) {
+        if (! $payload) {
             return response()->json(['error' => 'Unable to parse payload'], 400);
         }
 
@@ -54,8 +52,6 @@ class WebhookController extends Controller
 
     /**
      * Health check endpoint for Zapier webhook
-     *
-     * @return Response
      */
     public function health(): Response
     {
@@ -78,9 +74,6 @@ class WebhookController extends Controller
 
     /**
      * Send webhook to external service
-     *
-     * @param Request $request
-     * @return Response
      */
     public function send(Request $request): Response
     {
@@ -122,9 +115,6 @@ class WebhookController extends Controller
 
     /**
      * Parse incoming webhook payload based on Content-Type
-     *
-     * @param Request $request
-     * @return array|null
      */
     protected function parsePayload(Request $request): ?array
     {
@@ -144,34 +134,35 @@ class WebhookController extends Controller
                 if ($xml === false) {
                     return null;
                 }
+
                 return json_decode(json_encode($xml), true);
             }
 
             // Default to trying JSON first, then form data
             $json = json_decode($request->getContent(), true);
+
             return $json ?? $request->all();
         } catch (\Exception $e) {
             Log::error('Error parsing webhook payload', [
                 'content_type' => $contentType,
                 'message' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
 
     /**
      * Handle webhook event and dispatch to appropriate listeners
-     *
-     * @param array $payload
-     * @return void
      */
     protected function handleWebhookEvent(array $payload): void
     {
         $event = $payload['event'] ?? null;
         $data = $payload['data'] ?? [];
 
-        if (!$event) {
+        if (! $event) {
             Log::warning('Webhook event missing event key');
+
             return;
         }
 

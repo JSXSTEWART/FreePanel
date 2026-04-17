@@ -3,8 +3,8 @@
 namespace App\Services\WebServer;
 
 use App\Models\Domain;
-use App\Models\Subdomain;
 use App\Models\SslCertificate;
+use App\Models\Subdomain;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\View;
@@ -12,8 +12,11 @@ use Illuminate\Support\Facades\View;
 class ApacheService implements WebServerInterface
 {
     protected string $sitesAvailable;
+
     protected string $sitesEnabled;
+
     protected string $sslDir;
+
     protected string $serviceName;
 
     public function __construct()
@@ -39,14 +42,14 @@ class ApacheService implements WebServerInterface
         $account = $domain->account;
 
         // Create document root if it doesn't exist
-        if (!File::isDirectory($domain->document_root)) {
+        if (! File::isDirectory($domain->document_root)) {
             File::makeDirectory($domain->document_root, 0755, true);
             $this->setOwnership($domain->document_root, $account->uid, $account->gid);
         }
 
         // Create log directory
         $logDir = "/home/{$account->username}/logs";
-        if (!File::isDirectory($logDir)) {
+        if (! File::isDirectory($logDir)) {
             File::makeDirectory($logDir, 0755, true);
             $this->setOwnership($logDir, $account->uid, $account->gid);
         }
@@ -61,14 +64,14 @@ class ApacheService implements WebServerInterface
         // Enable site (Debian/Ubuntu)
         if ($this->sitesAvailable !== $this->sitesEnabled) {
             $enabledPath = "{$this->sitesEnabled}/{$domain->name}.conf";
-            if (!File::exists($enabledPath)) {
+            if (! File::exists($enabledPath)) {
                 File::link($configPath, $enabledPath);
             }
         }
 
         // Create default index page
         $indexPath = "{$domain->document_root}/index.html";
-        if (!File::exists($indexPath)) {
+        if (! File::exists($indexPath)) {
             $defaultPage = View::make('system.templates.default-index', [
                 'domain' => $domain->name,
             ])->render();
@@ -120,14 +123,14 @@ class ApacheService implements WebServerInterface
             $configPath = "{$this->sitesAvailable}/{$domain->name}.conf";
             $enabledPath = "{$this->sitesEnabled}/{$domain->name}.conf";
 
-            if (File::exists($configPath) && !File::exists($enabledPath)) {
+            if (File::exists($configPath) && ! File::exists($enabledPath)) {
                 File::link($configPath, $enabledPath);
             }
 
             // Also enable SSL if exists
             $sslConfigPath = "{$this->sitesAvailable}/{$domain->name}-ssl.conf";
             $sslEnabledPath = "{$this->sitesEnabled}/{$domain->name}-ssl.conf";
-            if (File::exists($sslConfigPath) && !File::exists($sslEnabledPath)) {
+            if (File::exists($sslConfigPath) && ! File::exists($sslEnabledPath)) {
                 File::link($sslConfigPath, $sslEnabledPath);
             }
         }
@@ -159,7 +162,7 @@ class ApacheService implements WebServerInterface
         $fullName = "{$subdomain->name}.{$domain->name}";
 
         // Create document root
-        if (!File::isDirectory($subdomain->document_root)) {
+        if (! File::isDirectory($subdomain->document_root)) {
             File::makeDirectory($subdomain->document_root, 0755, true);
             $this->setOwnership($subdomain->document_root, $account->uid, $account->gid);
         }
@@ -172,7 +175,7 @@ class ApacheService implements WebServerInterface
 
         if ($this->sitesAvailable !== $this->sitesEnabled) {
             $enabledPath = "{$this->sitesEnabled}/{$fullName}.conf";
-            if (!File::exists($enabledPath)) {
+            if (! File::exists($enabledPath)) {
                 File::link($configPath, $enabledPath);
             }
         }
@@ -203,7 +206,7 @@ class ApacheService implements WebServerInterface
 
         // Create SSL directory for domain
         $sslDomainDir = "{$this->sslDir}/{$domain->name}";
-        if (!File::isDirectory($sslDomainDir)) {
+        if (! File::isDirectory($sslDomainDir)) {
             File::makeDirectory($sslDomainDir, 0700, true);
         }
 
@@ -224,7 +227,7 @@ class ApacheService implements WebServerInterface
 
         if ($this->sitesAvailable !== $this->sitesEnabled) {
             $enabledPath = "{$this->sitesEnabled}/{$domain->name}-ssl.conf";
-            if (!File::exists($enabledPath)) {
+            if (! File::exists($enabledPath)) {
                 File::link($configPath, $enabledPath);
             }
         }
@@ -260,6 +263,7 @@ class ApacheService implements WebServerInterface
     public function testConfig(): bool
     {
         $result = Process::run("{$this->serviceName} -t");
+
         return $result->successful();
     }
 
@@ -272,6 +276,7 @@ class ApacheService implements WebServerInterface
     {
         $result = Process::run("{$this->serviceName} -v");
         preg_match('/Apache\/([0-9.]+)/', $result->output(), $matches);
+
         return $matches[1] ?? 'unknown';
     }
 

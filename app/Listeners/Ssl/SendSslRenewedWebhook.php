@@ -20,11 +20,11 @@ class SendSslRenewedWebhook implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param object $event The SSL renewed event
+     * @param  object  $event  The SSL renewed event
      */
     public function handle($event): void
     {
-        if (!isset($event->certificate)) {
+        if (! isset($event->certificate)) {
             return;
         }
 

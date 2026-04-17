@@ -2,16 +2,16 @@
 
 namespace App\Providers;
 
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Gate;
+use App\Models\Account;
+use App\Models\Database;
 use App\Models\Domain;
 use App\Models\EmailAccount;
-use App\Models\Database;
-use App\Models\Account;
+use App\Policies\AccountPolicy;
+use App\Policies\DatabasePolicy;
 use App\Policies\DomainPolicy;
 use App\Policies\EmailPolicy;
-use App\Policies\DatabasePolicy;
-use App\Policies\AccountPolicy;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {

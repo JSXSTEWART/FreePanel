@@ -31,7 +31,7 @@ class EmailPolicy
         }
 
         $account = $user->account;
-        if (!$account) {
+        if (! $account) {
             return false;
         }
 

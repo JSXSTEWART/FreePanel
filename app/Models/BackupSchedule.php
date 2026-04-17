@@ -40,7 +40,7 @@ class BackupSchedule extends Model
      */
     public function shouldRunNow(): bool
     {
-        if (!$this->is_enabled) {
+        if (! $this->is_enabled) {
             return false;
         }
 
@@ -74,7 +74,7 @@ class BackupSchedule extends Model
      */
     public function getNextRunAttribute(): ?\Carbon\Carbon
     {
-        if (!$this->is_enabled) {
+        if (! $this->is_enabled) {
             return null;
         }
 
@@ -89,6 +89,7 @@ class BackupSchedule extends Model
                 if ($next->lte($now)) {
                     $next->addDay();
                 }
+
                 return $next;
 
             case 'weekly':
@@ -96,6 +97,7 @@ class BackupSchedule extends Model
                 if ($next->lte($now)) {
                     $next->addWeek();
                 }
+
                 return $next;
 
             case 'monthly':
@@ -103,6 +105,7 @@ class BackupSchedule extends Model
                 if ($next->lte($now)) {
                     $next->addMonth();
                 }
+
                 return $next;
 
             default:
@@ -122,6 +125,7 @@ class BackupSchedule extends Model
                 return "Daily at {$this->time}";
             case 'weekly':
                 $day = $days[(int) $this->day_of_week] ?? 'Unknown';
+
                 return "Every {$day} at {$this->time}";
             case 'monthly':
                 return "Monthly on day {$this->day_of_month} at {$this->time}";

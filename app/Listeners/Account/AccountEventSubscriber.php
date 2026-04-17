@@ -4,7 +4,6 @@ namespace App\Listeners\Account;
 
 use App\Events\Account\AccountCreated;
 use App\Events\Account\AccountSuspended;
-use App\Services\System\UserManager;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Log;
 

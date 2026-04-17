@@ -157,10 +157,10 @@ class MimeTypeController extends Controller
 
         $htaccessPath = "/home/{$account->username}/public_html/.htaccess";
         $extensions = array_map(function ($ext) {
-            return '.' . ltrim($ext, '.');
+            return '.'.ltrim($ext, '.');
         }, $request->extensions);
 
-        $handlerLine = "AddHandler {$request->handler} " . implode(' ', $extensions);
+        $handlerLine = "AddHandler {$request->handler} ".implode(' ', $extensions);
 
         $this->appendToHtaccess($htaccessPath, $handlerLine, $account);
 
@@ -184,16 +184,16 @@ class MimeTypeController extends Controller
         }
 
         $htaccessPath = "/home/{$account->username}/public_html/.htaccess";
-        $extension = '.' . ltrim($request->extension, '.');
+        $extension = '.'.ltrim($request->extension, '.');
 
         if (file_exists($htaccessPath)) {
             $content = file_get_contents($htaccessPath);
             // Remove the specific handler line or just the extension from it
-            $pattern = '/AddHandler\s+' . preg_quote($request->handler, '/') . '\s+[^\n]*' . preg_quote($extension, '/') . '[^\n]*/';
+            $pattern = '/AddHandler\s+'.preg_quote($request->handler, '/').'\s+[^\n]*'.preg_quote($extension, '/').'[^\n]*/';
             $content = preg_replace($pattern, '', $content);
             $content = preg_replace("/\n{3,}/", "\n\n", $content); // Clean up extra newlines
 
-            file_put_contents("/tmp/htaccess_tmp", $content);
+            file_put_contents('/tmp/htaccess_tmp', $content);
             Process::run("sudo mv /tmp/htaccess_tmp {$htaccessPath}");
             Process::run("sudo chown {$account->username}:{$account->username} {$htaccessPath}");
         }
@@ -259,7 +259,7 @@ class MimeTypeController extends Controller
         // Security check - ensure path is within user's home
         $realPath = realpath($fullPath);
         $homeDir = "/home/{$account->username}";
-        if (!$realPath || !str_starts_with($realPath, $homeDir)) {
+        if (! $realPath || ! str_starts_with($realPath, $homeDir)) {
             return $this->error('Invalid path', 400);
         }
 
@@ -272,7 +272,7 @@ class MimeTypeController extends Controller
         }
 
         if ($request->index_files && count($request->index_files) > 0) {
-            $directives[] = 'DirectoryIndex ' . implode(' ', $request->index_files);
+            $directives[] = 'DirectoryIndex '.implode(' ', $request->index_files);
         }
 
         // Update .htaccess
@@ -315,12 +315,12 @@ class MimeTypeController extends Controller
         $content = preg_replace($pattern, '', $content);
 
         // Add new section if there are directives
-        if (!empty($directives)) {
-            $newSection = "{$startMarker}\n" . implode("\n", $directives) . "\n{$endMarker}\n";
-            $content = trim($content) . "\n\n" . $newSection;
+        if (! empty($directives)) {
+            $newSection = "{$startMarker}\n".implode("\n", $directives)."\n{$endMarker}\n";
+            $content = trim($content)."\n\n".$newSection;
         }
 
-        file_put_contents("/tmp/htaccess_tmp", $content);
+        file_put_contents('/tmp/htaccess_tmp', $content);
         Process::run("sudo mv /tmp/htaccess_tmp {$path}");
         Process::run("sudo chown {$account->username}:{$account->username} {$path}");
         Process::run("sudo chmod 644 {$path}");
@@ -336,9 +336,9 @@ class MimeTypeController extends Controller
             $content = file_get_contents($path);
         }
 
-        $content = trim($content) . "\n" . $line . "\n";
+        $content = trim($content)."\n".$line."\n";
 
-        file_put_contents("/tmp/htaccess_tmp", $content);
+        file_put_contents('/tmp/htaccess_tmp', $content);
         Process::run("sudo mv /tmp/htaccess_tmp {$path}");
         Process::run("sudo chown {$account->username}:{$account->username} {$path}");
     }

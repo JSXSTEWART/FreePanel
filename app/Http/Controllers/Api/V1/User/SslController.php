@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Validator;
 class SslController extends Controller
 {
     protected LetsEncryptService $letsEncrypt;
+
     protected SslInstaller $sslInstaller;
+
     protected WebServerInterface $webServer;
 
     public function __construct(
@@ -32,12 +34,13 @@ class SslController extends Controller
     {
         $account = $request->user()->account;
 
-        $certificates = SslCertificate::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $certificates = SslCertificate::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->with('domain:id,name')
             ->get()
             ->map(function ($cert) {
                 $cert->days_until_expiry = now()->diffInDays($cert->expires_at, false);
                 $cert->is_expiring_soon = $cert->days_until_expiry <= 30;
+
                 return $cert;
             });
 
@@ -48,7 +51,7 @@ class SslController extends Controller
     {
         $account = $request->user()->account;
 
-        $certificate = SslCertificate::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $certificate = SslCertificate::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->with('domain:id,name')
             ->findOrFail($id);
 
@@ -93,7 +96,7 @@ class SslController extends Controller
             // Request certificate from Let's Encrypt
             $domains = [$domain->name];
             if ($request->include_www) {
-                $domains[] = 'www.' . $domain->name;
+                $domains[] = 'www.'.$domain->name;
             }
 
             $result = $this->letsEncrypt->requestCertificate(
@@ -120,10 +123,12 @@ class SslController extends Controller
             $this->webServer->enableSsl($domain, $certificate);
 
             DB::commit();
+
             return $this->success($certificate, 'SSL certificate issued successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to issue SSL certificate: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to issue SSL certificate: '.$e->getMessage(), 500);
         }
     }
 
@@ -148,17 +153,17 @@ class SslController extends Controller
         $certResource = openssl_x509_read($request->certificate);
         $keyResource = openssl_pkey_get_private($request->private_key);
 
-        if (!$certResource || !$keyResource) {
+        if (! $certResource || ! $keyResource) {
             return $this->error('Invalid certificate or private key format', 422);
         }
 
-        if (!openssl_x509_check_private_key($certResource, $keyResource)) {
+        if (! openssl_x509_check_private_key($certResource, $keyResource)) {
             return $this->error('Certificate and private key do not match', 422);
         }
 
         // Parse certificate for dates
         $certInfo = openssl_x509_parse($request->certificate);
-        if (!$certInfo) {
+        if (! $certInfo) {
             return $this->error('Failed to parse certificate', 422);
         }
 
@@ -182,10 +187,12 @@ class SslController extends Controller
             $this->webServer->enableSsl($domain, $certificate);
 
             DB::commit();
+
             return $this->success($certificate, 'SSL certificate installed successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to install SSL certificate: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to install SSL certificate: '.$e->getMessage(), 500);
         }
     }
 
@@ -238,7 +245,7 @@ class SslController extends Controller
                 'private_key' => $keyOut,
             ], 'CSR generated successfully');
         } catch (\Exception $e) {
-            return $this->error('Failed to generate CSR: ' . $e->getMessage(), 500);
+            return $this->error('Failed to generate CSR: '.$e->getMessage(), 500);
         }
     }
 
@@ -246,7 +253,7 @@ class SslController extends Controller
     {
         $account = $request->user()->account;
 
-        $certificate = SslCertificate::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $certificate = SslCertificate::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($id);
 
         if ($certificate->type !== 'lets_encrypt') {
@@ -275,10 +282,12 @@ class SslController extends Controller
             $this->webServer->enableSsl($domain, $certificate);
 
             DB::commit();
+
             return $this->success($certificate, 'SSL certificate renewed successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to renew SSL certificate: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to renew SSL certificate: '.$e->getMessage(), 500);
         }
     }
 
@@ -286,7 +295,7 @@ class SslController extends Controller
     {
         $account = $request->user()->account;
 
-        $certificate = SslCertificate::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $certificate = SslCertificate::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($id);
 
         $domain = $certificate->domain;
@@ -300,10 +309,12 @@ class SslController extends Controller
             $certificate->delete();
 
             DB::commit();
+
             return $this->success(null, 'SSL certificate removed successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to remove SSL certificate: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to remove SSL certificate: '.$e->getMessage(), 500);
         }
     }
 }

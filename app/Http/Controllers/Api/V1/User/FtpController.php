@@ -26,7 +26,8 @@ class FtpController extends Controller
         $ftpAccounts = FtpAccount::where('account_id', $account->id)
             ->get()
             ->map(function ($ftp) use ($account) {
-                $ftp->full_username = $ftp->username . '@' . $account->domain;
+                $ftp->full_username = $ftp->username.'@'.$account->domain;
+
                 return $ftp;
             });
 
@@ -55,7 +56,7 @@ class FtpController extends Controller
         }
 
         // Construct full username
-        $username = $request->username . '@' . $account->domain;
+        $username = $request->username.'@'.$account->domain;
 
         // Check uniqueness
         if (FtpAccount::where('username', $username)->exists()) {
@@ -66,7 +67,7 @@ class FtpController extends Controller
         $basePath = "/home/{$account->username}";
         $directory = $this->resolveDirectory($basePath, $request->directory);
 
-        if (!str_starts_with($directory, $basePath)) {
+        if (! str_starts_with($directory, $basePath)) {
             return $this->error('Directory must be within your home directory', 422);
         }
 
@@ -86,10 +87,12 @@ class FtpController extends Controller
             DB::commit();
 
             $ftpAccount->full_username = $username;
+
             return $this->success($ftpAccount, 'FTP account created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create FTP account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create FTP account: '.$e->getMessage(), 500);
         }
     }
 
@@ -135,7 +138,7 @@ class FtpController extends Controller
 
             if ($request->has('directory')) {
                 $directory = $this->resolveDirectory($basePath, $request->directory);
-                if (!str_starts_with($directory, $basePath)) {
+                if (! str_starts_with($directory, $basePath)) {
                     return $this->error('Directory must be within your home directory', 422);
                 }
                 $updates['directory'] = $directory;
@@ -150,16 +153,18 @@ class FtpController extends Controller
                 $this->ftp->updatePassword($ftpAccount, $request->password);
             }
 
-            if (!empty($updates)) {
+            if (! empty($updates)) {
                 $ftpAccount->update($updates);
                 $this->ftp->updateAccount($ftpAccount);
             }
 
             DB::commit();
+
             return $this->success($ftpAccount, 'FTP account updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update FTP account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update FTP account: '.$e->getMessage(), 500);
         }
     }
 
@@ -175,10 +180,12 @@ class FtpController extends Controller
             $ftpAccount->delete();
 
             DB::commit();
+
             return $this->success(null, 'FTP account deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete FTP account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete FTP account: '.$e->getMessage(), 500);
         }
     }
 
@@ -188,9 +195,10 @@ class FtpController extends Controller
 
         try {
             $sessions = $this->ftp->getActiveSessions($account);
+
             return $this->success($sessions);
         } catch (\Exception $e) {
-            return $this->error('Failed to get FTP sessions: ' . $e->getMessage(), 500);
+            return $this->error('Failed to get FTP sessions: '.$e->getMessage(), 500);
         }
     }
 
@@ -200,19 +208,20 @@ class FtpController extends Controller
 
         try {
             $this->ftp->killSession($sessionId, $account);
+
             return $this->success(null, 'FTP session terminated');
         } catch (\Exception $e) {
-            return $this->error('Failed to terminate FTP session: ' . $e->getMessage(), 500);
+            return $this->error('Failed to terminate FTP session: '.$e->getMessage(), 500);
         }
     }
 
     protected function resolveDirectory(string $basePath, string $directory): string
     {
         // Handle relative paths
-        if (!str_starts_with($directory, '/')) {
-            $directory = $basePath . '/' . $directory;
-        } elseif (!str_starts_with($directory, $basePath)) {
-            $directory = $basePath . $directory;
+        if (! str_starts_with($directory, '/')) {
+            $directory = $basePath.'/'.$directory;
+        } elseif (! str_starts_with($directory, $basePath)) {
+            $directory = $basePath.$directory;
         }
 
         // Resolve . and ..
@@ -228,6 +237,6 @@ class FtpController extends Controller
             }
         }
 
-        return '/' . implode('/', $parts);
+        return '/'.implode('/', $parts);
     }
 }

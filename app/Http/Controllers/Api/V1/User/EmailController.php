@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api\V1\User;
 use App\Http\Controllers\Controller;
 use App\Models\Domain;
 use App\Models\EmailAccount;
-use App\Models\EmailForwarder;
 use App\Models\EmailAutoresponder;
+use App\Models\EmailForwarder;
 use App\Services\Email\EmailInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,14 +27,15 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $emails = EmailAccount::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $emails = EmailAccount::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->with('domain:id,name')
             ->get()
             ->map(function ($email) {
-                $email->address = $email->username . '@' . $email->domain->name;
+                $email->address = $email->username.'@'.$email->domain->name;
                 $email->usage_percent = $email->quota > 0
                     ? round(($email->quota_used / $email->quota) * 100, 1)
                     : 0;
+
                 return $email;
             });
 
@@ -60,7 +61,7 @@ class EmailController extends Controller
         $domain = Domain::where('account_id', $account->id)->findOrFail($request->domain_id);
 
         // Check email quota
-        $currentEmails = EmailAccount::whereHas('domain', fn($q) => $q->where('account_id', $account->id))->count();
+        $currentEmails = EmailAccount::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))->count();
         if ($account->package->max_email_accounts != -1 && $currentEmails >= $account->package->max_email_accounts) {
             return $this->error('Email account quota exceeded', 403);
         }
@@ -85,11 +86,13 @@ class EmailController extends Controller
 
             DB::commit();
 
-            $emailAccount->address = $username . '@' . $domain->name;
+            $emailAccount->address = $username.'@'.$domain->name;
+
             return $this->success($emailAccount, 'Email account created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create email account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create email account: '.$e->getMessage(), 500);
         }
     }
 
@@ -97,11 +100,12 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $email = EmailAccount::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $email = EmailAccount::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->with('domain:id,name')
             ->findOrFail($id);
 
-        $email->address = $email->username . '@' . $email->domain->name;
+        $email->address = $email->username.'@'.$email->domain->name;
+
         return $this->success($email);
     }
 
@@ -109,7 +113,7 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $email = EmailAccount::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $email = EmailAccount::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -138,10 +142,12 @@ class EmailController extends Controller
             $email->update($updates);
 
             DB::commit();
+
             return $this->success($email, 'Email account updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update email account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update email account: '.$e->getMessage(), 500);
         }
     }
 
@@ -149,7 +155,7 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $email = EmailAccount::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $email = EmailAccount::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($id);
 
         DB::beginTransaction();
@@ -158,10 +164,12 @@ class EmailController extends Controller
             $email->delete();
 
             DB::commit();
+
             return $this->success(null, 'Email account deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete email account: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete email account: '.$e->getMessage(), 500);
         }
     }
 
@@ -170,7 +178,7 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $forwarders = EmailForwarder::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $forwarders = EmailForwarder::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->with('domain:id,name')
             ->get();
 
@@ -204,10 +212,12 @@ class EmailController extends Controller
             $this->email->createForwarder($forwarder);
 
             DB::commit();
+
             return $this->success($forwarder, 'Email forwarder created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create forwarder: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create forwarder: '.$e->getMessage(), 500);
         }
     }
 
@@ -215,7 +225,7 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $forwarder = EmailForwarder::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $forwarder = EmailForwarder::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($id);
 
         DB::beginTransaction();
@@ -224,10 +234,12 @@ class EmailController extends Controller
             $forwarder->delete();
 
             DB::commit();
+
             return $this->success(null, 'Email forwarder deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete forwarder: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete forwarder: '.$e->getMessage(), 500);
         }
     }
 
@@ -236,7 +248,7 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $autoresponders = EmailAutoresponder::whereHas('emailAccount.domain', fn($q) => $q->where('account_id', $account->id))
+        $autoresponders = EmailAutoresponder::whereHas('emailAccount.domain', fn ($q) => $q->where('account_id', $account->id))
             ->with('emailAccount.domain:id,name')
             ->get();
 
@@ -259,7 +271,7 @@ class EmailController extends Controller
             return $this->error($validator->errors()->first(), 422);
         }
 
-        $emailAccount = EmailAccount::whereHas('domain', fn($q) => $q->where('account_id', $account->id))
+        $emailAccount = EmailAccount::whereHas('domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($request->email_account_id);
 
         DB::beginTransaction();
@@ -276,10 +288,12 @@ class EmailController extends Controller
             $this->email->createAutoresponder($autoresponder);
 
             DB::commit();
+
             return $this->success($autoresponder, 'Autoresponder created successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to create autoresponder: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to create autoresponder: '.$e->getMessage(), 500);
         }
     }
 
@@ -287,7 +301,7 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $autoresponder = EmailAutoresponder::whereHas('emailAccount.domain', fn($q) => $q->where('account_id', $account->id))
+        $autoresponder = EmailAutoresponder::whereHas('emailAccount.domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
@@ -308,10 +322,12 @@ class EmailController extends Controller
             $this->email->updateAutoresponder($autoresponder);
 
             DB::commit();
+
             return $this->success($autoresponder, 'Autoresponder updated successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to update autoresponder: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to update autoresponder: '.$e->getMessage(), 500);
         }
     }
 
@@ -319,7 +335,7 @@ class EmailController extends Controller
     {
         $account = $request->user()->account;
 
-        $autoresponder = EmailAutoresponder::whereHas('emailAccount.domain', fn($q) => $q->where('account_id', $account->id))
+        $autoresponder = EmailAutoresponder::whereHas('emailAccount.domain', fn ($q) => $q->where('account_id', $account->id))
             ->findOrFail($id);
 
         DB::beginTransaction();
@@ -328,10 +344,12 @@ class EmailController extends Controller
             $autoresponder->delete();
 
             DB::commit();
+
             return $this->success(null, 'Autoresponder deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            return $this->error('Failed to delete autoresponder: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to delete autoresponder: '.$e->getMessage(), 500);
         }
     }
 }

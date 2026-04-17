@@ -13,7 +13,7 @@ class SendAccountSuspendedToZapier
 
     public function handle(AccountSuspended $event): void
     {
-        if (!config('zapier.enabled')) {
+        if (! config('zapier.enabled')) {
             return;
         }
 

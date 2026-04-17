@@ -3,14 +3,15 @@
 namespace App\Services\WebServer;
 
 use App\Models\Domain;
-use App\Models\Subdomain;
 use App\Models\SslCertificate;
-use Illuminate\Support\Facades\Process;
+use App\Models\Subdomain;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class NginxService implements WebServerInterface
 {
     protected string $sitesAvailable = '/etc/nginx/sites-available';
+
     protected string $sitesEnabled = '/etc/nginx/sites-enabled';
 
     public function createVirtualHost(Domain $domain): void
@@ -50,7 +51,7 @@ class NginxService implements WebServerInterface
         $available = "{$this->sitesAvailable}/{$domain->name}.conf";
         $enabled = "{$this->sitesEnabled}/{$domain->name}.conf";
 
-        if (file_exists($available) && !file_exists($enabled)) {
+        if (file_exists($available) && ! file_exists($enabled)) {
             symlink($available, $enabled);
         }
     }
@@ -66,7 +67,7 @@ class NginxService implements WebServerInterface
 
     public function createSubdomainVirtualHost(Subdomain $subdomain): void
     {
-        $fullName = $subdomain->name . '.' . $subdomain->domain->name;
+        $fullName = $subdomain->name.'.'.$subdomain->domain->name;
         $config = $this->generateSubdomainConfig($subdomain);
         $configPath = "{$this->sitesAvailable}/{$fullName}.conf";
 
@@ -80,7 +81,7 @@ class NginxService implements WebServerInterface
 
     public function removeSubdomainVirtualHost(Subdomain $subdomain): void
     {
-        $fullName = $subdomain->name . '.' . $subdomain->domain->name;
+        $fullName = $subdomain->name.'.'.$subdomain->domain->name;
 
         $enabled = "{$this->sitesEnabled}/{$fullName}.conf";
         $available = "{$this->sitesAvailable}/{$fullName}.conf";
@@ -114,6 +115,7 @@ class NginxService implements WebServerInterface
     public function testConfig(): bool
     {
         $result = Process::run('nginx -t');
+
         return $result->successful();
     }
 
@@ -127,6 +129,7 @@ class NginxService implements WebServerInterface
     public function getVersion(): string
     {
         $result = Process::run('nginx -v 2>&1');
+
         return trim($result->output());
     }
 
@@ -203,7 +206,7 @@ NGINX;
 
     protected function generateSubdomainConfig(Subdomain $subdomain): string
     {
-        $fullName = $subdomain->name . '.' . $subdomain->domain->name;
+        $fullName = $subdomain->name.'.'.$subdomain->domain->name;
 
         return <<<NGINX
 server {

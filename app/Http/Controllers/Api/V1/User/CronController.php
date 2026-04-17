@@ -74,7 +74,7 @@ class CronController extends Controller
         }
 
         // Validate cron expression
-        if (!$this->cronService->validateExpression(
+        if (! $this->cronService->validateExpression(
             $request->minute,
             $request->hour,
             $request->day,
@@ -85,7 +85,7 @@ class CronController extends Controller
         }
 
         // Validate command for security
-        if (!$this->cronService->validateCommand($request->command, $account)) {
+        if (! $this->cronService->validateCommand($request->command, $account)) {
             return $this->error('Command contains forbidden operations or paths', 422);
         }
 
@@ -105,7 +105,8 @@ class CronController extends Controller
             $this->cronService->syncCrontab($account);
         } catch (\Exception $e) {
             $cronJob->delete();
-            return $this->error('Failed to install cron job: ' . $e->getMessage(), 500);
+
+            return $this->error('Failed to install cron job: '.$e->getMessage(), 500);
         }
 
         return $this->success([
@@ -122,7 +123,7 @@ class CronController extends Controller
         $account = $request->user()->account;
         $cronJob = $account->cronJobs()->find($id);
 
-        if (!$cronJob) {
+        if (! $cronJob) {
             return $this->error('Cron job not found', 404);
         }
 
@@ -148,25 +149,25 @@ class CronController extends Controller
         $month = $request->month ?? $cronJob->month;
         $weekday = $request->weekday ?? $cronJob->weekday;
 
-        if (!$this->cronService->validateExpression($minute, $hour, $day, $month, $weekday)) {
+        if (! $this->cronService->validateExpression($minute, $hour, $day, $month, $weekday)) {
             return $this->error('Invalid cron expression', 422);
         }
 
         // Validate command if being updated
-        if ($request->has('command') && !$this->cronService->validateCommand($request->command, $account)) {
+        if ($request->has('command') && ! $this->cronService->validateCommand($request->command, $account)) {
             return $this->error('Command contains forbidden operations or paths', 422);
         }
 
         $cronJob->update($request->only([
             'minute', 'hour', 'day', 'month', 'weekday',
-            'command', 'email', 'is_active'
+            'command', 'email', 'is_active',
         ]));
 
         // Sync to system crontab
         try {
             $this->cronService->syncCrontab($account);
         } catch (\Exception $e) {
-            return $this->error('Failed to update cron job: ' . $e->getMessage(), 500);
+            return $this->error('Failed to update cron job: '.$e->getMessage(), 500);
         }
 
         return $this->success(null, 'Cron job updated successfully');
@@ -180,7 +181,7 @@ class CronController extends Controller
         $account = $request->user()->account;
         $cronJob = $account->cronJobs()->find($id);
 
-        if (!$cronJob) {
+        if (! $cronJob) {
             return $this->error('Cron job not found', 404);
         }
 
@@ -190,7 +191,7 @@ class CronController extends Controller
         try {
             $this->cronService->syncCrontab($account);
         } catch (\Exception $e) {
-            return $this->error('Failed to remove cron job from system: ' . $e->getMessage(), 500);
+            return $this->error('Failed to remove cron job from system: '.$e->getMessage(), 500);
         }
 
         return $this->success(null, 'Cron job deleted successfully');
@@ -204,17 +205,17 @@ class CronController extends Controller
         $account = $request->user()->account;
         $cronJob = $account->cronJobs()->find($id);
 
-        if (!$cronJob) {
+        if (! $cronJob) {
             return $this->error('Cron job not found', 404);
         }
 
-        $cronJob->update(['is_active' => !$cronJob->is_active]);
+        $cronJob->update(['is_active' => ! $cronJob->is_active]);
 
         // Sync to system crontab
         try {
             $this->cronService->syncCrontab($account);
         } catch (\Exception $e) {
-            return $this->error('Failed to update cron job: ' . $e->getMessage(), 500);
+            return $this->error('Failed to update cron job: '.$e->getMessage(), 500);
         }
 
         return $this->success([
@@ -231,9 +232,10 @@ class CronController extends Controller
 
         try {
             $crontab = $this->cronService->getCrontab($account);
+
             return $this->success(['crontab' => $crontab]);
         } catch (\Exception $e) {
-            return $this->error('Failed to get crontab: ' . $e->getMessage(), 500);
+            return $this->error('Failed to get crontab: '.$e->getMessage(), 500);
         }
     }
 }

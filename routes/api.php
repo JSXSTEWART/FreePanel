@@ -1,50 +1,45 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\TwoFactorController;
-use App\Http\Controllers\Auth\OAuthController;
-
-use App\Http\Controllers\Api\V1\User\DomainController;
-use App\Http\Controllers\Api\V1\User\DnsController;
-use App\Http\Controllers\Api\V1\User\EmailController;
-use App\Http\Controllers\Api\V1\User\DatabaseController;
-use App\Http\Controllers\Api\V1\User\FileController;
-use App\Http\Controllers\Api\V1\User\FtpController;
-use App\Http\Controllers\Api\V1\User\SslController;
-use App\Http\Controllers\Api\V1\User\AppInstallerController;
-use App\Http\Controllers\Api\V1\User\BackupController;
-use App\Http\Controllers\Api\V1\User\StatsController;
-use App\Http\Controllers\Api\V1\User\CronController;
-use App\Http\Controllers\Api\V1\User\SecurityController;
-use App\Http\Controllers\Api\V1\User\ErrorPageController;
-use App\Http\Controllers\Api\V1\User\RedirectController;
-use App\Http\Controllers\Api\V1\User\PhpConfigController;
-use App\Http\Controllers\Api\V1\User\EmailFilterController;
-use App\Http\Controllers\Api\V1\User\GitController;
-use App\Http\Controllers\Api\V1\User\ApplicationController;
-use App\Http\Controllers\Api\V1\User\MimeTypeController;
-use App\Http\Controllers\Api\V1\User\TerminalController;
-use App\Http\Controllers\Api\V1\User\RemoteMysqlController;
-use App\Http\Controllers\Api\V1\User\DiskUsageController;
-use App\Http\Controllers\Api\V1\User\AccessLogController;
-use App\Http\Controllers\Api\V1\SetupController;
-
 use App\Http\Controllers\Api\V1\Admin\AccountController;
-use App\Http\Controllers\Api\V1\Admin\PackageController;
-use App\Http\Controllers\Api\V1\Admin\ResellerController;
-use App\Http\Controllers\Api\V1\Admin\ServiceController;
-use App\Http\Controllers\Api\V1\Admin\ServerController;
-use App\Http\Controllers\Api\V1\Admin\FirewallController;
 use App\Http\Controllers\Api\V1\Admin\BackupScheduleController;
-use App\Http\Controllers\Api\V1\Admin\SshController;
+use App\Http\Controllers\Api\V1\Admin\FirewallController;
 use App\Http\Controllers\Api\V1\Admin\MailQueueController;
 use App\Http\Controllers\Api\V1\Admin\ModSecurityController;
-
+use App\Http\Controllers\Api\V1\Admin\PackageController;
+use App\Http\Controllers\Api\V1\Admin\ResellerController;
+use App\Http\Controllers\Api\V1\Admin\ServerController;
+use App\Http\Controllers\Api\V1\Admin\ServiceController;
+use App\Http\Controllers\Api\V1\Admin\SshController;
+use App\Http\Controllers\Api\V1\SetupController;
+use App\Http\Controllers\Api\V1\User\AccessLogController;
+use App\Http\Controllers\Api\V1\User\AppInstallerController;
+use App\Http\Controllers\Api\V1\User\ApplicationController;
+use App\Http\Controllers\Api\V1\User\BackupController;
+use App\Http\Controllers\Api\V1\User\CronController;
+use App\Http\Controllers\Api\V1\User\DatabaseController;
+use App\Http\Controllers\Api\V1\User\DiskUsageController;
+use App\Http\Controllers\Api\V1\User\DnsController;
+use App\Http\Controllers\Api\V1\User\DomainController;
+use App\Http\Controllers\Api\V1\User\EmailController;
+use App\Http\Controllers\Api\V1\User\EmailFilterController;
+use App\Http\Controllers\Api\V1\User\ErrorPageController;
+use App\Http\Controllers\Api\V1\User\FileController;
+use App\Http\Controllers\Api\V1\User\FtpController;
+use App\Http\Controllers\Api\V1\User\GitController;
+use App\Http\Controllers\Api\V1\User\MimeTypeController;
+use App\Http\Controllers\Api\V1\User\PhpConfigController;
+use App\Http\Controllers\Api\V1\User\RedirectController;
+use App\Http\Controllers\Api\V1\User\RemoteMysqlController;
+use App\Http\Controllers\Api\V1\User\SecurityController;
+use App\Http\Controllers\Api\V1\User\SslController;
+use App\Http\Controllers\Api\V1\User\StatsController;
+use App\Http\Controllers\Api\V1\User\TerminalController;
 use App\Http\Controllers\Api\V1\WebhookController;
 use App\Http\Controllers\Api\V1\ZapierConnectionController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\OAuthController;
+use App\Http\Controllers\Auth\TwoFactorController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,7 +100,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
     });
 
     // Subdomains
-    Route::apiResource('subdomains', DomainController::class . '@subdomains');
+    Route::apiResource('subdomains', DomainController::class.'@subdomains');
 
     // DNS
     Route::prefix('dns/zones/{domain}')->group(function () {
@@ -125,8 +120,8 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
         Route::put('accounts/{account}/quota', [EmailController::class, 'updateQuota']);
         Route::get('accounts/{account}/usage', [EmailController::class, 'usage']);
 
-        Route::apiResource('forwarders', EmailController::class . '@forwarders');
-        Route::apiResource('autoresponders', EmailController::class . '@autoresponders');
+        Route::apiResource('forwarders', EmailController::class.'@forwarders');
+        Route::apiResource('autoresponders', EmailController::class.'@autoresponders');
     });
 
     // Databases
@@ -136,7 +131,7 @@ Route::prefix('v1')->middleware(['auth:sanctum', 'audit'])->group(function () {
         Route::post('/{database}/grant', [DatabaseController::class, 'grant']);
         Route::post('/{database}/revoke', [DatabaseController::class, 'revoke']);
 
-        Route::apiResource('users', DatabaseController::class . '@users');
+        Route::apiResource('users', DatabaseController::class.'@users');
         Route::put('users/{user}/password', [DatabaseController::class, 'changeUserPassword']);
     });
 
@@ -491,7 +486,7 @@ Route::prefix('v1/webhooks')->group(function () {
     Route::post('zapier/receive', [WebhookController::class, 'receive'])
         ->middleware(\App\Http\Middleware\VerifyZapierWebhookSignature::class)
         ->name('webhooks.zapier.receive');
-    
+
     // Zapier health check (public, no auth required)
     Route::get('zapier/health', [WebhookController::class, 'health'])
         ->name('webhooks.zapier.health');

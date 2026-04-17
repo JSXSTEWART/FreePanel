@@ -52,7 +52,7 @@ class ServerController extends Controller
                 $mountPoint = $parts[5];
 
                 // Only include relevant mount points
-                if (!$this->isRelevantMount($mountPoint)) {
+                if (! $this->isRelevantMount($mountPoint)) {
                     continue;
                 }
 
@@ -168,7 +168,7 @@ class ServerController extends Controller
 
             return $this->success($info);
         } catch (\Exception $e) {
-            return $this->error('Failed to get MySQL info: ' . $e->getMessage(), 500);
+            return $this->error('Failed to get MySQL info: '.$e->getMessage(), 500);
         }
     }
 
@@ -296,6 +296,7 @@ class ServerController extends Controller
     protected function getProcessCount(): int
     {
         $output = shell_exec('ps aux 2>/dev/null | wc -l');
+
         return max(0, (int) $output - 1);
     }
 

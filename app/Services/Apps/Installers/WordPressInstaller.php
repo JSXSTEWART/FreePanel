@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Process;
 class WordPressInstaller implements AppInstallerInterface
 {
     protected MysqlService $mysql;
+
     protected string $wpCliPath;
 
     public function __construct(MysqlService $mysql)
@@ -28,7 +29,7 @@ class WordPressInstaller implements AppInstallerInterface
         $account = $options['account'];
 
         // Create directory
-        if (!File::isDirectory($path)) {
+        if (! File::isDirectory($path)) {
             File::makeDirectory($path, 0755, true);
         }
 
@@ -42,7 +43,7 @@ class WordPressInstaller implements AppInstallerInterface
 
         // Create wp-config.php
         $this->runWpCli(sprintf(
-            "config create --path=%s --dbname=%s --dbuser=%s --dbpass=%s --dbhost=%s",
+            'config create --path=%s --dbname=%s --dbuser=%s --dbpass=%s --dbhost=%s',
             escapeshellarg($path),
             escapeshellarg($db['name']),
             escapeshellarg($db['user']),
@@ -52,7 +53,7 @@ class WordPressInstaller implements AppInstallerInterface
 
         // Install WordPress
         $this->runWpCli(sprintf(
-            "core install --path=%s --url=%s --title=%s --admin_user=%s --admin_password=%s --admin_email=%s",
+            'core install --path=%s --url=%s --title=%s --admin_user=%s --admin_password=%s --admin_email=%s',
             escapeshellarg($path),
             escapeshellarg($url),
             escapeshellarg($siteName),
@@ -70,7 +71,7 @@ class WordPressInstaller implements AppInstallerInterface
         $this->setSecurePermissions($path);
 
         return [
-            'admin_url' => rtrim($url, '/') . '/wp-admin/',
+            'admin_url' => rtrim($url, '/').'/wp-admin/',
             'version' => $this->getInstalledVersion($path),
         ];
     }
@@ -115,7 +116,7 @@ class WordPressInstaller implements AppInstallerInterface
 
     public function backup(string $path, string $backupPath): void
     {
-        if (!File::isDirectory($backupPath)) {
+        if (! File::isDirectory($backupPath)) {
             File::makeDirectory($backupPath, 0700, true);
         }
 
@@ -133,7 +134,7 @@ class WordPressInstaller implements AppInstallerInterface
     {
         $versionFile = "{$path}/wp-includes/version.php";
 
-        if (!File::exists($versionFile)) {
+        if (! File::exists($versionFile)) {
             return null;
         }
 
@@ -153,7 +154,7 @@ class WordPressInstaller implements AppInstallerInterface
 
         // Clone database
         $prodDbName = $this->getDbName($productionPath);
-        $stagingDbName = ($options['database_prefix'] ?? 'stg_') . $prodDbName;
+        $stagingDbName = ($options['database_prefix'] ?? 'stg_').$prodDbName;
 
         // Create staging database
         $this->mysql->createDatabase($stagingDbName);
@@ -176,7 +177,7 @@ class WordPressInstaller implements AppInstallerInterface
 
         // Search and replace URLs
         $this->runWpCli(sprintf(
-            "search-replace %s %s --path=%s --all-tables",
+            'search-replace %s %s --path=%s --all-tables',
             escapeshellarg($productionUrl),
             escapeshellarg($stagingUrl),
             escapeshellarg($stagingPath)
@@ -193,8 +194,8 @@ class WordPressInstaller implements AppInstallerInterface
         $fullCommand = "{$this->wpCliPath} {$command} --allow-root 2>&1";
         $result = Process::run($fullCommand);
 
-        if (!$result->successful()) {
-            throw new \RuntimeException("WP-CLI command failed: " . $result->errorOutput());
+        if (! $result->successful()) {
+            throw new \RuntimeException('WP-CLI command failed: '.$result->errorOutput());
         }
 
         return $result->output();
@@ -204,7 +205,7 @@ class WordPressInstaller implements AppInstallerInterface
     {
         $wpConfigPath = "{$path}/wp-config.php";
 
-        if (!File::exists($wpConfigPath)) {
+        if (! File::exists($wpConfigPath)) {
             return null;
         }
 
@@ -228,6 +229,6 @@ class WordPressInstaller implements AppInstallerInterface
 
     protected function chownRecursive(string $path, int $uid, int $gid): void
     {
-        Process::run("chown -R {$uid}:{$gid} " . escapeshellarg($path));
+        Process::run("chown -R {$uid}:{$gid} ".escapeshellarg($path));
     }
 }

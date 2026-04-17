@@ -96,6 +96,7 @@ class Application extends Model
     public function getFullPathAttribute(): string
     {
         $account = $this->account;
+
         return "/home/{$account->username}/{$this->path}";
     }
 
@@ -167,7 +168,7 @@ class Application extends Model
      */
     public function getUptimeAttribute(): ?string
     {
-        if (!$this->started_at || $this->status !== 'running') {
+        if (! $this->started_at || $this->status !== 'running') {
             return null;
         }
 

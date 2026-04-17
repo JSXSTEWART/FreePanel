@@ -20,7 +20,7 @@ class RedirectController extends Controller
             ->with('domain:id,domain')
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(fn($redirect) => [
+            ->map(fn ($redirect) => [
                 'id' => $redirect->id,
                 'domain' => $redirect->domain?->domain ?? 'All Domains',
                 'domain_id' => $redirect->domain_id,
@@ -58,7 +58,7 @@ class RedirectController extends Controller
         // Validate domain belongs to account
         if ($request->domain_id) {
             $domain = $account->domains()->find($request->domain_id);
-            if (!$domain) {
+            if (! $domain) {
                 return $this->error('Domain not found', 404);
             }
         }
@@ -98,7 +98,7 @@ class RedirectController extends Controller
         $account = $request->user()->account;
         $redirect = $account->redirects()->find($id);
 
-        if (!$redirect) {
+        if (! $redirect) {
             return $this->error('Redirect not found', 404);
         }
 
@@ -114,7 +114,7 @@ class RedirectController extends Controller
         }
 
         $redirect->update($request->only([
-            'destination_url', 'type', 'wildcard', 'is_active'
+            'destination_url', 'type', 'wildcard', 'is_active',
         ]));
 
         // Update .htaccess
@@ -131,7 +131,7 @@ class RedirectController extends Controller
         $account = $request->user()->account;
         $redirect = $account->redirects()->find($id);
 
-        if (!$redirect) {
+        if (! $redirect) {
             return $this->error('Redirect not found', 404);
         }
 
@@ -152,11 +152,11 @@ class RedirectController extends Controller
         $account = $request->user()->account;
         $redirect = $account->redirects()->find($id);
 
-        if (!$redirect) {
+        if (! $redirect) {
             return $this->error('Redirect not found', 404);
         }
 
-        $redirect->update(['is_active' => !$redirect->is_active]);
+        $redirect->update(['is_active' => ! $redirect->is_active]);
 
         // Update .htaccess
         $this->syncRedirects($account, $redirect->domain_id);
@@ -192,8 +192,8 @@ class RedirectController extends Controller
         $existing = file_exists($htaccessPath) ? file_get_contents($htaccessPath) : '';
 
         // Remove existing redirects section
-        $startMarker = "# BEGIN FreePanel Redirects";
-        $endMarker = "# END FreePanel Redirects";
+        $startMarker = '# BEGIN FreePanel Redirects';
+        $endMarker = '# END FreePanel Redirects';
         $pattern = "/\n?{$startMarker}.*?{$endMarker}\n?/s";
         $existing = preg_replace($pattern, '', $existing);
 
@@ -214,6 +214,6 @@ class RedirectController extends Controller
 
         $rules .= "# END FreePanel Redirects\n";
 
-        file_put_contents($htaccessPath, trim($existing) . "\n\n" . $rules);
+        file_put_contents($htaccessPath, trim($existing)."\n\n".$rules);
     }
 }

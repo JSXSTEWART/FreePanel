@@ -4,8 +4,6 @@ namespace App\Listeners\Domain;
 
 use App\Events\Domain\DomainCreated;
 use App\Events\Domain\DomainDeleted;
-use App\Services\WebServer\WebServerInterface;
-use App\Services\Dns\DnsInterface;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Log;
 

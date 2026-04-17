@@ -53,6 +53,7 @@ class GitRepository extends Model
     public function getFullPathAttribute(): string
     {
         $account = $this->account;
+
         return "/home/{$account->username}/repositories/{$this->path}";
     }
 
@@ -62,7 +63,8 @@ class GitRepository extends Model
     public function getSshUrlAttribute(): string
     {
         $account = $this->account;
-        return "git@" . config('app.domain') . ":{$account->username}/{$this->name}.git";
+
+        return 'git@'.config('app.domain').":{$account->username}/{$this->name}.git";
     }
 
     /**
@@ -72,6 +74,7 @@ class GitRepository extends Model
     {
         $account = $this->account;
         $domain = config('app.domain');
+
         return "https://{$domain}/git/{$account->username}/{$this->name}.git";
     }
 

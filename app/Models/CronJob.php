@@ -51,23 +51,23 @@ class CronJob extends Model
         if ($this->minute === '*') {
             $parts[] = 'every minute';
         } elseif (str_starts_with($this->minute, '*/')) {
-            $parts[] = 'every ' . substr($this->minute, 2) . ' minutes';
+            $parts[] = 'every '.substr($this->minute, 2).' minutes';
         } else {
-            $parts[] = 'at minute ' . $this->minute;
+            $parts[] = 'at minute '.$this->minute;
         }
 
         // Hour
         if ($this->hour !== '*') {
             if (str_starts_with($this->hour, '*/')) {
-                $parts[] = 'every ' . substr($this->hour, 2) . ' hours';
+                $parts[] = 'every '.substr($this->hour, 2).' hours';
             } else {
-                $parts[] = 'at ' . $this->hour . ':00';
+                $parts[] = 'at '.$this->hour.':00';
             }
         }
 
         // Day of month
         if ($this->day !== '*') {
-            $parts[] = 'on day ' . $this->day;
+            $parts[] = 'on day '.$this->day;
         }
 
         // Month
@@ -75,7 +75,7 @@ class CronJob extends Model
             $months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             $monthNum = (int) $this->month;
             if ($monthNum >= 1 && $monthNum <= 12) {
-                $parts[] = 'in ' . $months[$monthNum - 1];
+                $parts[] = 'in '.$months[$monthNum - 1];
             }
         }
 
@@ -84,7 +84,7 @@ class CronJob extends Model
             $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             $dayNum = (int) $this->weekday;
             if ($dayNum >= 0 && $dayNum <= 6) {
-                $parts[] = 'on ' . $days[$dayNum];
+                $parts[] = 'on '.$days[$dayNum];
             }
         }
 
